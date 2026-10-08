@@ -1,0 +1,2886 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>SEBY UNIVERSE - Game, Streaming & Digital Services</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    >
+
+    <!-- GOOGLE IDENTITY SERVICES -->
+    <script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer>
+    </script>
+</head>
+
+<body>
+
+<!-- =====================================================
+     SEBY UNIVERSE — AUTH GATE
+===================================================== -->
+
+<div id="sebyAuthGate" class="seby-auth-gate">
+
+    <div class="auth-background-blur"></div>
+
+    <div class="auth-orb auth-orb-one"></div>
+    <div class="auth-orb auth-orb-two"></div>
+    <div class="auth-orb auth-orb-three"></div>
+
+    <div class="seby-auth-container">
+
+        <!-- BRAND -->
+        <div class="seby-auth-brand">
+
+            <div class="seby-logo-circle">
+                <span>S</span>
+            </div>
+
+            <div>
+                <h1>SEBY <span>UNIVERSE</span></h1>
+                <p>GAME • STREAMING • DIGITAL</p>
+            </div>
+
+        </div>
+
+
+        <!-- AUTH CARD -->
+        <div class="seby-auth-card">
+
+            <div class="auth-card-header">
+
+                <div class="auth-lock-icon">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+
+                <h2 id="gateAuthTitle">
+                    Welcome to SEBY UNIVERSE
+                </h2>
+
+                <p id="gateAuthSubtitle">
+                    Sign in or create your account to continue.
+                </p>
+
+            </div>
+
+
+            <!-- ================= LOGIN ================= -->
+
+            <form
+                id="gateLoginForm"
+                class="gate-auth-form active"
+            >
+
+                <div class="gate-input-group">
+
+                    <label for="gateLoginEmail">
+                        <i class="fa-solid fa-envelope"></i>
+                        Email
+                    </label>
+
+                    <div class="gate-input-wrapper">
+
+                        <input
+                            type="email"
+                            id="gateLoginEmail"
+                            placeholder="example@gmail.com"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="gate-input-group">
+
+                    <label for="gateLoginPassword">
+                        <i class="fa-solid fa-lock"></i>
+                        Password
+                    </label>
+
+                    <div class="gate-input-wrapper">
+
+                        <input
+                            type="password"
+                            id="gateLoginPassword"
+                            placeholder="••••••••"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="gate-password-toggle"
+                            onclick="toggleGatePassword('gateLoginPassword', this)"
+                            aria-label="Show password"
+                        >
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="gate-primary-btn"
+                >
+                    <span>Sign In</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+
+
+                <div class="gate-divider">
+                    <span>OR</span>
+                </div>
+
+                <p class="gate-switch-text">
+
+                    Don't have an account?
+
+                    <button
+                        type="button"
+                        onclick="switchGateAuth('register')"
+                    >
+                        Create an account
+                    </button>
+
+                </p>
+
+            </form>
+
+
+            <!-- ================= REGISTER ================= -->
+
+            <form
+                id="gateRegisterForm"
+                class="gate-auth-form"
+            >
+
+                <div class="gate-register-grid">
+
+                    <div class="gate-input-group">
+
+                        <label for="gateFirstName">
+                            <i class="fa-solid fa-user"></i>
+                            First Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="gateFirstName"
+                            placeholder="John"
+                            autocomplete="given-name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="gate-input-group">
+
+                        <label for="gateLastName">
+                            <i class="fa-solid fa-user"></i>
+                            Last Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="gateLastName"
+                            placeholder="Smith"
+                            autocomplete="family-name"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="gate-input-group">
+
+                    <label for="gateWhatsapp">
+                        <i class="fa-brands fa-whatsapp"></i>
+                        WhatsApp Number
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="gateWhatsapp"
+                        value="+509 "
+                        placeholder="+509 XX XX XXXX"
+                        autocomplete="tel"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="gate-input-group">
+
+                    <label for="gateRegisterEmail">
+                        <i class="fa-solid fa-envelope"></i>
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="gateRegisterEmail"
+                        placeholder="example@gmail.com"
+                        autocomplete="email"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="gate-input-group">
+
+                    <label for="gateRegisterPassword">
+                        <i class="fa-solid fa-lock"></i>
+                        Password
+                    </label>
+
+                    <div class="gate-input-wrapper">
+
+                        <input
+                            type="password"
+                            id="gateRegisterPassword"
+                            placeholder="••••••••"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="gate-password-toggle"
+                            onclick="toggleGatePassword('gateRegisterPassword', this)"
+                            aria-label="Show password"
+                        >
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div class="gate-input-group">
+
+                    <label for="gateConfirmPassword">
+                        <i class="fa-solid fa-lock"></i>
+                        Confirm Password
+                    </label>
+
+                    <div class="gate-input-wrapper">
+
+                        <input
+                            type="password"
+                            id="gateConfirmPassword"
+                            placeholder="••••••••"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="gate-password-toggle"
+                            onclick="toggleGatePassword('gateConfirmPassword', this)"
+                            aria-label="Show password"
+                        >
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="gate-primary-btn"
+                >
+                    <span>Create My Account</span>
+                    <i class="fa-solid fa-user-plus"></i>
+                </button>
+
+
+                <div class="gate-divider">
+                    <span>OR</span>
+                </div>
+
+                <p class="gate-switch-text">
+
+                    Already have an account?
+
+                    <button
+                        type="button"
+                        onclick="switchGateAuth('login')"
+                    >
+                        Sign In
+                    </button>
+
+                </p>
+
+            </form>
+
+
+            <div class="auth-secure-note">
+
+                <i class="fa-solid fa-shield-halved"></i>
+
+                <span>
+                    Your connection is protected by SEBY UNIVERSE
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="seby-auth-footer">
+
+            <span>© 2026 SEBY UNIVERSE</span>
+
+            <span class="auth-footer-dot">•</span>
+
+            <span>GAME & STREAMING</span>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     APPLICATION
+===================================================== -->
+
+<div id="sebyApp">
+
+    <!-- HEADER -->
+
+    <header class="app-header">
+
+        <div class="header-left">
+
+            <button
+                class="icon-btn"
+                id="openMenuBtn"
+            >
+
+                <i class="fa-solid fa-bars"></i>
+
+                <span data-i18n="menu">
+                    Menu
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="header-right">
+
+            <button
+                class="icon-btn"
+                id="notifBtn"
+                aria-label="Notifications"
+            >
+
+                <i class="fa-solid fa-bell"></i>
+
+                <span
+                    class="badge"
+                    id="notifBadge"
+                >
+                    1
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-btn"
+                id="cartBtn"
+                aria-label="Shopping cart"
+            >
+
+                <i class="fa-solid fa-cart-shopping"></i>
+
+                <span
+                    class="badge"
+                    id="cartBadge"
+                >
+                    0
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-btn account-btn"
+                id="profileHeaderBtn"
+                aria-label="Profile"
+            >
+
+                <i class="fa-solid fa-user-astronaut"></i>
+
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- SIDEBAR -->
+
+    <div
+        class="sidebar-overlay"
+        id="sidebarOverlay">
+    </div>
+
+
+    <aside
+        class="sidebar"
+        id="sidebar"
+    >
+
+        <div class="sidebar-header">
+
+            <h2>
+                SEBY UNIVERSE
+            </h2>
+
+            <button
+                class="close-btn"
+                id="closeMenuBtn"
+                aria-label="Close menu"
+            >
+                &times;
+            </button>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <a
+                href="#"
+                class="nav-item active"
+                data-page="home-page"
+            >
+
+                <i class="fa-solid fa-house"></i>
+
+                <span data-i18n="home">
+                    Home
+                </span>
+
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-page="wallet-page"
+            >
+
+                <i class="fa-solid fa-wallet"></i>
+
+                <span data-i18n="wallet">
+                    Wallet
+                </span>
+
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-page="orders-page"
+            >
+
+                <i class="fa-solid fa-bag-shopping"></i>
+
+                <span data-i18n="orders">
+                    My Orders
+                </span>
+
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-page="profile-page"
+            >
+
+                <i class="fa-solid fa-user"></i>
+
+                <span data-i18n="profile">
+                    Profile
+                </span>
+
+            </a>
+
+
+            <div class="nav-dropdown">
+
+                <a
+                    href="#"
+                    class="nav-item dropdown-toggle"
+                    id="paramsToggle"
+                >
+
+                    <i class="fa-solid fa-gear"></i>
+
+                    <span data-i18n="settings">
+                        Settings
+                    </span>
+
+                    <i class="fa-solid fa-chevron-down arrow"></i>
+
+                </a>
+
+
+                <div
+                    class="dropdown-menu"
+                    id="paramsMenu"
+                >
+
+                    <a
+                        href="#"
+                        id="accountInfosBtn"
+                    >
+
+                        <i class="fa-solid fa-id-card"></i>
+
+                        <span data-i18n="accountInfo">
+                            Account Information
+                        </span>
+
+                    </a>
+
+
+                    <a
+                        href="#"
+                        id="logoutBtn"
+                    >
+
+                        <i class="fa-solid fa-right-from-bracket"></i>
+
+                        <span data-i18n="logout">
+                            Sign Out
+                        </span>
+
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <a
+                href="#"
+                class="nav-item pro-btn"
+                id="goProBtn"
+            >
+
+                <i class="fa-solid fa-crown"></i>
+
+                <span data-i18n="pro">
+                    Become a PRO Customer (250 Gdes)
+                </span>
+
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-page="special-services-page"
+            >
+
+                <i class="fa-solid fa-star"></i>
+
+                <span data-i18n="specialServices">
+                    Special Services
+                </span>
+
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-page="help-page"
+            >
+
+                <i class="fa-solid fa-circle-question"></i>
+
+                <span data-i18n="helpCenter">
+                    Help Center
+                </span>
+
+            </a>
+
+
+            <!-- LANGUAGE SELECTOR -->
+
+            <div class="lang-selector">
+
+                <label>
+
+                    <i class="fa-solid fa-globe"></i>
+
+                    <span data-i18n="language">
+                        Language:
+                    </span>
+
+                </label>
+
+
+                <select id="langSelect">
+
+                    <option value="en" selected>
+                        English
+                    </option>
+
+                    <option value="fr">
+                        Français
+                    </option>
+
+                    <option value="ht">
+                        Kreyòl
+                    </option>
+
+                </select>
+
+            </div>
+
+        </nav>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main-content">
+
+        <!-- HOME -->
+
+        <section
+            id="home-page"
+            class="page-section active"
+        >
+
+            <div class="hero-banner">
+
+                <div class="banner-card">
+
+                    <div class="banner-text">
+
+                        <h3 data-i18n="heroTitle">
+                            RECHARGE EASILY
+                        </h3>
+
+                        <p data-i18n="heroText">
+                            Free Fire, TikTok, Netflix, eFootball, DLS and much more with ease!
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="categories-bar">
+
+                <button
+                    class="cat-btn active"
+                    data-cat="all"
+                >
+
+                    <i class="fa-solid fa-border-all"></i>
+
+                    <span data-i18n="all">
+                        All
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="cat-btn"
+                    data-cat="game"
+                >
+
+                    <i class="fa-solid fa-gamepad"></i>
+
+                    <span data-i18n="games">
+                        Games
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="cat-btn"
+                    data-cat="streaming"
+                >
+
+                    <i class="fa-solid fa-tv"></i>
+
+                    <span data-i18n="streaming">
+                        Streaming
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="cat-btn"
+                    data-cat="social"
+                >
+
+                    <i class="fa-solid fa-share-nodes"></i>
+
+                    <span data-i18n="social">
+                        Social
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <h2 class="section-title">
+
+                <i class="fa-solid fa-fire text-orange"></i>
+
+                <span data-i18n="popular">
+                    Popular
+                </span>
+
+            </h2>
+
+
+            <div class="products-grid">
+
+                <!-- FREE FIRE -->
+
+                <div
+                    class="product-card"
+                    data-category="game"
+                    onclick="openProductModal('freefire')"
+                >
+
+                    <div
+                        class="badge-tag"
+                        data-i18n="popularNumber"
+                    >
+                        #1 POPULAR
+                    </div>
+
+                    <div class="card-img-placeholder ff-bg">
+                        FREE FIRE
+                    </div>
+
+                    <div class="card-info">
+
+                        <h3>
+                            Free Fire 💎
+                        </h3>
+
+                        <p
+                            class="tagline"
+                            data-i18n="freeFireDesc"
+                        >
+                            Get diamonds quickly to buy skins and passes!
+                        </p>
+
+                        <span
+                            class="price-start"
+                            data-i18n="freeFirePrice"
+                        >
+                            From 168 HTG
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- TIKTOK -->
+
+                <div
+                    class="product-card"
+                    data-category="social"
+                    onclick="openProductModal('tiktok')"
+                >
+
+                    <div
+                        class="badge-tag blue"
+                        data-i18n="popular"
+                    >
+                        POPULAR
+                    </div>
+
+                    <div class="card-img-placeholder tiktok-bg">
+
+                        <i class="fa-brands fa-tiktok"></i>
+                        TikTok
+
+                    </div>
+
+                    <div class="card-info">
+
+                        <h3>
+                            TikTok Coins 🪙
+                        </h3>
+
+                        <p
+                            class="tagline"
+                            data-i18n="tiktokDesc"
+                        >
+                            Send gifts during live streams and support your favorite TikToker!
+                        </p>
+
+                        <span
+                            class="price-start"
+                            data-i18n="tiktokPrice"
+                        >
+                            From 125 HTG
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- NETFLIX -->
+
+                <div
+                    class="product-card"
+                    data-category="streaming"
+                    onclick="openProductModal('netflix')"
+                >
+
+                    <div class="card-img-placeholder netflix-bg">
+                        NETFLIX
+                    </div>
+
+                    <div class="card-info">
+
+                        <h3>
+                            Netflix Premium 🎬
+                        </h3>
+
+                        <p
+                            class="tagline"
+                            data-i18n="netflixDesc"
+                        >
+                            Watch great movies and series in 4K Ultra HD with unlimited options!
+                        </p>
+
+                        <span
+                            class="price-start"
+                            data-i18n="netflixPrice"
+                        >
+                            From 500 HTG
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- EFOOTBALL -->
+
+                <div
+                    class="product-card"
+                    data-category="game"
+                    onclick="openProductModal('efootball')"
+                >
+
+                    <div class="card-img-placeholder pes-bg">
+                        eFOOTBALL
+                    </div>
+
+                    <div class="card-info">
+
+                        <h3>
+                            eFootball Coins ⚽
+                        </h3>
+
+                        <p
+                            class="tagline"
+                            data-i18n="efootballDesc"
+                        >
+                            Get the best players and build your dream team!
+                        </p>
+
+                        <span
+                            class="price-start"
+                            data-i18n="efootballPrice"
+                        >
+                            From 250 HTG
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DLS GEMS -->
+
+                <div
+                    class="product-card"
+                    data-category="game"
+                    onclick="openProductModal('dls_gems')"
+                >
+
+                    <div class="card-img-placeholder dls-bg">
+                        DLS GEMS
+                    </div>
+
+                    <div class="card-info">
+
+                        <h3>
+                            DLS Diamonds 💎
+                        </h3>
+
+                        <p
+                            class="tagline"
+                            data-i18n="dlsGemsDesc"
+                        >
+                            Upgrade your stadium and unlock great superstars!
+                        </p>
+
+                        <span
+                            class="price-start"
+                            data-i18n="dlsGemsPrice"
+                        >
+                            From 500 HTG
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DLS COINS -->
+
+                <div
+                    class="product-card"
+                    data-category="game"
+                    onclick="openProductModal('dls_coins')"
+                >
+
+                    <div class="card-img-placeholder dls-c-bg">
+                        DLS COINS
+                    </div>
+
+                    <div class="card-info">
+
+                        <h3>
+                            DLS Coins 🪙
+                        </h3>
+
+                        <p
+                            class="tagline"
+                            data-i18n="dlsCoinsDesc"
+                        >
+                            Increase your team level quickly in Dream League Football!
+                        </p>
+
+                        <span
+                            class="price-start"
+                            data-i18n="dlsCoinsPrice"
+                        >
+                            From 500 HTG
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- FLEX GOLD -->
+
+                <div
+                    class="product-card"
+                    data-category="game"
+                    onclick="openProductModal('flex_gold')"
+                >
+
+                    <div class="card-img-placeholder flex-g-bg">
+                        FLEX CITY GOLD
+                    </div>
+
+                    <div class="card-info">
+
+                        <h3>
+                            Flex City Gold 🟡
+                        </h3>
+
+                        <p
+                            class="tagline"
+                            data-i18n="flexGoldDesc"
+                        >
+                            Build and dominate the city with powerful gold resources!
+                        </p>
+
+                        <span
+                            class="price-start"
+                            data-i18n="flexGoldPrice"
+                        >
+                            From 660 HTG
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- FLEX DIAMONDS -->
+
+                <div
+                    class="product-card"
+                    data-category="game"
+                    onclick="openProductModal('flex_diamonds')"
+                >
+
+                    <div class="card-img-placeholder flex-d-bg">
+                        FLEX CITY DIAMONDS
+                    </div>
+
+                    <div class="card-info">
+
+                        <h3>
+                            Flex City Diamonds 🔷
+                        </h3>
+
+                        <p
+                            class="tagline"
+                            data-i18n="flexDiamondDesc"
+                        >
+                            Buy exclusive vehicles and unlock advanced levels!
+                        </p>
+
+                        <span
+                            class="price-start"
+                            data-i18n="flexDiamondPrice"
+                        >
+                            From 700 HTG
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- WALLET -->
+
+        <section
+            id="wallet-page"
+            class="page-section"
+        >
+
+            <h2 class="page-title">
+
+                <i class="fa-solid fa-wallet"></i>
+
+                <span data-i18n="walletTitle">
+                    SEBY UNIVERSE Wallet
+                </span>
+
+            </h2>
+
+
+            <div class="wallet-card-box">
+
+                <div
+                    class="wallet-title"
+                    data-i18n="walletAvailable"
+                >
+                    Available balance on SEBY UNIVERSE
+                </div>
+
+                <div
+                    class="wallet-amount"
+                    id="userWalletBalance"
+                >
+                    0.00 Gdes
+                </div>
+
+                <div class="wallet-status">
+
+                    <i class="fa-solid fa-bolt"></i>
+
+                    <span data-i18n="instant">
+                        Instant
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="instructions-box">
+
+                <h3>
+
+                    <i class="fa-solid fa-circle-info"></i>
+
+                    <span data-i18n="howRecharge">
+                        How to recharge your Wallet:
+                    </span>
+
+                </h3>
+
+                <ol>
+
+                    <li data-i18n="walletStep1">
+                        Make a payment/deposit through NatCash to this number:
+                        <strong>+509 40 09 8873</strong>
+                    </li>
+
+                    <li data-i18n="walletStep2">
+                        Copy the transaction ID from your confirmation SMS.
+                    </li>
+
+                    <li data-i18n="walletStep3">
+                        Enter the transaction ID below and submit it for validation.
+                    </li>
+
+                </ol>
+
+                <p class="nb-txt">
+
+                    <em data-i18n="walletNote">
+                        Note: Your Wallet will be automatically recharged after the administrator validates the transaction.
+                    </em>
+
+                </p>
+
+            </div>
+
+
+            <div class="form-card">
+
+                <h3 data-i18n="rechargeWallet">
+                    Recharge Your Wallet
+                </h3>
+
+                <div class="form-group">
+
+                    <label data-i18n="natcashNumber">
+                        NatCash payment number:
+                    </label>
+
+                    <div class="copy-input-group">
+
+                        <input
+                            type="text"
+                            value="+509 40 09 8873"
+                            readonly
+                            id="natcashNumInput"
+                        >
+
+                        <button
+                            onclick="copyToClipboard('+50940098873')"
+                        >
+
+                            <i class="fa-regular fa-copy"></i>
+
+                            <span data-i18n="copy">
+                                Copy
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label data-i18n="amountSent">
+                        Amount sent (Gdes):
+                    </label>
+
+                    <input
+                        type="number"
+                        id="rechargeAmount"
+                        placeholder="Example: 500"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label data-i18n="transactionId">
+                        TRANSACTION ID (NatCash):
+                    </label>
+
+                    <input
+                        type="text"
+                        id="walletTxnId"
+                        placeholder="Example: 26042056235714"
+                    >
+
+                    <small
+                        class="hint-text"
+                        data-i18n="transactionHint"
+                    >
+                        Numbers only (the code must not have been used before).
+                    </small>
+
+                </div>
+
+
+                <button
+                    class="btn-primary full-btn"
+                    onclick="submitWalletRecharge()"
+                >
+
+                    <i class="fa-solid fa-paper-plane"></i>
+
+                    <span data-i18n="submitValidation">
+                        Submit for Validation
+                    </span>
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- ORDERS -->
+
+        <section
+            id="orders-page"
+            class="page-section"
+        >
+
+            <h2 class="page-title">
+
+                <i class="fa-solid fa-bag-shopping"></i>
+
+                <span data-i18n="myOrders">
+                    My Orders
+                </span>
+
+            </h2>
+
+            <div
+                id="ordersList"
+                class="orders-list">
+            </div>
+
+        </section>
+
+
+        <!-- PROFILE -->
+
+        <section
+            id="profile-page"
+            class="page-section"
+        >
+
+            <h2 class="page-title">
+
+                <i class="fa-solid fa-user"></i>
+
+                <span data-i18n="customerProfile">
+                    Customer Profile
+                </span>
+
+            </h2>
+
+            <div
+                class="profile-card"
+                id="profileContent">
+            </div>
+
+        </section>
+
+
+        <!-- SPECIAL SERVICES -->
+
+        <section
+            id="special-services-page"
+            class="page-section"
+        >
+
+            <h2 class="page-title">
+
+                <i class="fa-solid fa-star"></i>
+
+                <span data-i18n="specialServicesTitle">
+                    Special Services
+                </span>
+
+            </h2>
+
+
+            <div class="special-box">
+
+                <p data-i18n="specialIntro">
+                    These services are handled directly through WhatsApp with the administrator:
+                </p>
+
+
+                <ul class="special-list">
+
+                    <li>
+                        <i class="fa-solid fa-check-circle"></i>
+                        <span data-i18n="paypalSale">
+                            PayPal Account Sales
+                        </span>
+                    </li>
+
+                    <li>
+                        <i class="fa-solid fa-check-circle"></i>
+                        <span data-i18n="paypalRecharge">
+                            PayPal Account Recharge
+                        </span>
+                    </li>
+
+                    <li>
+                        <i class="fa-solid fa-check-circle"></i>
+                        <span data-i18n="wiseRecharge">
+                            Wise Account Recharge
+                        </span>
+                    </li>
+
+                    <li>
+                        <i class="fa-solid fa-check-circle"></i>
+                        <span data-i18n="meruRecharge">
+                            Meru Account Recharge
+                        </span>
+                    </li>
+
+                </ul>
+
+
+                <a
+                    href="https://wa.me/50937155313?text=Hello%20SEBY%20UNIVERSE,%20I%20would%20like%20a%20special%20service"
+                    target="_blank"
+                    class="btn-whatsapp full-btn"
+                >
+
+                    <i class="fa-brands fa-whatsapp"></i>
+
+                    <span data-i18n="writeWhatsApp">
+                        Contact us on WhatsApp
+                    </span>
+
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <!-- HELP -->
+
+        <section
+            id="help-page"
+            class="page-section"
+        >
+
+            <h2 class="page-title">
+
+                <i class="fa-solid fa-circle-question"></i>
+
+                <span data-i18n="helpTitle">
+                    SEBY UNIVERSE Help Center
+                </span>
+
+            </h2>
+
+
+            <div class="help-box">
+
+                <h3 data-i18n="needHelp">
+                    Need help?
+                </h3>
+
+                <p data-i18n="helpText">
+                    If you have a problem with an order or Wallet recharge, contact our support service quickly.
+                </p>
+
+
+                <a
+                    href="https://wa.me/50937155313"
+                    target="_blank"
+                    class="btn-whatsapp"
+                >
+
+                    <i class="fa-brands fa-whatsapp"></i>
+
+                    <span data-i18n="whatsappSupport">
+                        WhatsApp Support (+509 37 15 53 13)
+                    </span>
+
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- PRODUCT MODAL -->
+
+    <div
+        class="modal-overlay"
+        id="productModal"
+    >
+
+        <div class="modal-content">
+
+            <button
+                class="modal-close"
+                onclick="closeProductModal()"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+
+            <div id="modalBody"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- CART MODAL -->
+
+    <div
+        class="modal-overlay"
+        id="cartModal"
+    >
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h3>
+
+                    <i class="fa-solid fa-cart-shopping"></i>
+
+                    <span data-i18n="myCart">
+                        My Shopping Cart
+                    </span>
+
+                </h3>
+
+                <button
+                    class="modal-close"
+                    onclick="closeCartModal()"
+                    aria-label="Close"
+                >
+                    &times;
+                </button>
+
+            </div>
+
+            <div id="cartModalBody"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- NOTIFICATION MODAL -->
+
+    <div
+        class="modal-overlay"
+        id="notifModal"
+    >
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h3>
+
+                    <i class="fa-solid fa-bell"></i>
+
+                    <span data-i18n="adminNotification">
+                        Admin Notification
+                    </span>
+
+                </h3>
+
+                <button
+                    class="modal-close"
+                    onclick="closeNotifModal()"
+                    aria-label="Close"
+                >
+                    &times;
+                </button>
+
+            </div>
+
+
+            <div class="notif-body">
+
+                <div class="notif-item">
+
+                    <h4 data-i18n="welcome">
+                        Welcome to SEBY UNIVERSE!
+                    </h4>
+
+                    <p data-i18n="welcomeText">
+                        Easily recharge your Wallet through NatCash at +509 40 09 8873 and place your orders without waiting!
+                    </p>
+
+                    <small data-i18n="customerService">
+                        Customer Service 24/7
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- OLD AUTH MODAL — KEPT FOR COMPATIBILITY -->
+
+    <div
+        class="modal-overlay"
+        id="authModal"
+    >
+
+        <div class="modal-content auth-box">
+
+            <div class="auth-tabs">
+
+                <button
+                    class="tab-btn active"
+                    id="tabLoginBtn"
+                    onclick="switchAuthTab('login')"
+                    data-i18n="login"
+                >
+                    Sign In
+                </button>
+
+                <button
+                    class="tab-btn"
+                    id="tabRegisterBtn"
+                    onclick="switchAuthTab('register')"
+                    data-i18n="createAccount"
+                >
+                    Create an Account
+                </button>
+
+            </div>
+
+
+            <form
+                id="loginForm"
+                class="auth-form active"
+            >
+
+                <div class="form-group">
+
+                    <label data-i18n="email">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="loginEmail"
+                        placeholder="example@gmail.com"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label data-i18n="password">
+                        Password
+                    </label>
+
+                    <div class="password-wrapper">
+
+                        <input
+                            type="password"
+                            id="loginPassword"
+                            placeholder="••••••••"
+                            required
+                        >
+
+                        <i
+                            class="fa-regular fa-eye toggle-pwd"
+                            onclick="togglePasswordVisibility('loginPassword', this)"
+                        ></i>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="btn-primary full-btn"
+                    data-i18n="login"
+                >
+                    Sign In
+                </button>
+
+
+                <div class="divider">
+
+                    <span data-i18n="orContinue">
+                        or continue with
+                    </span>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn-google full-btn"
+                    onclick="socialAuth('Google')"
+                >
+
+                    <i class="fa-brands fa-google"></i>
+
+                    <span data-i18n="continueGoogle">
+                        Continue with Google
+                    </span>
+
+                </button>
+
+            </form>
+
+
+            <form
+                id="registerForm"
+                class="auth-form"
+            >
+
+                <div class="form-group">
+
+                    <label data-i18n="firstName">
+                        First Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="regFirstName"
+                        placeholder="John"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label data-i18n="lastName">
+                        Last Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="regLastName"
+                        placeholder="Smith"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label data-i18n="whatsappNumber">
+                        WhatsApp Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="regWhatsapp"
+                        value="+509 "
+                        required
+                        placeholder="+509 XX XX XXXX"
+                        oninput="formatPhoneInput(this)"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label data-i18n="email">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="regEmail"
+                        placeholder="example@gmail.com"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label data-i18n="password">
+                        Password
+                    </label>
+
+                    <div class="password-wrapper">
+
+                        <input
+                            type="password"
+                            id="regPassword"
+                            placeholder="••••••••"
+                            required
+                        >
+
+                        <i
+                            class="fa-regular fa-eye toggle-pwd"
+                            onclick="togglePasswordVisibility('regPassword', this)"
+                        ></i>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label data-i18n="confirmPassword">
+                        Confirm Password
+                    </label>
+
+                    <div class="password-wrapper">
+
+                        <input
+                            type="password"
+                            id="regConfirmPassword"
+                            placeholder="••••••••"
+                            required
+                        >
+
+                        <i
+                            class="fa-regular fa-eye toggle-pwd"
+                            onclick="togglePasswordVisibility('regConfirmPassword', this)"
+                        ></i>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="btn-primary full-btn"
+                    data-i18n="createAccount"
+                >
+                    Create an Account
+                </button>
+
+
+                <div class="divider">
+
+                    <span data-i18n="orContinue">
+                        or continue with
+                    </span>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn-google full-btn"
+                    onclick="socialAuth('Google')"
+                >
+
+                    <i class="fa-brands fa-google"></i>
+
+                    <span data-i18n="registerGoogle">
+                        Sign Up with Google
+                    </span>
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRO MODAL -->
+
+    <div
+        class="modal-overlay"
+        id="proModal"
+    >
+
+        <div class="modal-content">
+
+            <button
+                class="modal-close"
+                onclick="closeProModal()"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+
+            <div class="pro-modal-body">
+
+                <div class="crown-icon">
+
+                    <i class="fa-solid fa-crown"></i>
+
+                </div>
+
+                <h2 data-i18n="becomePro">
+                    Become a PRO Customer
+                </h2>
+
+                <p class="pro-price">
+
+                    <span data-i18n="price">
+                        Price:
+                    </span>
+
+                    <strong>
+                        250 Gdes
+                    </strong>
+
+                </p>
+
+
+                <div class="pro-info-card">
+
+                    <h4>
+
+                        <i class="fa-solid fa-gift"></i>
+
+                        <span data-i18n="proBenefits">
+                            PRO Customer Benefits:
+                        </span>
+
+                    </h4>
+
+
+                    <ul>
+
+                        <li>
+
+                            <i class="fa-solid fa-check"></i>
+
+                            <span data-i18n="proBenefit1">
+                                Better chances of receiving free gifts and bonuses.
+                            </span>
+
+                        </li>
+
+
+                        <li>
+
+                            <i class="fa-solid fa-check"></i>
+
+                            <span data-i18n="proBenefit2">
+                                Higher priority for all orders.
+                            </span>
+
+                        </li>
+
+
+                        <li>
+
+                            <i class="fa-solid fa-check"></i>
+
+                            <span data-i18n="proBenefit3">
+                                Access to giveaways and exclusive discounts.
+                            </span>
+
+                        </li>
+
+                    </ul>
+
+                </div>
+
+
+                <div class="instructions-box">
+
+                    <p data-i18n="proPayment">
+                        Make a payment of
+                        <strong>250 Gdes</strong>
+                        to the NatCash number:
+                        <strong>+509 40 09 8873</strong>
+                    </p>
+
+
+                    <p>
+
+                        <em data-i18n="proWhatsAppNote">
+                            Important: You must also add us to your WhatsApp contacts!
+                        </em>
+
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="https://wa.me/50937155313?text=Hello%20SEBY%20UNIVERSE,%20I%20have%20made%20the%20250%20Gdes%20payment%20to%20become%20a%20PRO%20customer"
+                    target="_blank"
+                    class="btn-whatsapp full-btn"
+                >
+
+                    <i class="fa-brands fa-whatsapp"></i>
+
+                    <span data-i18n="confirmWhatsApp">
+                        Confirm on WhatsApp (+509 37 15 53 13)
+                    </span>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     TRANSLATIONS
+===================================================== -->
+
+<script>
+
+const translations = {
+
+    /* =================================================
+       ENGLISH — DEFAULT
+    ================================================= */
+
+    en: {
+
+        menu:"Menu",
+
+        home:"Home",
+
+        wallet:"Wallet",
+
+        orders:"My Orders",
+
+        profile:"Profile",
+
+        settings:"Settings",
+
+        accountInfo:"Account Information",
+
+        logout:"Sign Out",
+
+        pro:"Become a PRO Customer (250 Gdes)",
+
+        specialServices:"Special Services",
+
+        helpCenter:"Help Center",
+
+        language:"Language:",
+
+        heroTitle:"RECHARGE EASILY",
+
+        heroText:
+            "Free Fire, TikTok, Netflix, eFootball, DLS and much more with ease!",
+
+        all:"All",
+
+        games:"Games",
+
+        streaming:"Streaming",
+
+        social:"Social",
+
+        popular:"Popular",
+
+        popularNumber:"#1 POPULAR",
+
+        freeFireDesc:
+            "Get diamonds quickly to buy skins and passes!",
+
+        freeFirePrice:
+            "From 168 HTG",
+
+        tiktokDesc:
+            "Send gifts during live streams and support your favorite TikToker!",
+
+        tiktokPrice:
+            "From 125 HTG",
+
+        netflixDesc:
+            "Watch great movies and series in 4K Ultra HD with unlimited options!",
+
+        netflixPrice:
+            "From 500 HTG",
+
+        efootballDesc:
+            "Get the best players and build your dream team!",
+
+        efootballPrice:
+            "From 250 HTG",
+
+        dlsGemsDesc:
+            "Upgrade your stadium and unlock great superstars!",
+
+        dlsGemsPrice:
+            "From 500 HTG",
+
+        dlsCoinsDesc:
+            "Increase your team level quickly in Dream League Football!",
+
+        dlsCoinsPrice:
+            "From 500 HTG",
+
+        flexGoldDesc:
+            "Build and dominate the city with powerful gold resources!",
+
+        flexGoldPrice:
+            "From 660 HTG",
+
+        flexDiamondDesc:
+            "Buy exclusive vehicles and unlock advanced levels!",
+
+        flexDiamondPrice:
+            "From 700 HTG",
+
+        walletTitle:
+            "SEBY UNIVERSE Wallet",
+
+        walletAvailable:
+            "Available balance on SEBY UNIVERSE",
+
+        instant:
+            "Instant",
+
+        howRecharge:
+            "How to recharge your Wallet:",
+
+        walletStep1:
+            "Make a payment/deposit through NatCash to this number: +509 40 09 8873",
+
+        walletStep2:
+            "Copy the transaction ID from your confirmation SMS.",
+
+        walletStep3:
+            "Enter the transaction ID below and submit it for validation.",
+
+        walletNote:
+            "Note: Your Wallet will be automatically recharged after the administrator validates the transaction.",
+
+        rechargeWallet:
+            "Recharge Your Wallet",
+
+        natcashNumber:
+            "NatCash payment number:",
+
+        copy:
+            "Copy",
+
+        amountSent:
+            "Amount sent (Gdes):",
+
+        transactionId:
+            "TRANSACTION ID (NatCash):",
+
+        transactionHint:
+            "Numbers only (the code must not have been used before).",
+
+        submitValidation:
+            "Submit for Validation",
+
+        myOrders:
+            "My Orders",
+
+        customerProfile:
+            "Customer Profile",
+
+        specialServicesTitle:
+            "Special Services",
+
+        specialIntro:
+            "These services are handled directly through WhatsApp with the administrator:",
+
+        paypalSale:
+            "PayPal Account Sales",
+
+        paypalRecharge:
+            "PayPal Account Recharge",
+
+        wiseRecharge:
+            "Wise Account Recharge",
+
+        meruRecharge:
+            "Meru Account Recharge",
+
+        writeWhatsApp:
+            "Contact us on WhatsApp",
+
+        helpTitle:
+            "SEBY UNIVERSE Help Center",
+
+        needHelp:
+            "Need help?",
+
+        helpText:
+            "If you have a problem with an order or Wallet recharge, contact our support service quickly.",
+
+        whatsappSupport:
+            "WhatsApp Support (+509 37 15 53 13)",
+
+        myCart:
+            "My Shopping Cart",
+
+        adminNotification:
+            "Admin Notification",
+
+        welcome:
+            "Welcome to SEBY UNIVERSE!",
+
+        welcomeText:
+            "Easily recharge your Wallet through NatCash at +509 40 09 8873 and place your orders without waiting!",
+
+        customerService:
+            "Customer Service 24/7",
+
+        login:
+            "Sign In",
+
+        createAccount:
+            "Create an Account",
+
+        email:
+            "Email",
+
+        password:
+            "Password",
+
+        orContinue:
+            "or continue with",
+
+        continueGoogle:
+            "Continue with Google",
+
+        firstName:
+            "First Name",
+
+        lastName:
+            "Last Name",
+
+        whatsappNumber:
+            "WhatsApp Number",
+
+        confirmPassword:
+            "Confirm Password",
+
+        registerGoogle:
+            "Sign Up with Google",
+
+        becomePro:
+            "Become a PRO Customer",
+
+        price:
+            "Price:",
+
+        proBenefits:
+            "PRO Customer Benefits:",
+
+        proBenefit1:
+            "Better chances of receiving free gifts and bonuses.",
+
+        proBenefit2:
+            "Higher priority for all orders.",
+
+        proBenefit3:
+            "Access to giveaways and exclusive discounts.",
+
+        proPayment:
+            "Make a payment of 250 Gdes to the NatCash number: +509 40 09 8873",
+
+        proWhatsAppNote:
+            "Important: You must also add us to your WhatsApp contacts!",
+
+        confirmWhatsApp:
+            "Confirm on WhatsApp (+509 37 15 53 13)"
+    },
+
+
+    /* =================================================
+       FRANÇAIS
+    ================================================= */
+
+    fr: {
+
+        menu:"Menu",
+
+        home:"Accueil",
+
+        wallet:"Portefeuille / Wallet",
+
+        orders:"Mes commandes",
+
+        profile:"Profil",
+
+        settings:"Paramètres",
+
+        accountInfo:"Informations du compte",
+
+        logout:"Se déconnecter",
+
+        pro:"Devenir client PRO (250 Gdes)",
+
+        specialServices:"Services spéciaux",
+
+        helpCenter:"Centre d'aide",
+
+        language:"Langue:",
+
+        heroTitle:
+            "RECHARGEZ FACILEMENT",
+
+        heroText:
+            "Free Fire, TikTok, Netflix, eFootball, DLS et bien plus encore sans effort !",
+
+        all:"Tout",
+
+        games:"Jeux",
+
+        streaming:"Streaming",
+
+        social:"Réseaux sociaux",
+
+        popular:"Populaires",
+
+        popularNumber:"#1 POPULAIRE",
+
+        freeFireDesc:
+            "Obtenez rapidement des diamants pour acheter des skins et des pass !",
+
+        freeFirePrice:
+            "À partir de 168 HTG",
+
+        tiktokDesc:
+            "Envoyez des cadeaux en live et soutenez votre tiktokeur préféré !",
+
+        tiktokPrice:
+            "À partir de 125 HTG",
+
+        netflixDesc:
+            "Regardez de superbes films et séries en 4K Ultra HD avec des options illimitées !",
+
+        netflixPrice:
+            "À partir de 500 HTG",
+
+        efootballDesc:
+            "Achetez les meilleurs joueurs et construisez votre équipe de rêve !",
+
+        efootballPrice:
+            "À partir de 250 HTG",
+
+        dlsGemsDesc:
+            "Améliorez votre stade et débloquez de grandes superstars !",
+
+        dlsGemsPrice:
+            "À partir de 500 HTG",
+
+        dlsCoinsDesc:
+            "Augmentez rapidement le niveau de votre équipe dans Dream League Football !",
+
+        dlsCoinsPrice:
+            "À partir de 500 HTG",
+
+        flexGoldDesc:
+            "Construisez et dominez la ville avec de grandes ressources en or !",
+
+        flexGoldPrice:
+            "À partir de 660 HTG",
+
+        flexDiamondDesc:
+            "Achetez des véhicules exclusifs et débloquez des niveaux avancés !",
+
+        flexDiamondPrice:
+            "À partir de 700 HTG",
+
+        walletTitle:
+            "Portefeuille SEBY UNIVERSE",
+
+        walletAvailable:
+            "Solde disponible sur SEBY UNIVERSE",
+
+        instant:
+            "Instantané",
+
+        howRecharge:
+            "Comment recharger votre Wallet :",
+
+        walletStep1:
+            "Effectuez un paiement/dépôt NatCash au numéro suivant : +509 40 09 8873",
+
+        walletStep2:
+            "Copiez l'identifiant de transaction indiqué dans le SMS de confirmation.",
+
+        walletStep3:
+            "Collez l'identifiant de transaction dans le champ ci-dessous et validez.",
+
+        walletNote:
+            "NB : Le Wallet sera automatiquement rechargé après validation par l'administrateur.",
+
+        rechargeWallet:
+            "Recharger votre Wallet",
+
+        natcashNumber:
+            "Numéro NatCash pour le paiement :",
+
+        copy:
+            "Copier",
+
+        amountSent:
+            "Montant envoyé (Gdes) :",
+
+        transactionId:
+            "ID DE TRANSACTION (NatCash) :",
+
+        transactionHint:
+            "Chiffres uniquement (le code ne doit pas avoir déjà été utilisé).",
+
+        submitValidation:
+            "Soumettre pour validation",
+
+        myOrders:
+            "Mes commandes",
+
+        customerProfile:
+            "Profil client",
+
+        specialServicesTitle:
+            "Services spéciaux",
+
+        specialIntro:
+            "Ces services sont effectués directement sur WhatsApp avec l'administrateur :",
+
+        paypalSale:
+            "Vente de comptes PayPal",
+
+        paypalRecharge:
+            "Recharge de comptes PayPal",
+
+        wiseRecharge:
+            "Recharge de comptes Wise",
+
+        meruRecharge:
+            "Recharge de comptes Meru",
+
+        writeWhatsApp:
+            "Nous écrire sur WhatsApp",
+
+        helpTitle:
+            "Centre d'aide SEBY UNIVERSE",
+
+        needHelp:
+            "Besoin d'aide ?",
+
+        helpText:
+            "Si vous avez un problème avec une commande ou une recharge de Wallet, contactez rapidement notre service d'assistance.",
+
+        whatsappSupport:
+            "Assistance WhatsApp (+509 37 15 53 13)",
+
+        myCart:
+            "Mon panier",
+
+        adminNotification:
+            "Notification de l'administrateur",
+
+        welcome:
+            "Bienvenue sur SEBY UNIVERSE !",
+
+        welcomeText:
+            "Rechargez facilement votre Wallet via NatCash au +509 40 09 8873 et passez toutes vos commandes sans attendre !",
+
+        customerService:
+            "Service client 24/7",
+
+        login:
+            "Se connecter",
+
+        createAccount:
+            "Créer un compte",
+
+        email:
+            "E-mail",
+
+        password:
+            "Mot de passe",
+
+        orContinue:
+            "ou continuer avec",
+
+        continueGoogle:
+            "Continuer avec Google",
+
+        firstName:
+            "Prénom",
+
+        lastName:
+            "Nom",
+
+        whatsappNumber:
+            "Numéro WhatsApp",
+
+        confirmPassword:
+            "Confirmer le mot de passe",
+
+        registerGoogle:
+            "S'inscrire avec Google",
+
+        becomePro:
+            "Devenir client PRO",
+
+        price:
+            "Prix :",
+
+        proBenefits:
+            "Avantages du client PRO :",
+
+        proBenefit1:
+            "Vous aurez plus de chances de recevoir des cadeaux gratuits et des bonus.",
+
+        proBenefit2:
+            "Priorité de traitement sur toutes les commandes.",
+
+        proBenefit3:
+            "Accès aux tirages au sort et aux réductions exclusives.",
+
+        proPayment:
+            "Effectuez un paiement de 250 Gdes sur le numéro NatCash : +509 40 09 8873",
+
+        proWhatsAppNote:
+            "Important : vous devez également nous ajouter à vos contacts WhatsApp !",
+
+        confirmWhatsApp:
+            "Confirmer sur WhatsApp (+509 37 15 53 13)"
+    },
+
+
+    /* =================================================
+       KREYÒL
+    ================================================= */
+
+    ht: {
+
+        menu:"Menu",
+
+        home:"Akèy",
+
+        wallet:"Bous / Wallet",
+
+        orders:"Kòmand mwen yo",
+
+        profile:"Profil",
+
+        settings:"Paramètres",
+
+        accountInfo:"Infos du compte",
+
+        logout:"Se déconnecter",
+
+        pro:"Vin yon kliyan PRO (250 Gdes)",
+
+        specialServices:"Sèvis Spéciaux",
+
+        helpCenter:"Sant èd",
+
+        language:"Lang:",
+
+        heroTitle:
+            "RECHAJ TANKOU",
+
+        heroText:
+            "Free Fire, TikTok, Netflix, eFootball, DLS ak plis ankò san efò!",
+
+        all:"Tout",
+
+        games:"Jwèt",
+
+        streaming:"Streaming",
+
+        social:"Rezo",
+
+        popular:"Pi Popilè",
+
+        popularNumber:"#1 POPILÈ",
+
+        freeFireDesc:
+            "Pran diamants vit pou achte skin ak pass!",
+
+        freeFirePrice:
+            "Depi 168 HTG",
+
+        tiktokDesc:
+            "Voye kado nan live epi sipòte tiktoker prefere ou!",
+
+        tiktokPrice:
+            "Depi 125 HTG",
+
+        netflixDesc:
+            "Gade bèl films ak series 4K Ultra HD, bèl grafik ak opsyon san limit!",
+
+        netflixPrice:
+            "Depi 500 HTG",
+
+        efootballDesc:
+            "Achte pi bon jwè yo epi konstwi ekip rèv ou a!",
+
+        efootballPrice:
+            "Depi 250 HTG",
+
+        dlsGemsDesc:
+            "Mete stadium ou an fòm epi debloke gwo sipèsta!",
+
+        dlsGemsPrice:
+            "Depi 500 HTG",
+
+        dlsCoinsDesc:
+            "Ogmante nivo ekip ou an rapid nan Dream League Football!",
+
+        dlsCoinsPrice:
+            "Depi 500 HTG",
+
+        flexGoldDesc:
+            "Konstwi epi domine vil la ak gwo resous lò!",
+
+        flexGoldPrice:
+            "Depi 660 HTG",
+
+        flexDiamondDesc:
+            "Achte machin eksklizif ak nivo avanse!",
+
+        flexDiamondPrice:
+            "Depi 700 HTG",
+
+        walletTitle:
+            "Bous SEBY UNIVERSE",
+
+        walletAvailable:
+            "Solde disponible dans SEBY UNIVERSE",
+
+        instant:
+            "Instantané",
+
+        howRecharge:
+            "Kijan pou rechaje Wallet ou:",
+
+        walletStep1:
+            "Fè pèman/depo pa NatCash sou nimewo sa a: +509 40 09 8873",
+
+        walletStep2:
+            "Kopye ID tranzaksyon an ki nan mesaj confirmation SMS la.",
+
+        walletStep3:
+            "Kole ID tranzaksyon an nan espas anba a epi valide.",
+
+        walletNote:
+            "NB: Wallet la ap rechaje otomatik tou dwat lè Admin an valide aksyon an.",
+
+        rechargeWallet:
+            "Rechaje Bous Ou",
+
+        natcashNumber:
+            "Nimewo NatCash pou pèman an:",
+
+        copy:
+            "Kopye",
+
+        amountSent:
+            "Montan ou voye an (Gdes):",
+
+        transactionId:
+            "ID TRANSAKSIYON (NatCash):",
+
+        transactionHint:
+            "Chif sèlman (kòd la pa dwe deja itilize).",
+
+        submitValidation:
+            "Soumèt pou Validation",
+
+        myOrders:
+            "Kòmand Mwen Yo",
+
+        customerProfile:
+            "Profil Kliyan",
+
+        specialServicesTitle:
+            "Sèvis Spéciaux",
+
+        specialIntro:
+            "Sèvis sa yo fèt an dirèk sou WhatsApp ak administratè a:",
+
+        paypalSale:
+            "Vant kont PayPal",
+
+        paypalRecharge:
+            "Rechaje kont PayPal",
+
+        wiseRecharge:
+            "Rechaje kont Wise",
+
+        meruRecharge:
+            "Rechaje kont Meru",
+
+        writeWhatsApp:
+            "Ekri nou sou WhatsApp",
+
+        helpTitle:
+            "Sant Èd SEBY UNIVERSE",
+
+        needHelp:
+            "Ou bezwen èd?",
+
+        helpText:
+            "Si ou gen yon pwoblèm ak yon kòmand oswa yon rechaj Wallet, kontakte sèvis sipò nou an rapidman.",
+
+        whatsappSupport:
+            "Sipò WhatsApp (+509 37 15 53 13)",
+
+        myCart:
+            "Panye Kòmand Mwen",
+
+        adminNotification:
+            "Notifikasyon Admin",
+
+        welcome:
+            "Byenveni sou SEBY UNIVERSE!",
+
+        welcomeText:
+            "Rechaje wallet ou fasilman pa NatCash sou +509 40 09 8873 epi pase tout kòmand ou yo san tann!",
+
+        customerService:
+            "Sèvis Kliyan 24/7",
+
+        login:
+            "Se connecter",
+
+        createAccount:
+            "Kreye yon kont",
+
+        email:
+            "E-mail",
+
+        password:
+            "Mot de passe",
+
+        orContinue:
+            "ou kontinye ak",
+
+        continueGoogle:
+            "Kontinye ak Google",
+
+        firstName:
+            "Prénom",
+
+        lastName:
+            "Nom",
+
+        whatsappNumber:
+            "Numéro WhatsApp",
+
+        confirmPassword:
+            "Konfime modpas la",
+
+        registerGoogle:
+            "Enskri ak kont Google",
+
+        becomePro:
+            "Vin yon Kliyan PRO",
+
+        price:
+            "Pri:",
+
+        proBenefits:
+            "Avantaj Kliyan PRO:",
+
+        proBenefit1:
+            "Ou ap pi fasil jwenn kado gratis ak bonus.",
+
+        proBenefit2:
+            "Sèvis an pi gwo priyorite sou tout kòmand.",
+
+        proBenefit3:
+            "Aksè ak tiraj osò ak rabè eksklizif.",
+
+        proPayment:
+            "Fè yon pèman de 250 Gdes sou nimewo NatCash: +509 40 09 8873",
+
+        proWhatsAppNote:
+            "Enpòtan: Fòk ou ajoute nou nan kontak WhatsApp ou tou!",
+
+        confirmWhatsApp:
+            "Konfime sou WhatsApp (+509 37 15 53 13)"
+    }
+
+};
+
+
+/* =====================================================
+   CHANGE LANGUAGE
+===================================================== */
+
+function changeLanguage(language) {
+
+    const selectedLanguage =
+        translations[language] ||
+        translations.en;
+
+
+    document.documentElement.lang =
+        language;
+
+
+    document
+        .querySelectorAll("[data-i18n]")
+        .forEach(element => {
+
+            const key =
+                element.getAttribute("data-i18n");
+
+
+            if (
+                selectedLanguage[key] !== undefined
+            ) {
+
+                /*
+                 * innerHTML olye de textContent
+                 * pou nou ka kenbe <strong>, <em>, elatriye
+                 * nan kèk translation.
+                 */
+
+                element.innerHTML =
+                    selectedLanguage[key];
+
+            }
+
+        });
+
+
+    localStorage.setItem(
+        "sebyLanguage",
+        language
+    );
+}
+
+
+/* =====================================================
+   LANGUAGE INITIALIZATION
+   ENGLISH IS DEFAULT
+===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const langSelect =
+            document.getElementById(
+                "langSelect"
+            );
+
+
+        /*
+         * English se lang default la.
+         * Si itilizatè a te deja chwazi yon lang,
+         * nou respekte chwa li.
+         */
+
+        const savedLanguage =
+            localStorage.getItem(
+                "sebyLanguage"
+            ) || "en";
+
+
+        if (langSelect) {
+
+            langSelect.value =
+                savedLanguage;
+
+
+            langSelect.addEventListener(
+                "change",
+                function () {
+
+                    changeLanguage(
+                        this.value
+                    );
+
+                }
+            );
+
+        }
+
+
+        changeLanguage(
+            savedLanguage
+        );
+
+    }
+);
+
+</script>
+
+
+<!-- =====================================================
+     MAIN SCRIPT
+===================================================== -->
+
+<script src="script.js"></script>
+
+
+</body>
+</html>
