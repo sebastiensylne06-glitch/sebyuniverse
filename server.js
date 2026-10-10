@@ -39,6 +39,8 @@ const defaultDB = {
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
 
+/* -------------------- CORS -------------------- */
+
 app.use(cors({
   origin(origin, callback) {
     if (!origin) return callback(null, true);
@@ -60,6 +62,37 @@ app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
   next();
+});
+
+/* -------------------- PUBLIC FILES -------------------- */
+
+// Sèvi sèlman fichye piblik ki nesesè yo.
+// Pa sèvi tout rasin pwojè a ak express.static(__dirname).
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.get("/style.css", (req, res) => {
+  res.sendFile(path.join(__dirname, "style.css"));
+});
+
+app.get("/script.js", (req, res) => {
+  res.sendFile(path.join(__dirname, "script.js"));
+});
+
+// Fichye admin yo sèvi sèlman si non yo koresponn.
+// Verifye non reyèl fichye yo nan GitHub.
+app.get("/admin.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.get("/admin.css", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.css"));
+});
+
+app.get("/admin.js", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.js"));
 });
 
 /* -------------------- DATABASE -------------------- */
@@ -220,14 +253,8 @@ function publicWriteLimit(req, res, next) {
 
 /* -------------------- HEALTH -------------------- */
 
-app.get("/", (req, res) => {
-  res.json({
-    ok: true,
-    name: "SEBY UNIVERSE API",
-    status: "online",
-    version: "1.2.0"
-  });
-});
+// Paj dakèy la se index.html.
+// API sante a rete disponib nan /api/health.
 
 app.get("/api/health", (req, res) => {
   res.json({
