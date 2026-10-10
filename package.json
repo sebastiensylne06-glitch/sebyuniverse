@@ -1,3 +1,4 @@
+
 {
   "name": "seby-universe-backend",
   "version": "1.0.0",
@@ -9,7 +10,8 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "google-auth-library": "^10.3.0"
   },
   "engines": {
     "node": ">=18"
