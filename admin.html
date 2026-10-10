@@ -1,862 +1,279 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>SEBY UNIVERSE — Admin</title>
 
-    <!-- FONT AWESOME -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    >
-
-    <!-- ADMIN CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="admin.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        .admin-login-gate {
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #101010;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        .admin-login-card {
+            width: 100%;
+            max-width: 430px;
+            padding: 32px 24px;
+            text-align: center;
+            border: 1px solid #333;
+            border-radius: 18px;
+            background: #1b1b1b;
+            box-sizing: border-box;
+        }
+        .admin-login-card h1 {
+            margin: 16px 0;
+            font-size: 24px;
+        }
+        .admin-login-card h1 span { color: #facc15; }
+        .admin-login-card h2 { font-size: 19px; }
+        .admin-login-card p {
+            color: #ccc;
+            line-height: 1.6;
+        }
+        .admin-login-card .brand-icon {
+            font-size: 34px;
+            color: #facc15;
+        }
+        #googleLoginButton {
+            display: flex;
+            justify-content: center;
+            margin-top: 24px;
+            min-height: 44px;
+        }
+        #adminLoginMessage {
+            color: #facc15;
+            overflow-wrap: anywhere;
+        }
+        [hidden] { display: none !important; }
+    </style>
 </head>
 
 <body>
 
-<div class="app">
+<!-- GOOGLE LOGIN GATE -->
+<div id="adminLoginGate" class="admin-login-gate">
+    <div class="admin-login-card">
+        <div class="brand-icon">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h1>SEBY <span>UNIVERSE</span></h1>
+        <h2>Connexion administrateur</h2>
+        <p>
+            Connectez-vous avec le compte Google autorisé
+            pour accéder au panneau d'administration.
+        </p>
+        <div id="googleLoginButton"></div>
+        <p id="adminLoginMessage" role="status">
+            Chargement de Google Login...
+        </p>
+    </div>
+</div>
 
-    <!-- =====================================================
-         SIDEBAR
-    ====================================================== -->
+<!-- APPLICATION ADMIN -->
+<div class="app" id="adminApp" hidden>
 
     <aside class="sidebar" id="sidebar">
-
         <div class="sidebar-header">
-
             <div class="brand-icon">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
-
             <div class="brand">
-                <strong>
-                    SEBY <span>UNIVERSE</span>
-                </strong>
-
+                <strong>SEBY <span>UNIVERSE</span></strong>
                 <small>ADMIN PANEL</small>
             </div>
-
-            <button
-                class="close-sidebar"
-                onclick="closeSidebar()"
-                aria-label="Fermer"
-            >
+            <button class="close-sidebar" onclick="closeSidebar()" aria-label="Fermer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-
         </div>
-
 
         <nav class="sidebar-menu">
-
-            <button
-                class="menu-item active"
-                onclick="showSection('dashboard', this)"
-            >
-                <i class="fa-solid fa-chart-pie"></i>
-                <span>Dashboard</span>
+            <button class="menu-item active" onclick="showSection('dashboard', this)">
+                <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
             </button>
-
-
-            <button
-                class="menu-item"
-                onclick="showSection('orders', this)"
-            >
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span>Commandes</span>
-                <b id="ordersBadge">0</b>
+            <button class="menu-item" onclick="showSection('orders', this)">
+                <i class="fa-solid fa-cart-shopping"></i><span>Commandes</span><b id="ordersBadge">0</b>
             </button>
-
-
-            <button
-                class="menu-item"
-                onclick="showSection('recharges', this)"
-            >
-                <i class="fa-solid fa-wallet"></i>
-                <span>Recharges</span>
-                <b id="rechargesBadge">0</b>
+            <button class="menu-item" onclick="showSection('recharges', this)">
+                <i class="fa-solid fa-wallet"></i><span>Recharges</span><b id="rechargesBadge">0</b>
             </button>
-
-
-            <button
-                class="menu-item"
-                onclick="showSection('clients', this)"
-            >
-                <i class="fa-solid fa-users"></i>
-                <span>Clients</span>
+            <button class="menu-item" onclick="showSection('clients', this)">
+                <i class="fa-solid fa-users"></i><span>Clients</span>
             </button>
-
-
-            <button
-                class="menu-item"
-                onclick="showSection('notifications', this)"
-            >
-                <i class="fa-solid fa-bell"></i>
-                <span>Notifications</span>
-                <b id="notificationsBadge">0</b>
+            <button class="menu-item" onclick="showSection('notifications', this)">
+                <i class="fa-solid fa-bell"></i><span>Notifications</span><b id="notificationsBadge">0</b>
             </button>
-
-
-            <button
-                class="menu-item"
-                onclick="showSection('products', this)"
-            >
-                <i class="fa-solid fa-box"></i>
-                <span>Produits & Prix</span>
+            <button class="menu-item" onclick="showSection('products', this)">
+                <i class="fa-solid fa-box"></i><span>Produits & Prix</span>
             </button>
-
-
-            <button
-                class="menu-item"
-                onclick="showSection('transactions', this)"
-            >
-                <i class="fa-solid fa-receipt"></i>
-                <span>Transactions</span>
+            <button class="menu-item" onclick="showSection('transactions', this)">
+                <i class="fa-solid fa-receipt"></i><span>Transactions</span>
             </button>
-
-
-            <button
-                class="menu-item"
-                onclick="showSection('settings', this)"
-            >
-                <i class="fa-solid fa-gear"></i>
-                <span>Paramètres</span>
+            <button class="menu-item" onclick="showSection('settings', this)">
+                <i class="fa-solid fa-gear"></i><span>Paramètres</span>
             </button>
-
         </nav>
 
-
         <div class="sidebar-bottom">
-
-            <button
-                class="bottom-button"
-                onclick="openSite()"
-            >
-                <i class="fa-solid fa-globe"></i>
-                <span>Voir le site</span>
+            <button class="bottom-button" onclick="openSite()">
+                <i class="fa-solid fa-globe"></i><span>Voir le site</span>
             </button>
-
-
-            <button
-                class="bottom-button logout"
-                onclick="logout()"
-            >
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span>Déconnexion</span>
+            <button class="bottom-button logout" onclick="logout()">
+                <i class="fa-solid fa-right-from-bracket"></i><span>Déconnexion</span>
             </button>
-
         </div>
-
     </aside>
 
-
-    <!-- OVERLAY MOBILE -->
-
-    <div
-        class="overlay"
-        id="overlay"
-        onclick="closeSidebar()"
-    ></div>
-
-
-    <!-- =====================================================
-         MAIN
-    ====================================================== -->
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
     <main class="main">
-
-        <!-- TOPBAR -->
-
         <header class="topbar">
-
-            <button
-                class="mobile-menu"
-                onclick="openSidebar()"
-                aria-label="Menu"
-            >
+            <button class="mobile-menu" onclick="openSidebar()" aria-label="Menu">
                 <i class="fa-solid fa-bars"></i>
             </button>
-
-
-            <div class="page-title">
-                <h1 id="pageTitle">Dashboard</h1>
-            </div>
-
-
+            <div class="page-title"><h1 id="pageTitle">Dashboard</h1></div>
             <div class="top-actions">
-
-                <button
-                    class="notification-button"
-                    onclick="showSection('notifications')"
-                    aria-label="Notifications"
-                >
+                <button class="notification-button" onclick="showSection('notifications')" aria-label="Notifications">
                     <i class="fa-solid fa-bell"></i>
                     <span id="topNotificationBadge">0</span>
                 </button>
-
             </div>
-
         </header>
-
-
-        <!-- =================================================
-             CONTENT
-        ================================================== -->
 
         <div class="content">
 
-
-            <!-- =================================================
-                 DASHBOARD
-            ================================================== -->
-
-            <section
-                class="section active"
-                id="dashboardSection"
-            >
-
+            <section class="section active" id="dashboardSection">
                 <div class="welcome-card">
-
                     <div>
-
                         <small>SEBY UNIVERSE</small>
-
-                        <h2>
-                            Bienvenue, Admin 👋
-                        </h2>
-
-                        <p>
-                            Gérez les produits, les commandes,
-                            les clients et les transactions
-                            depuis votre espace administrateur.
-                        </p>
-
+                        <h2>Bienvenue, Admin 👋</h2>
+                        <p>Gérez les produits, les commandes, les clients et les transactions depuis votre espace administrateur.</p>
+                        <p id="adminSignedInAs"></p>
                     </div>
-
                 </div>
-
-
-                <!-- STATS -->
 
                 <div class="stats-grid">
-
-                    <div class="stat-card">
-
-                        <div class="stat-icon blue">
-                            <i class="fa-solid fa-cart-shopping"></i>
-                        </div>
-
-                        <div>
-                            <span>Total commandes</span>
-                            <strong id="statOrders">0</strong>
-                        </div>
-
-                    </div>
-
-
-                    <div class="stat-card">
-
-                        <div class="stat-icon orange">
-                            <i class="fa-solid fa-clock"></i>
-                        </div>
-
-                        <div>
-                            <span>En attente</span>
-                            <strong id="statPending">0</strong>
-                        </div>
-
-                    </div>
-
-
-                    <div class="stat-card">
-
-                        <div class="stat-icon green">
-                            <i class="fa-solid fa-circle-check"></i>
-                        </div>
-
-                        <div>
-                            <span>Validées</span>
-                            <strong id="statValidated">0</strong>
-                        </div>
-
-                    </div>
-
-
-                    <div class="stat-card">
-
-                        <div class="stat-icon red">
-                            <i class="fa-solid fa-circle-xmark"></i>
-                        </div>
-
-                        <div>
-                            <span>Refusées</span>
-                            <strong id="statRejected">0</strong>
-                        </div>
-
-                    </div>
-
-
-                    <div class="stat-card">
-
-                        <div class="stat-icon purple">
-                            <i class="fa-solid fa-wallet"></i>
-                        </div>
-
-                        <div>
-                            <span>Recharges</span>
-                            <strong id="statRecharges">0</strong>
-                        </div>
-
-                    </div>
-
-
-                    <div class="stat-card">
-
-                        <div class="stat-icon cyan">
-                            <i class="fa-solid fa-users"></i>
-                        </div>
-
-                        <div>
-                            <span>Clients</span>
-                            <strong id="statClients">0</strong>
-                        </div>
-
-                    </div>
-
+                    <div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-cart-shopping"></i></div><div><span>Total commandes</span><strong id="statOrders">0</strong></div></div>
+                    <div class="stat-card"><div class="stat-icon orange"><i class="fa-solid fa-clock"></i></div><div><span>En attente</span><strong id="statPending">0</strong></div></div>
+                    <div class="stat-card"><div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div><div><span>Validées</span><strong id="statValidated">0</strong></div></div>
+                    <div class="stat-card"><div class="stat-icon red"><i class="fa-solid fa-circle-xmark"></i></div><div><span>Refusées</span><strong id="statRejected">0</strong></div></div>
+                    <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-wallet"></i></div><div><span>Recharges</span><strong id="statRecharges">0</strong></div></div>
+                    <div class="stat-card"><div class="stat-icon cyan"><i class="fa-solid fa-users"></i></div><div><span>Clients</span><strong id="statClients">0</strong></div></div>
                 </div>
-
-
-                <!-- DASHBOARD PANEL -->
 
                 <div class="panel">
-
-                    <div class="panel-header">
-
-                        <div>
-                            <h3>État du système</h3>
-
-                            <p>
-                                Connexion avec le backend
-                            </p>
-                        </div>
-
-                    </div>
-
-                    <div
-                        class="api-status"
-                        id="apiStatus"
-                    >
-                        Vérification de l'API...
-                    </div>
-
+                    <div class="panel-header"><div><h3>État du système</h3><p>Connexion avec le backend</p></div></div>
+                    <div class="api-status" id="apiStatus">Vérification de l'API...</div>
                 </div>
-
 
                 <div class="panel">
-
-                    <div class="panel-header">
-
-                        <div>
-                            <h3>Activité récente</h3>
-
-                            <p>
-                                Les dernières activités apparaîtront ici.
-                            </p>
-                        </div>
-
-                    </div>
-
-                    <div class="empty-box">
-
-                        <i class="fa-solid fa-chart-line"></i>
-
-                        <p>
-                            Aucune activité récente.
-                        </p>
-
-                    </div>
-
+                    <div class="panel-header"><div><h3>Activité récente</h3><p>Les dernières activités apparaîtront ici.</p></div></div>
+                    <div class="empty-box"><i class="fa-solid fa-chart-line"></i><p>Aucune activité récente.</p></div>
                 </div>
-
             </section>
 
-
-            <!-- =================================================
-                 COMMANDES
-            ================================================== -->
-
-            <section
-                class="section"
-                id="ordersSection"
-            >
-
-                <div class="section-heading">
-
-                    <div>
-                        <h2>Commandes</h2>
-
-                        <p>
-                            Gérez les commandes des clients.
-                        </p>
-                    </div>
-
-                </div>
-
-
-                <div class="panel">
-
-                    <div class="empty-box">
-
-                        <i class="fa-solid fa-cart-shopping"></i>
-
-                        <p>
-                            Aucune commande à afficher.
-                        </p>
-
-                    </div>
-
-                </div>
-
+            <section class="section" id="ordersSection">
+                <div class="section-heading"><div><h2>Commandes</h2><p>Gérez les commandes des clients.</p></div></div>
+                <div class="panel" id="ordersList"><div class="empty-box"><i class="fa-solid fa-cart-shopping"></i><p>Chargement des commandes...</p></div></div>
             </section>
 
-
-            <!-- =================================================
-                 RECHARGES
-            ================================================== -->
-
-            <section
-                class="section"
-                id="rechargesSection"
-            >
-
-                <div class="section-heading">
-
-                    <div>
-                        <h2>Recharges</h2>
-
-                        <p>
-                            Gérez les demandes de recharge des clients.
-                        </p>
-                    </div>
-
-                </div>
-
-
-                <div class="panel">
-
-                    <div class="empty-box">
-
-                        <i class="fa-solid fa-wallet"></i>
-
-                        <p>
-                            Aucune recharge à afficher.
-                        </p>
-
-                    </div>
-
-                </div>
-
+            <section class="section" id="rechargesSection">
+                <div class="section-heading"><div><h2>Recharges</h2><p>Gérez les demandes de recharge des clients.</p></div></div>
+                <div class="panel" id="rechargesList"><div class="empty-box"><i class="fa-solid fa-wallet"></i><p>Chargement des recharges...</p></div></div>
             </section>
 
-
-            <!-- =================================================
-                 CLIENTS
-            ================================================== -->
-
-            <section
-                class="section"
-                id="clientsSection"
-            >
-
-                <div class="section-heading">
-
-                    <div>
-                        <h2>Clients</h2>
-
-                        <p>
-                            Consultez les informations des clients.
-                        </p>
-                    </div>
-
-                </div>
-
-
-                <div class="panel">
-
-                    <div class="empty-box">
-
-                        <i class="fa-solid fa-users"></i>
-
-                        <p>
-                            Aucun client à afficher.
-                        </p>
-
-                    </div>
-
-                </div>
-
+            <section class="section" id="clientsSection">
+                <div class="section-heading"><div><h2>Clients</h2><p>Consultez les informations des clients.</p></div></div>
+                <div class="panel" id="clientsList"><div class="empty-box"><i class="fa-solid fa-users"></i><p>Chargement des clients...</p></div></div>
             </section>
 
-
-            <!-- =================================================
-                 NOTIFICATIONS
-            ================================================== -->
-
-            <section
-                class="section"
-                id="notificationsSection"
-            >
-
-                <div class="section-heading">
-
-                    <div>
-                        <h2>Notifications</h2>
-
-                        <p>
-                            Notifications et alertes administrateur.
-                        </p>
-                    </div>
-
-                </div>
-
-
-                <div class="panel">
-
-                    <div class="empty-box">
-
-                        <i class="fa-solid fa-bell"></i>
-
-                        <p>
-                            Aucune notification.
-                        </p>
-
-                    </div>
-
-                </div>
-
+            <section class="section" id="notificationsSection">
+                <div class="section-heading"><div><h2>Notifications</h2><p>Notifications et alertes administrateur.</p></div></div>
+                <div class="panel" id="notificationsList"><div class="empty-box"><i class="fa-solid fa-bell"></i><p>Chargement des notifications...</p></div></div>
             </section>
 
-
-            <!-- =================================================
-                 PRODUITS
-            ================================================== -->
-
-            <section
-                class="section"
-                id="productsSection"
-            >
-
+            <section class="section" id="productsSection">
                 <div class="section-heading">
-
-                    <div>
-
-                        <h2>Produits & Prix</h2>
-
-                        <p>
-                            Ajoutez, modifiez et supprimez vos produits.
-                        </p>
-
-                    </div>
-
-
-                    <button
-                        class="primary-button"
-                        onclick="openProductModal()"
-                    >
-                        <i class="fa-solid fa-plus"></i>
-                        Ajouter un produit
+                    <div><h2>Produits & Prix</h2><p>Ajoutez, modifiez et supprimez vos produits.</p></div>
+                    <button class="primary-button" onclick="openProductModal()">
+                        <i class="fa-solid fa-plus"></i> Ajouter un produit
                     </button>
-
                 </div>
-
-
-                <div
-                    class="products-grid"
-                    id="productsList"
-                >
-
-                    <div class="empty-box">
-
-                        <i class="fa-solid fa-spinner fa-spin"></i>
-
-                        <p>
-                            Chargement des produits...
-                        </p>
-
-                    </div>
-
+                <div class="products-grid" id="productsList">
+                    <div class="empty-box"><i class="fa-solid fa-spinner fa-spin"></i><p>Chargement des produits...</p></div>
                 </div>
-
             </section>
 
-
-            <!-- =================================================
-                 TRANSACTIONS
-            ================================================== -->
-
-            <section
-                class="section"
-                id="transactionsSection"
-            >
-
-                <div class="section-heading">
-
-                    <div>
-
-                        <h2>Transactions</h2>
-
-                        <p>
-                            Vérifiez les transactions des clients.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="panel">
-
-                    <div class="empty-box">
-
-                        <i class="fa-solid fa-receipt"></i>
-
-                        <p>
-                            Aucune transaction à afficher.
-                        </p>
-
-                    </div>
-
-                </div>
-
+            <section class="section" id="transactionsSection">
+                <div class="section-heading"><div><h2>Transactions</h2><p>Vérifiez les transactions des clients.</p></div></div>
+                <div class="panel" id="transactionsList"><div class="empty-box"><i class="fa-solid fa-receipt"></i><p>Chargement des transactions...</p></div></div>
             </section>
 
-
-            <!-- =================================================
-                 SETTINGS
-            ================================================== -->
-
-            <section
-                class="section"
-                id="settingsSection"
-            >
-
-                <div class="section-heading">
-
-                    <div>
-
-                        <h2>Paramètres</h2>
-
-                        <p>
-                            Configuration de l'administration.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
+            <section class="section" id="settingsSection">
+                <div class="section-heading"><div><h2>Paramètres</h2><p>Configuration de l'administration.</p></div></div>
                 <div class="settings-card">
-
-                    <h3>
-                        SEBY UNIVERSE Admin
-                    </h3>
-
-                    <p>
-                        Panneau d'administration connecté
-                        au backend SEBY UNIVERSE.
-                    </p>
-
-
-                    <div
-                        class="api-status"
-                        id="settingsApiStatus"
-                    >
-                        API : vérification en cours...
-                    </div>
-
+                    <h3>SEBY UNIVERSE Admin</h3>
+                    <p>Panneau d'administration connecté au backend SEBY UNIVERSE.</p>
+                    <p id="settingsAdminEmail"></p>
+                    <div class="api-status" id="settingsApiStatus">API : vérification en cours...</div>
                 </div>
-
             </section>
 
         </div>
-
     </main>
-
 </div>
 
-
-<!-- =========================================================
-     PRODUCT MODAL
-========================================================== -->
-
-<div
-    class="modal"
-    id="productModal"
->
-
+<!-- PRODUCT MODAL -->
+<div class="modal" id="productModal">
     <div class="modal-box">
-
         <div class="modal-header">
-
-            <div>
-
-                <h2 id="modalTitle">
-                    Ajouter un produit
-                </h2>
-
-                <p>
-                    Remplissez les informations du produit.
-                </p>
-
-            </div>
-
-
-            <button
-                type="button"
-                onclick="closeProductModal()"
-                aria-label="Fermer"
-            >
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-
+            <div><h2 id="modalTitle">Ajouter un produit</h2><p>Remplissez les informations du produit.</p></div>
+            <button type="button" onclick="closeProductModal()" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
         </div>
-
 
         <form id="productForm">
+            <input type="hidden" id="productId">
 
-            <input
-                type="hidden"
-                id="productId"
-            >
+            <label for="productName">Nom du produit</label>
+            <input type="text" id="productName" placeholder="Ex: Free Fire 100 Diamonds" required>
 
+            <label for="productCategory">Catégorie</label>
+            <input type="text" id="productCategory" placeholder="Ex: Free Fire">
 
-            <label for="productName">
-                Nom du produit
-            </label>
+            <label for="productPrice">Prix</label>
+            <div class="price-input"><input type="number" id="productPrice" min="0" step="1" placeholder="500" required><span>GDES</span></div>
 
-            <input
-                type="text"
-                id="productName"
-                placeholder="Ex: Free Fire 100 Diamonds"
-                required
-            >
+            <label for="productImage">Image du produit</label>
+            <input type="text" id="productImage" placeholder="URL de l'image">
 
-
-            <label for="productCategory">
-                Catégorie
-            </label>
-
-            <input
-                type="text"
-                id="productCategory"
-                placeholder="Ex: Free Fire"
-            >
-
-
-            <label for="productPrice">
-                Prix
-            </label>
-
-            <div class="price-input">
-
-                <input
-                    type="number"
-                    id="productPrice"
-                    min="0"
-                    step="1"
-                    placeholder="500"
-                    required
-                >
-
-                <span>GDES</span>
-
-            </div>
-
-
-            <label for="productImage">
-                Image du produit
-            </label>
-
-            <input
-                type="text"
-                id="productImage"
-                placeholder="URL de l'image"
-            >
-
-
-            <label for="productDescription">
-                Description
-            </label>
-
-            <textarea
-                id="productDescription"
-                rows="4"
-                placeholder="Description du produit..."
-            ></textarea>
-
+            <label for="productDescription">Description</label>
+            <textarea id="productDescription" rows="4" placeholder="Description du produit..."></textarea>
 
             <label class="switch-row">
-
-                <input
-                    type="checkbox"
-                    id="productAvailable"
-                    checked
-                >
-
-                <span>
-                    Produit disponible
-                </span>
-
+                <input type="checkbox" id="productAvailable" checked>
+                <span>Produit disponible</span>
             </label>
 
-
             <div class="modal-actions">
-
-                <button
-                    type="button"
-                    class="cancel-button"
-                    onclick="closeProductModal()"
-                >
-                    Annuler
-                </button>
-
-
-                <button
-                    type="submit"
-                    class="primary-button"
-                >
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    Enregistrer
-                </button>
-
+                <button type="button" class="cancel-button" onclick="closeProductModal()">Annuler</button>
+                <button type="submit" class="primary-button"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
             </div>
-
         </form>
-
     </div>
-
 </div>
 
-
-<!-- =========================================================
-     TOAST
-========================================================== -->
-
-<div
-    class="toast"
-    id="toast"
-></div>
-
-
-<!-- =========================================================
-     ADMIN JS
-========================================================== -->
+<div class="toast" id="toast" role="status"></div>
 
 <script src="admin.js"></script>
-
 </body>
 </html>
