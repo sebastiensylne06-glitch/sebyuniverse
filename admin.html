@@ -2,278 +2,295 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEBY UNIVERSE — Admin</title>
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="admin.css">
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-    <style>
-        .admin-login-gate {
-            min-height: 100vh;
-            padding: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #101010;
-            color: #fff;
-            font-family: Arial, sans-serif;
-        }
-        .admin-login-card {
-            width: 100%;
-            max-width: 430px;
-            padding: 32px 24px;
-            text-align: center;
-            border: 1px solid #333;
-            border-radius: 18px;
-            background: #1b1b1b;
-            box-sizing: border-box;
-        }
-        .admin-login-card h1 {
-            margin: 16px 0;
-            font-size: 24px;
-        }
-        .admin-login-card h1 span { color: #facc15; }
-        .admin-login-card h2 { font-size: 19px; }
-        .admin-login-card p {
-            color: #ccc;
-            line-height: 1.6;
-        }
-        .admin-login-card .brand-icon {
-            font-size: 34px;
-            color: #facc15;
-        }
-        #googleLoginButton {
-            display: flex;
-            justify-content: center;
-            margin-top: 24px;
-            min-height: 44px;
-        }
-        #adminLoginMessage {
-            color: #facc15;
-            overflow-wrap: anywhere;
-        }
-        [hidden] { display: none !important; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121212">
+  <title>SEBY UNIVERSE — ADMIN</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    :root {
+      --gold: #ffd000;
+      --apricot: #ffbf86;
+      --bg: #101010;
+      --card: #191919;
+      --white: #fff;
+      --muted: #aaa;
+      --border: #383838;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--white);
+      font-family: Arial, sans-serif;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #101010;
+      color: white;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: 1px solid var(--gold);
+      border-color: var(--gold);
+    }
+    .btn {
+      padding: 12px 15px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--gold);
+      color: #111;
+      font-weight: bold;
+    }
+    .secondary {
+      background: #292929;
+      color: white;
+      border: 1px solid var(--border);
+    }
+    .login-gate {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: radial-gradient(circle at top, #3b2b15, #101010 60%);
+    }
+    .login-card {
+      width: min(100%, 410px);
+      padding: 28px;
+      border: 1px solid #65501e;
+      border-radius: 22px;
+      background: #191919ed;
+      box-shadow: 0 20px 70px #0009;
+      text-align: center;
+      backdrop-filter: blur(15px);
+    }
+    .brand-icon {
+      width: 60px;
+      height: 60px;
+      margin: auto;
+      display: grid;
+      place-items: center;
+      background: var(--gold);
+      color: #111;
+      border-radius: 18px;
+      font-size: 26px;
+    }
+    h1 { font-size: 25px; }
+    h1 span, .brand span { color: var(--gold); }
+    .muted, .login-card p { color: var(--muted); line-height: 1.5; }
+    #adminCodeForm { display: grid; gap: 12px; margin-top: 20px; }
+    .app-shell { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 100vh; }
+    aside {
+      padding: 18px 12px;
+      background: #151515;
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+    .brand { padding: 8px 10px 22px; font-size: 22px; font-weight: 900; }
+    .nav { display: grid; gap: 7px; }
+    .nav button {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #ddd;
+      text-align: left;
+    }
+    .nav button i { width: 24px; }
+    .nav button.active, .nav button:hover {
+      color: var(--gold);
+      background: #ffd00012;
+      border-color: #ffd00055;
+    }
+    .side-bottom { margin-top: 22px; }
+    .main { padding: 24px; min-width: 0; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+    .topbar h2 { margin: 0; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat, .panel, .settings-card {
+      padding: 17px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: linear-gradient(145deg, #202020, #171717);
+      min-width: 0;
+    }
+    .stat i { color: var(--gold); }
+    .stat .label { margin-top: 9px; color: var(--muted); font-size: 13px; }
+    .stat .value { margin-top: 7px; font-size: 25px; font-weight: bold; }
+    .page-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+    .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+    table { width: 100%; min-width: 600px; border-collapse: collapse; background: #181818; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #333; font-size: 13px; }
+    th { background: #242424; color: var(--gold); }
+    .empty { padding: 25px; text-align: center; color: var(--muted); }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .field { display: grid; gap: 7px; }
+    .field label, #changeAdminSecretForm label { color: #ccc; font-size: 13px; }
+    .field.full { grid-column: 1 / -1; }
+    .form-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    #changeAdminSecretForm { display: grid; gap: 10px; margin-top: 14px; }
+    #globalMessage, #adminLoginMessage, #changeAdminSecretMessage { overflow-wrap: anywhere; }
+    @media (max-width: 850px) {
+      .app-shell { grid-template-columns: 1fr; }
+      aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+      .nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .nav button { text-align: center; font-size: 11px; padding: 10px 4px; }
+      .nav button i { display: block; width: auto; margin-bottom: 5px; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main { padding: 15px; }
+    }
+    @media (max-width: 550px) {
+      .settings-grid, .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .stat { padding: 12px; }
+      .stat .value { font-size: 21px; }
+      .login-card { padding: 22px 17px; }
+    }
+  </style>
 </head>
-
 <body>
 
-<!-- GOOGLE LOGIN GATE -->
-<div id="adminLoginGate" class="admin-login-gate">
-    <div class="admin-login-card">
-        <div class="brand-icon">
-            <i class="fa-solid fa-shield-halved"></i>
-        </div>
-        <h1>SEBY <span>UNIVERSE</span></h1>
-        <h2>Connexion administrateur</h2>
-        <p>
-            Connectez-vous avec le compte Google autorisé
-            pour accéder au panneau d'administration.
-        </p>
-        <div id="googleLoginButton"></div>
-        <p id="adminLoginMessage" role="status">
-            Chargement de Google Login...
-        </p>
+  <div id="adminLoginGate" class="login-gate">
+    <div class="login-card">
+      <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <h1>SEBY <span>UNIVERSE</span></h1>
+      <h2>Connexion administrateur</h2>
+      <p>Entrez votre code secret administrateur.</p>
+      <form id="adminCodeForm">
+        <input id="adminCode" type="password" placeholder="Code secret administrateur" autocomplete="current-password" maxlength="256" required>
+        <button id="adminLoginButton" class="btn" type="submit">Se connecter</button>
+      </form>
+      <p id="adminLoginMessage" role="status" aria-live="polite"></p>
     </div>
-</div>
+  </div>
 
-<!-- APPLICATION ADMIN -->
-<div class="app" id="adminApp" hidden>
-
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="brand-icon">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <div class="brand">
-                <strong>SEBY <span>UNIVERSE</span></strong>
-                <small>ADMIN PANEL</small>
-            </div>
-            <button class="close-sidebar" onclick="closeSidebar()" aria-label="Fermer">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-
-        <nav class="sidebar-menu">
-            <button class="menu-item active" onclick="showSection('dashboard', this)">
-                <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
-            </button>
-            <button class="menu-item" onclick="showSection('orders', this)">
-                <i class="fa-solid fa-cart-shopping"></i><span>Commandes</span><b id="ordersBadge">0</b>
-            </button>
-            <button class="menu-item" onclick="showSection('recharges', this)">
-                <i class="fa-solid fa-wallet"></i><span>Recharges</span><b id="rechargesBadge">0</b>
-            </button>
-            <button class="menu-item" onclick="showSection('clients', this)">
-                <i class="fa-solid fa-users"></i><span>Clients</span>
-            </button>
-            <button class="menu-item" onclick="showSection('notifications', this)">
-                <i class="fa-solid fa-bell"></i><span>Notifications</span><b id="notificationsBadge">0</b>
-            </button>
-            <button class="menu-item" onclick="showSection('products', this)">
-                <i class="fa-solid fa-box"></i><span>Produits & Prix</span>
-            </button>
-            <button class="menu-item" onclick="showSection('transactions', this)">
-                <i class="fa-solid fa-receipt"></i><span>Transactions</span>
-            </button>
-            <button class="menu-item" onclick="showSection('settings', this)">
-                <i class="fa-solid fa-gear"></i><span>Paramètres</span>
-            </button>
-        </nav>
-
-        <div class="sidebar-bottom">
-            <button class="bottom-button" onclick="openSite()">
-                <i class="fa-solid fa-globe"></i><span>Voir le site</span>
-            </button>
-            <button class="bottom-button logout" onclick="logout()">
-                <i class="fa-solid fa-right-from-bracket"></i><span>Déconnexion</span>
-            </button>
-        </div>
+  <div id="adminApp" class="app-shell" hidden>
+    <aside>
+      <div class="brand">SEBY <span>UNIVERSE</span></div>
+      <nav class="nav">
+        <button class="active" data-page="dashboard"><i class="fa-solid fa-chart-line"></i> Tableau de bord</button>
+        <button data-page="products"><i class="fa-solid fa-box"></i> Produits</button>
+        <button data-page="orders"><i class="fa-solid fa-bag-shopping"></i> Commandes</button>
+        <button data-page="recharges"><i class="fa-solid fa-wallet"></i> Recharges</button>
+        <button data-page="clients"><i class="fa-solid fa-users"></i> Clients</button>
+        <button data-page="transactions"><i class="fa-solid fa-money-bill-transfer"></i> Transactions</button>
+        <button data-page="notifications"><i class="fa-solid fa-bell"></i> Notifications</button>
+        <button data-page="settings"><i class="fa-solid fa-gear"></i> Paramètres</button>
+      </nav>
+      <div class="side-bottom">
+        <button id="logoutButton" class="btn secondary" style="width:100%">Déconnexion</button>
+      </div>
     </aside>
 
-    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
-
     <main class="main">
-        <header class="topbar">
-            <button class="mobile-menu" onclick="openSidebar()" aria-label="Menu">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-            <div class="page-title"><h1 id="pageTitle">Dashboard</h1></div>
-            <div class="top-actions">
-                <button class="notification-button" onclick="showSection('notifications')" aria-label="Notifications">
-                    <i class="fa-solid fa-bell"></i>
-                    <span id="topNotificationBadge">0</span>
-                </button>
-            </div>
-        </header>
-
-        <div class="content">
-
-            <section class="section active" id="dashboardSection">
-                <div class="welcome-card">
-                    <div>
-                        <small>SEBY UNIVERSE</small>
-                        <h2>Bienvenue, Admin 👋</h2>
-                        <p>Gérez les produits, les commandes, les clients et les transactions depuis votre espace administrateur.</p>
-                        <p id="adminSignedInAs"></p>
-                    </div>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-cart-shopping"></i></div><div><span>Total commandes</span><strong id="statOrders">0</strong></div></div>
-                    <div class="stat-card"><div class="stat-icon orange"><i class="fa-solid fa-clock"></i></div><div><span>En attente</span><strong id="statPending">0</strong></div></div>
-                    <div class="stat-card"><div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div><div><span>Validées</span><strong id="statValidated">0</strong></div></div>
-                    <div class="stat-card"><div class="stat-icon red"><i class="fa-solid fa-circle-xmark"></i></div><div><span>Refusées</span><strong id="statRejected">0</strong></div></div>
-                    <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-wallet"></i></div><div><span>Recharges</span><strong id="statRecharges">0</strong></div></div>
-                    <div class="stat-card"><div class="stat-icon cyan"><i class="fa-solid fa-users"></i></div><div><span>Clients</span><strong id="statClients">0</strong></div></div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header"><div><h3>État du système</h3><p>Connexion avec le backend</p></div></div>
-                    <div class="api-status" id="apiStatus">Vérification de l'API...</div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header"><div><h3>Activité récente</h3><p>Les dernières activités apparaîtront ici.</p></div></div>
-                    <div class="empty-box"><i class="fa-solid fa-chart-line"></i><p>Aucune activité récente.</p></div>
-                </div>
-            </section>
-
-            <section class="section" id="ordersSection">
-                <div class="section-heading"><div><h2>Commandes</h2><p>Gérez les commandes des clients.</p></div></div>
-                <div class="panel" id="ordersList"><div class="empty-box"><i class="fa-solid fa-cart-shopping"></i><p>Chargement des commandes...</p></div></div>
-            </section>
-
-            <section class="section" id="rechargesSection">
-                <div class="section-heading"><div><h2>Recharges</h2><p>Gérez les demandes de recharge des clients.</p></div></div>
-                <div class="panel" id="rechargesList"><div class="empty-box"><i class="fa-solid fa-wallet"></i><p>Chargement des recharges...</p></div></div>
-            </section>
-
-            <section class="section" id="clientsSection">
-                <div class="section-heading"><div><h2>Clients</h2><p>Consultez les informations des clients.</p></div></div>
-                <div class="panel" id="clientsList"><div class="empty-box"><i class="fa-solid fa-users"></i><p>Chargement des clients...</p></div></div>
-            </section>
-
-            <section class="section" id="notificationsSection">
-                <div class="section-heading"><div><h2>Notifications</h2><p>Notifications et alertes administrateur.</p></div></div>
-                <div class="panel" id="notificationsList"><div class="empty-box"><i class="fa-solid fa-bell"></i><p>Chargement des notifications...</p></div></div>
-            </section>
-
-            <section class="section" id="productsSection">
-                <div class="section-heading">
-                    <div><h2>Produits & Prix</h2><p>Ajoutez, modifiez et supprimez vos produits.</p></div>
-                    <button class="primary-button" onclick="openProductModal()">
-                        <i class="fa-solid fa-plus"></i> Ajouter un produit
-                    </button>
-                </div>
-                <div class="products-grid" id="productsList">
-                    <div class="empty-box"><i class="fa-solid fa-spinner fa-spin"></i><p>Chargement des produits...</p></div>
-                </div>
-            </section>
-
-            <section class="section" id="transactionsSection">
-                <div class="section-heading"><div><h2>Transactions</h2><p>Vérifiez les transactions des clients.</p></div></div>
-                <div class="panel" id="transactionsList"><div class="empty-box"><i class="fa-solid fa-receipt"></i><p>Chargement des transactions...</p></div></div>
-            </section>
-
-            <section class="section" id="settingsSection">
-                <div class="section-heading"><div><h2>Paramètres</h2><p>Configuration de l'administration.</p></div></div>
-                <div class="settings-card">
-                    <h3>SEBY UNIVERSE Admin</h3>
-                    <p>Panneau d'administration connecté au backend SEBY UNIVERSE.</p>
-                    <p id="settingsAdminEmail"></p>
-                    <div class="api-status" id="settingsApiStatus">API : vérification en cours...</div>
-                </div>
-            </section>
-
+      <header class="topbar">
+        <div>
+          <h2 id="pageTitle">Tableau de bord</h2>
+          <div id="adminSignedInAs" class="muted">Connecté : ADMIN</div>
         </div>
-    </main>
-</div>
+        <button id="refreshButton" class="btn secondary"><i class="fa-solid fa-rotate"></i> Actualiser</button>
+      </header>
 
-<!-- PRODUCT MODAL -->
-<div class="modal" id="productModal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <div><h2 id="modalTitle">Ajouter un produit</h2><p>Remplissez les informations du produit.</p></div>
-            <button type="button" onclick="closeProductModal()" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
+      <section id="page-dashboard" class="page active">
+        <div class="stats">
+          <div class="stat"><i class="fa-solid fa-box"></i><div class="label">Produits</div><div id="statProducts" class="value">0</div></div>
+          <div class="stat"><i class="fa-solid fa-bag-shopping"></i><div class="label">Commandes</div><div id="statOrders" class="value">0</div></div>
+          <div class="stat"><i class="fa-solid fa-users"></i><div class="label">Clients</div><div id="statClients" class="value">0</div></div>
+          <div class="stat"><i class="fa-solid fa-wallet"></i><div class="label">Recharges en attente</div><div id="statPending" class="value">0</div></div>
         </div>
+        <div class="panel"><h3>Commandes récentes</h3><div id="recentOrders" class="table-wrap"></div></div>
+      </section>
 
-        <form id="productForm">
-            <input type="hidden" id="productId">
-
-            <label for="productName">Nom du produit</label>
-            <input type="text" id="productName" placeholder="Ex: Free Fire 100 Diamonds" required>
-
-            <label for="productCategory">Catégorie</label>
-            <input type="text" id="productCategory" placeholder="Ex: Free Fire">
-
-            <label for="productPrice">Prix</label>
-            <div class="price-input"><input type="number" id="productPrice" min="0" step="1" placeholder="500" required><span>GDES</span></div>
-
-            <label for="productImage">Image du produit</label>
-            <input type="text" id="productImage" placeholder="URL de l'image">
-
-            <label for="productDescription">Description</label>
-            <textarea id="productDescription" rows="4" placeholder="Description du produit..."></textarea>
-
-            <label class="switch-row">
-                <input type="checkbox" id="productAvailable" checked>
-                <span>Produit disponible</span>
-            </label>
-
-            <div class="modal-actions">
-                <button type="button" class="cancel-button" onclick="closeProductModal()">Annuler</button>
-                <button type="submit" class="primary-button"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
-            </div>
+      <section id="page-products" class="page">
+        <div class="page-heading">
+          <h3>Gestion des produits</h3>
+          <button id="newProductButton" class="btn"><i class="fa-solid fa-plus"></i> Ajouter</button>
+        </div>
+        <form id="productForm" class="panel" hidden>
+          <h3 id="productFormTitle">Ajouter un produit</h3>
+          <input type="hidden" id="productId">
+          <div class="form-grid">
+            <div class="field"><label for="productName">Nom *</label><input id="productName" required maxlength="200"></div>
+            <div class="field"><label for="productCategory">Catégorie</label><input id="productCategory" maxlength="120"></div>
+            <div class="field"><label for="productPrice">Prix (Gdes) *</label><input id="productPrice" type="number" min="0" step="0.01" required></div>
+            <div class="field"><label for="productImage">URL image</label><input id="productImage" type="url" maxlength="1000"></div>
+            <div class="field full"><label for="productDescription">Description</label><textarea id="productDescription" rows="3" maxlength="1000"></textarea></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" type="submit">Enregistrer</button>
+            <button id="cancelProductButton" class="btn secondary" type="button">Annuler</button>
+          </div>
+          <p id="productMessage" class="muted" role="status"></p>
         </form>
-    </div>
-</div>
+        <div id="productsTable" class="table-wrap"></div>
+      </section>
 
-<div class="toast" id="toast" role="status"></div>
+      <section id="page-orders" class="page"><div class="page-heading"><h3>Commandes</h3></div><div id="ordersTable" class="table-wrap"></div></section>
+      <section id="page-recharges" class="page"><div class="page-heading"><h3>Recharges</h3></div><div id="rechargesTable" class="table-wrap"></div></section>
+      <section id="page-clients" class="page"><div class="page-heading"><h3>Clients</h3></div><div id="clientsTable" class="table-wrap"></div></section>
+      <section id="page-transactions" class="page"><div class="page-heading"><h3>Transactions</h3></div><div id="transactionsTable" class="table-wrap"></div></section>
+      <section id="page-notifications" class="page"><div class="page-heading"><h3>Notifications</h3></div><div id="notificationsTable" class="table-wrap"></div></section>
 
-<script src="admin.js"></script>
+      <section id="page-settings" class="page">
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3>Session administrateur</h3>
+            <p id="settingsAdminEmail">Compte administrateur : ADMIN</p>
+            <button id="settingsLogoutButton" class="btn secondary">Déconnexion</button>
+          </div>
+          <div class="settings-card">
+            <h3><i class="fa-solid fa-key"></i> Sécurité administrateur</h3>
+            <p>Chanje kòd sekrè a. Nouvo kòd la dwe gen omwen 16 karaktè.</p>
+            <button id="openChangeSecretButton" class="btn" type="button">Changer le code secret</button>
+            <form id="changeAdminSecretForm" hidden>
+              <label for="currentAdminSecret">Code actuel</label>
+              <input id="currentAdminSecret" type="password" autocomplete="current-password" maxlength="256" required>
+              <label for="newAdminSecret">Nouveau code (16 caractères minimum)</label>
+              <input id="newAdminSecret" type="password" autocomplete="new-password" minlength="16" maxlength="256" required>
+              <label for="confirmAdminSecret">Confirmer le nouveau code</label>
+              <input id="confirmAdminSecret" type="password" autocomplete="new-password" minlength="16" maxlength="256" required>
+              <button class="btn" type="submit">Enregistrer le nouveau code</button>
+              <p id="changeAdminSecretMessage" role="status" aria-live="polite"></p>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <p id="globalMessage" class="muted" role="status" aria-live="polite"></p>
+    </main>
+  </div>
+
+  <script src="admin.js" defer></script>
 </body>
 </html>
