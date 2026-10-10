@@ -2234,3 +2234,53 @@ a{
         animation:none!important;
     }
 }
+
+/* SEBY UNIVERSE — Ajisteman enskripsyon sou telefòn */
+@media screen and (max-width: 600px) {
+  .register-container,
+  .signup-container,
+  .register-card,
+  .signup-card,
+  .auth-container,
+  .auth-card {
+    width: calc(100% - 28px);
+    max-width: 420px;
+    margin: 12px auto;
+    padding: 20px 16px;
+    box-sizing: border-box;
+  }
+
+  .register-container h1,
+  .signup-container h1,
+  .register-card h1,
+  .signup-card h1,
+  .auth-container h1,
+  .auth-card h1 {
+    font-size: 25px;
+    line-height: 1.25;
+    margin: 12px 0;
+  }
+
+  .register-container input,
+  .signup-container input,
+  .register-card input,
+  .signup-card input,
+  .auth-container input,
+  .auth-card input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 13px 14px;
+    font-size: 16px;
+  }
+
+  .register-container button,
+  .signup-container button,
+  .register-card button,
+  .signup-card button,
+  .auth-container button,
+  .auth-card button {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
