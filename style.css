@@ -1914,3 +1914,44 @@ body {
         transform: none !important;
     }
 }
+/* SEBY UNIVERSE — KORÈKSYON EFÈ KOULÈ SOU PWODUI YO */
+
+.product-card,
+.product-box,
+.product-item,
+.category-box,
+.product-card a,
+.product-box a {
+    -webkit-tap-highlight-color: transparent !important;
+    outline: none;
+}
+
+/* Retire ansyen koulè lè w klike */
+.product-card:active,
+.product-box:active,
+.product-item:active,
+.category-box:active,
+.product-card:focus,
+.product-box:focus,
+.product-item:focus,
+.category-box:focus {
+    outline: none !important;
+    box-shadow: inherit;
+}
+
+/* Kenbe menm koulè ak menm aparans */
+.product-card,
+.product-box,
+.product-item,
+.category-box {
+    transition: transform 0.25s ease,
+                box-shadow 0.25s ease !important;
+}
+
+/* Retire koulè ble oswa vyolèt sou lyen */
+.product-card a:focus,
+.product-box a:focus,
+.product-item a:focus {
+    color: inherit;
+    outline: none !important;
+}
