@@ -159,11 +159,11 @@ async function handleGoogleCredential(response) {
         sessionStorage.removeItem(USER_KEY);
 
         showLoginGate(
-            error.message ||
-            "Connexion refusée. Utilisez le compte administrateur autorisé."
-        );
+    error.message ||
+    "Connexion refusée. Vérifiez la configuration Google et le backend."
+);
 
-        waitForGoogle();
+console.error("Détail de l'erreur ADMIN :", error);
     }
 }
 
