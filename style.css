@@ -2284,3 +2284,81 @@ a{
     box-sizing: border-box;
   }
 }
+
+/* SEBY UNIVERSE — Meni navigasyon fiks */
+:root {
+  --nav-height: 58px;
+}
+
+nav,
+.navbar,
+.bottom-nav,
+.bottom-navigation,
+#navbar,
+#bottomNav {
+  box-sizing: border-box;
+}
+
+/* Meni prensipal anlè a */
+.navbar,
+#navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+/* Meni anba ekran telefòn nan */
+.bottom-nav,
+.bottom-navigation,
+#bottomNav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+
+  min-height: var(--nav-height);
+  padding: 6px 8px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
+
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 4px;
+
+  background: #080808;
+  border-top: 1px solid #ffd000;
+  box-sizing: border-box;
+}
+
+/* Bouton ak lyen nan meni an */
+.bottom-nav a,
+.bottom-nav button,
+.bottom-navigation a,
+.bottom-navigation button,
+#bottomNav a,
+#bottomNav button {
+  min-width: 0;
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+/* Kite kontni an vizib dèyè meni fiks la */
+body {
+  padding-bottom: calc(75px + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 600px) {
+  .navbar,
+  #navbar {
+    padding: 8px 12px;
+  }
+
+  .bottom-nav,
+  .bottom-navigation,
+  #bottomNav {
+    min-height: 54px;
+  }
+}
