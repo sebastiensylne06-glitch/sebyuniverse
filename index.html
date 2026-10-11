@@ -29,6 +29,15 @@
      SEBY UNIVERSE — AUTH GATE  
 ===================================================== -->  <div id="sebyAuthGate" class="seby-auth-gate">  <div class="auth-background-blur"></div>  
 
+<div id="sebyLoader" role="status" aria-label="Chargement de SEBY UNIVERSE">
+    <img src="/logo.jpg" alt="SEBY UNIVERSE" class="seby-loader-logo">
+
+    <p class="seby-loader-title">SEBY UNIVERSE</p>
+    <p class="seby-loader-subtitle">Préparation de votre espace...</p>
+
+    <div class="seby-loader-bar"></div>
+</div>
+
 <div class="auth-orb auth-orb-one"></div>  
 <div class="auth-orb auth-orb-two"></div>  
 <div class="auth-orb auth-orb-three"></div>  
@@ -5396,6 +5405,33 @@ document.addEventListener(
 
 <script src="script.js"></script>
 
+
+<script>
+(function () {
+    const loader = document.getElementById("sebyLoader");
+    if (!loader) return;
+
+    const minimumTime = new Promise(resolve => {
+        setTimeout(resolve, 1500);
+    });
+
+    const pageLoaded = new Promise(resolve => {
+        if (document.readyState === "complete") {
+            resolve();
+        } else {
+            window.addEventListener("load", resolve, { once: true });
+        }
+    });
+
+    Promise.all([minimumTime, pageLoaded]).then(() => {
+        loader.classList.add("loader-hidden");
+
+        setTimeout(() => {
+            loader.remove();
+        }, 400);
+    });
+})();
+</script>
 
 </body>
 </html>
