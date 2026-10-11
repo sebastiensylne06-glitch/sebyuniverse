@@ -1964,3 +1964,18 @@ body {
   object-fit: contain;
   border-radius: 10px;
 }
+/* SEBY UNIVERSE LOGO */
+.brand-logo-img {
+    display: block;
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.seby-logo-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
