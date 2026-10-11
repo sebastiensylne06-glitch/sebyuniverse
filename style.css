@@ -2075,6 +2075,11 @@ border-radius: 10px;
 animation: sebyLoading 1s ease-in-out infinite;
 }
 
+/* Kache logo SU nan header login lan sèlman */
+.brand-logo {
+    display: none !important;
+}
+
 @keyframes sebyLogoPulse {
 0%, 100% { transform: scale(1); }
 50% { transform: scale(1.04); }
