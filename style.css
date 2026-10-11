@@ -1979,3 +1979,11 @@ body {
     justify-content: center;
     overflow: hidden;
 }
+/* SEBY UNIVERSE LOGO */
+.brand-logo-img {
+    display: block;
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    border-radius: 10px;
+}
