@@ -1987,3 +1987,107 @@ body {
     object-fit: contain;
     border-radius: 10px;
 }
+/* =========================================
+SEBY UNIVERSE — LOGO PREMIUM
+========================================= */
+
+.brand-logo-img {
+display: block;
+width: 46px;
+height: 46px;
+padding: 4px;
+box-sizing: border-box;
+object-fit: contain;
+background: #050505;
+border: 1px solid #ffd000;
+border-radius: 12px;
+box-shadow: 0 0 10px rgba(255, 208, 0, 0.18);
+flex-shrink: 0;
+}
+
+/* =========================================
+LOADING SCREEN
+========================================= */
+
+#sebyLoader {
+position: fixed;
+inset: 0;
+z-index: 999999;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 16px;
+background: #050505;
+opacity: 1;
+visibility: visible;
+transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+#sebyLoader.loader-hidden {
+opacity: 0;
+visibility: hidden;
+pointer-events: none;
+}
+
+.seby-loader-logo {
+width: 76px;
+height: 76px;
+padding: 7px;
+box-sizing: border-box;
+object-fit: contain;
+background: #080808;
+border: 2px solid #ffd000;
+border-radius: 20px;
+box-shadow: 0 0 24px rgba(255, 208, 0, 0.2);
+animation: sebyLogoPulse 1.2s ease-in-out infinite;
+}
+
+.seby-loader-title {
+margin: 0;
+color: #ffd000;
+font-size: 20px;
+font-weight: 800;
+letter-spacing: 2px;
+}
+
+.seby-loader-subtitle {
+margin: 0;
+color: #bdbdbd;
+font-size: 12px;
+}
+
+.seby-loader-bar {
+width: 120px;
+height: 3px;
+overflow: hidden;
+background: #242424;
+border-radius: 10px;
+}
+
+.seby-loader-bar::after {
+content: "";
+display: block;
+width: 45%;
+height: 100%;
+background: #ffd000;
+border-radius: 10px;
+animation: sebyLoading 1s ease-in-out infinite;
+}
+
+@keyframes sebyLogoPulse {
+0%, 100% { transform: scale(1); }
+50% { transform: scale(1.04); }
+}
+
+@keyframes sebyLoading {
+0% { transform: translateX(-110%); }
+100% { transform: translateX(330%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+.seby-loader-logo,
+.seby-loader-bar::after {
+animation: none;
+}
+}
