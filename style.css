@@ -1955,22 +1955,12 @@ body {
     color: inherit;
     outline: none !important;
 }
-/* SEBY UNIVERSE JPG LOGO */
 
-.logo img,
-.brand-logo img {
+
+.brand-logo-img {
+  display: block;
   width: 55px;
   height: 55px;
-  object-fit: cover;
-  border-radius: 12px;
-  display: block;
-  border: 2px solid #ffd700;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-}
-
-.logo,
-.brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  object-fit: contain;
+  border-radius: 10px;
 }
