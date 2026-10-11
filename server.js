@@ -8,6 +8,7 @@ const path = require("path");
 const crypto = require("crypto");
 
 let nodemailer = null;
+
 try {
   nodemailer = require("nodemailer");
 } catch (_) {
@@ -23,6 +24,7 @@ const SECRET_FILE = path.join(DATA_DIR, "admin-secret.json");
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET || "";
 const SESSION_TTL = 8 * 60 * 60 * 1000;
+
 const sessions = new Map();
 const loginAttempts = new Map();
 
@@ -32,6 +34,10 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .filter(Boolean);
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
+
+/* =====================================================
+   DATABASE
+===================================================== */
 
 function emptyDB() {
   return {
@@ -47,11 +53,16 @@ function emptyDB() {
 
 function readDB() {
   try {
-    const saved = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+    const saved = JSON.parse(
+      fs.readFileSync(DB_FILE, "utf8")
+    );
+
     const base = emptyDB();
 
     for (const key of Object.keys(base)) {
-      if (!Array.isArray(saved[key])) saved[key] = [];
+      if (!Array.isArray(saved[key])) {
+        saved[key] = [];
+      }
     }
 
     return { ...base, ...saved };
@@ -64,7 +75,13 @@ let db = readDB();
 
 function saveDB() {
   const temp = `${DB_FILE}.tmp`;
-  fs.writeFileSync(temp, JSON.stringify(db, null, 2), "utf8");
+
+  fs.writeFileSync(
+    temp,
+    JSON.stringify(db, null, 2),
+    "utf8"
+  );
+
   fs.renameSync(temp, DB_FILE);
 }
 
@@ -74,6 +91,10 @@ function makeId() {
     : crypto.randomBytes(16).toString("hex");
 }
 
+/* =====================================================
+   SECRET ADMIN AK SESYON
+===================================================== */
+
 function hashSecret(value) {
   return crypto
     .createHash("sha256")
@@ -82,18 +103,24 @@ function hashSecret(value) {
 }
 
 function matchesSecret(value, expectedHash) {
-  if (typeof value !== "string" || !expectedHash) return false;
+  if (typeof value !== "string" || !expectedHash) {
+    return false;
+  }
 
   const actual = Buffer.from(hashSecret(value), "hex");
   const expected = Buffer.from(expectedHash, "hex");
 
-  return actual.length === expected.length &&
-    crypto.timingSafeEqual(actual, expected);
+  return (
+    actual.length === expected.length &&
+    crypto.timingSafeEqual(actual, expected)
+  );
 }
 
 function loadSecretHash() {
   try {
-    const saved = JSON.parse(fs.readFileSync(SECRET_FILE, "utf8"));
+    const saved = JSON.parse(
+      fs.readFileSync(SECRET_FILE, "utf8")
+    );
 
     if (
       typeof saved.hash === "string" &&
@@ -138,7 +165,10 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: "100kb" }));
-app.use(express.urlencoded({ extended: false, limit: "100kb" }));
+app.use(express.urlencoded({
+  extended: false,
+  limit: "100kb"
+}));
 
 function requireAdmin(req, res, next) {
   const match = (
@@ -166,6 +196,10 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+/* =====================================================
+   FONKSYON JENERAL
+===================================================== */
+
 function text(value, max = 500) {
   return typeof value === "string"
     ? value.trim().slice(0, max)
@@ -186,25 +220,74 @@ function normalizeStatus(value) {
 function isPending(status) {
   const value = normalizeStatus(status);
 
-  return value.includes("attente") ||
+  return (
+    value.includes("attente") ||
     value.includes("pending") ||
-    value.includes("en cours");
+    value.includes("en cours")
+  );
 }
 
 function isValidated(status) {
   const value = normalizeStatus(status);
 
-  return value.includes("valide") ||
+  return (
+    value.includes("valide") ||
     value.includes("approved") ||
     value.includes("complete") ||
     value.includes("livre") ||
-    value.includes("termine");
+    value.includes("termine")
+  );
 }
 
-function allowLoginAttempt(req, res) {
-  const ip = req.ip || req.socket.remoteAddress || "unknown";
-  const now = Date.now();
+/* =====================================================
+   KÒD TRANZAKSYON
+   10 A 20 CHIF SÈLMAN
+===================================================== */
 
+function validateTransactionId(value) {
+  const id = text(value, 200);
+
+  return /^\d{10,20}$/.test(id);
+}
+
+function extractTransactionId(description) {
+  const match = String(description || "").match(
+    /Transaction\s*ID\s*:\s*(\d+)/i
+  );
+
+  return match ? match[1] : "";
+}
+
+function transactionAlreadyUsed(transactionId) {
+  const id = text(transactionId, 200);
+
+  if (!id) return false;
+
+  const orderUsesId = db.orders.some(order => {
+    const savedId =
+      text(order.transactionId, 200) ||
+      extractTransactionId(order.description);
+
+    return savedId === id;
+  });
+
+  const rechargeUsesId = db.recharges.some(recharge =>
+    text(recharge.transactionId, 200) === id
+  );
+
+  return orderUsesId || rechargeUsesId;
+}
+
+/* =====================================================
+   LIMITE TANTATIV KONEKSYON ADMIN
+===================================================== */
+
+function allowLoginAttempt(req, res) {
+  const ip = req.ip ||
+    req.socket.remoteAddress ||
+    "unknown";
+
+  const now = Date.now();
   let item = loginAttempts.get(ip);
 
   if (!item || now - item.start >= 15 * 60 * 1000) {
@@ -228,7 +311,7 @@ function allowLoginAttempt(req, res) {
 }
 
 /* =====================================================
-   IMÈL SMTP — KONFIGIRASYON OPSYONÈL
+   IMÈL SMTP — OPSYONÈL
 ===================================================== */
 
 function getMailTransport() {
@@ -260,15 +343,13 @@ async function sendCustomerEmail(email, title, message) {
   if (!transport) {
     return {
       sent: false,
-      reason: "SMTP pa konfigire oswa nodemailer pa enstale."
+      reason: "SMTP pa konfigire oswa Nodemailer pa enstale."
     };
   }
 
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER;
-
   try {
     await transport.sendMail({
-      from,
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: email,
       subject: title,
       text: message
@@ -325,7 +406,10 @@ app.post("/api/admin/login", (req, res) => {
   const token = crypto.randomBytes(32).toString("hex");
 
   sessions.set(token, Date.now() + SESSION_TTL);
-  loginAttempts.delete(req.ip || req.socket.remoteAddress || "unknown");
+
+  loginAttempts.delete(
+    req.ip || req.socket.remoteAddress || "unknown"
+  );
 
   res.json({
     ok: true,
@@ -334,60 +418,63 @@ app.post("/api/admin/login", (req, res) => {
   });
 });
 
-/* Chanje kòd ADMIN lan */
-app.post("/api/admin/change-secret", requireAdmin, (req, res) => {
-  const currentCode = req.body && req.body.currentCode;
-  const newCode = req.body && req.body.newCode;
+app.post(
+  "/api/admin/change-secret",
+  requireAdmin,
+  (req, res) => {
+    const currentCode = req.body && req.body.currentCode;
+    const newCode = req.body && req.body.newCode;
 
-  if (
-    typeof currentCode !== "string" ||
-    !matchesSecret(currentCode, adminSecretHash)
-  ) {
-    return res.status(401).json({
-      error: "Le code actuel est incorrect."
-    });
+    if (
+      typeof currentCode !== "string" ||
+      !matchesSecret(currentCode, adminSecretHash)
+    ) {
+      return res.status(401).json({
+        error: "Le code actuel est incorrect."
+      });
+    }
+
+    if (
+      typeof newCode !== "string" ||
+      newCode.length < 16 ||
+      newCode.length > 256
+    ) {
+      return res.status(400).json({
+        error: "Le nouveau code doit contenir entre 16 et 256 caractères."
+      });
+    }
+
+    if (currentCode === newCode) {
+      return res.status(400).json({
+        error: "Le nouveau code doit être différent de l'ancien."
+      });
+    }
+
+    try {
+      const nextHash = hashSecret(newCode);
+
+      fs.writeFileSync(
+        SECRET_FILE,
+        JSON.stringify({ hash: nextHash }, null, 2),
+        { encoding: "utf8", mode: 0o600 }
+      );
+
+      adminSecretHash = nextHash;
+      sessions.clear();
+
+      res.json({
+        ok: true,
+        message: "Code changé. Reconnectez-vous."
+      });
+    } catch (error) {
+      console.error("Erreur changement code admin:", error);
+
+      res.status(500).json({
+        error: "Impossible d'enregistrer le nouveau code."
+      });
+    }
   }
-
-  if (
-    typeof newCode !== "string" ||
-    newCode.length < 16 ||
-    newCode.length > 256
-  ) {
-    return res.status(400).json({
-      error: "Le nouveau code doit contenir entre 16 et 256 caractères."
-    });
-  }
-
-  if (currentCode === newCode) {
-    return res.status(400).json({
-      error: "Le nouveau code doit être différent de l'ancien."
-    });
-  }
-
-  try {
-    const nextHash = hashSecret(newCode);
-
-    fs.writeFileSync(
-      SECRET_FILE,
-      JSON.stringify({ hash: nextHash }, null, 2),
-      { encoding: "utf8", mode: 0o600 }
-    );
-
-    adminSecretHash = nextHash;
-    sessions.clear();
-
-    res.json({
-      ok: true,
-      message: "Code changé. Reconnectez-vous."
-    });
-  } catch (error) {
-    console.error("Erreur changement code admin:", error);
-
-    res.status(500).json({
-      error: "Impossible d'enregistrer le nouveau code."
-    });
-  }
-});
+);
 
 app.post("/api/admin/logout", requireAdmin, (req, res) => {
   const match = (
@@ -406,13 +493,11 @@ app.post("/api/admin/logout", requireAdmin, (req, res) => {
 app.get("/api/products", (req, res) => {
   res.set("Cache-Control", "no-store");
 
-  res.json(
-    db.products.filter(p => p.active !== false)
-  );
+  res.json(db.products.filter(p => p.active !== false));
 });
 
 /* =====================================================
-   COMMANDES PUBLIQUES
+   KÒMAND PUBLIK
 ===================================================== */
 
 app.post("/api/orders", (req, res) => {
@@ -444,6 +529,13 @@ app.post("/api/orders", (req, res) => {
     Math.min(100, Number(b.quantity) || 1)
   );
 
+  const description = text(b.description, 1000);
+
+  const transactionId = text(
+    b.transactionId || b.reference,
+    200
+  ) || extractTransactionId(description);
+
   if (!productName) {
     return res.status(400).json({
       error: "Le produit est obligatoire."
@@ -456,6 +548,21 @@ app.post("/api/orders", (req, res) => {
     });
   }
 
+  if (transactionId && !validateTransactionId(transactionId)) {
+    return res.status(400).json({
+      error: "Kòd tranzaksyon invalid. Li dwe gen ant 10 ak 20 chif. Verifye SMS NatCash la ankò."
+    });
+  }
+
+  if (
+    transactionId &&
+    transactionAlreadyUsed(transactionId)
+  ) {
+    return res.status(409).json({
+      error: "Kòd tranzaksyon sa a deja itilize. Verifye SMS NatCash la ankò."
+    });
+  }
+
   const createdAt = new Date().toISOString();
 
   const order = {
@@ -464,9 +571,12 @@ app.post("/api/orders", (req, res) => {
     customerName,
     customerPhone,
     customerEmail,
-    amount: Number.isFinite(amount) && amount >= 0 ? amount : 0,
+    amount: Number.isFinite(amount) && amount >= 0
+      ? amount
+      : 0,
     quantity,
-    description: text(b.description, 1000),
+    description,
+    transactionId,
     status: "En attente",
     createdAt
   };
@@ -504,11 +614,71 @@ app.post("/api/orders", (req, res) => {
 
   saveDB();
 
-  res.status(201).json({ ok: true, order });
+  res.status(201).json({
+    ok: true,
+    order
+  });
 });
 
 /* =====================================================
-   DEMANDE DE RECHARGE PUBLIQUE
+   KLIYAN KA GADE ESTATI KÒMAND YO
+===================================================== */
+
+/*
+  GET /api/customer-orders?email=...
+  GET /api/customer-orders?phone=...
+
+  Enpòtan:
+  Pou sekirite, pi bon solisyon alontèm se
+  sèvi ak yon vrè sesyon kliyan.
+*/
+
+app.get("/api/customer-orders", (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const email = normalizeEmail(req.query.email);
+  const phone = text(req.query.phone, 80);
+
+  if (!email && !phone) {
+    return res.status(400).json({
+      error: "Bay imèl kliyan an oswa nimewo telefòn li."
+    });
+  }
+
+  const orders = db.orders
+    .filter(order => {
+      const orderEmail = normalizeEmail(
+        order.customerEmail || order.email
+      );
+
+      const orderPhone = text(
+        order.customerPhone ||
+        order.phone ||
+        order.whatsapp,
+        80
+      );
+
+      return (
+        (Boolean(email) && orderEmail === email) ||
+        (Boolean(phone) && orderPhone === phone)
+      );
+    })
+    .map(order => ({
+      id: order.id,
+      productName: order.productName,
+      customerName: order.customerName,
+      amount: order.amount,
+      quantity: order.quantity,
+      status: order.status,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt || null
+    }));
+
+  res.json(orders);
+});
+
+/* =====================================================
+   RECHAJ WALLET / NATCASH
 ===================================================== */
 
 app.post("/api/recharges", (req, res) => {
@@ -530,6 +700,18 @@ app.post("/api/recharges", (req, res) => {
     b.transactionId || b.reference,
     200
   );
+
+  if (!validateTransactionId(transactionId)) {
+    return res.status(400).json({
+      error: "Kòd tranzaksyon invalid. Li dwe gen ant 10 ak 20 chif. Verifye SMS NatCash la ankò."
+    });
+  }
+
+  if (transactionAlreadyUsed(transactionId)) {
+    return res.status(409).json({
+      error: "Kòd tranzaksyon sa a deja itilize. Verifye SMS NatCash la ankò."
+    });
+  }
 
   if (!Number.isFinite(amount) || amount < 150) {
     return res.status(400).json({
@@ -567,34 +749,15 @@ app.post("/api/recharges", (req, res) => {
 
   saveDB();
 
-  res.status(201).json({ ok: true, recharge });
+  res.status(201).json({
+    ok: true,
+    recharge
+  });
 });
 
 /* =====================================================
-   MESAJ ADMIN POU KLIYAN
+   KLIYAN AK NOTIFIKASYON YO
 ===================================================== */
-
-/*
-  POST /api/admin/messages
-
-  audience:
-    all       = tout kliyan
-    pending   = kliyan ki gen kòmand an atant
-    validated = kliyan ki gen kòmand valide
-    new       = kliyan ki anrejistre nan 7 dènye jou yo
-    specific  = kliyan presi selon imèl
-
-  Header:
-    Authorization: Bearer TOKEN_ADMIN
-
-  Body:
-    {
-      "audience": "all",
-      "email": "",
-      "title": "Enfòmasyon",
-      "message": "Men mesaj ADMIN nan."
-    }
-*/
 
 function buildCustomerDirectory() {
   const directory = new Map();
@@ -659,151 +822,149 @@ function buildCustomerDirectory() {
   return Array.from(directory.values());
 }
 
-app.post("/api/admin/messages", requireAdmin, async (req, res) => {
-  const b = req.body || {};
+/* =====================================================
+   ADMIN VOYE MESAJ BAY KLIYAN
+===================================================== */
 
-  const audience = text(b.audience, 30).toLowerCase();
-  const title = text(b.title, 160);
-  const message = text(b.message, 5000);
-  const targetEmail = normalizeEmail(b.email);
+app.post(
+  "/api/admin/messages",
+  requireAdmin,
+  async (req, res) => {
+    const b = req.body || {};
 
-  const allowedAudiences = [
-    "all",
-    "pending",
-    "validated",
-    "new",
-    "specific"
-  ];
+    const audience = text(b.audience, 30).toLowerCase();
+    const title = text(b.title, 160);
+    const message = text(b.message, 5000);
+    const targetEmail = normalizeEmail(b.email);
 
-  if (!allowedAudiences.includes(audience)) {
-    return res.status(400).json({
-      error: "Chwazi yon kategori kliyan ki valab."
-    });
-  }
+    const allowedAudiences = [
+      "all",
+      "pending",
+      "validated",
+      "new",
+      "specific"
+    ];
 
-  if (!title || !message) {
-    return res.status(400).json({
-      error: "Tit ak mesaj la obligatwa."
-    });
-  }
-
-  if (audience === "specific" && !targetEmail) {
-    return res.status(400).json({
-      error: "Mete imèl kliyan ou vle kontakte a."
-    });
-  }
-
-  const customers = buildCustomerDirectory();
-  const now = Date.now();
-  const sevenDays = 7 * 24 * 60 * 60 * 1000;
-
-  let selected = customers;
-
-  if (audience === "specific") {
-    selected = customers.filter(
-      c => c.email === targetEmail
-    );
-
-    if (selected.length === 0) {
-      return res.status(404).json({
-        error: "Nou pa jwenn kliyan sa a. Verifye imèl la."
+    if (!allowedAudiences.includes(audience)) {
+      return res.status(400).json({
+        error: "Chwazi yon kategori kliyan ki valab."
       });
     }
-  } else if (audience === "pending") {
-    selected = customers.filter(
-      c => c.orders.some(o => isPending(o.status))
-    );
-  } else if (audience === "validated") {
-    selected = customers.filter(
-      c => c.orders.some(o => isValidated(o.status))
-    );
-  } else if (audience === "new") {
-    selected = customers.filter(c => {
-      if (!c.createdAt) return false;
 
-      const created = new Date(c.createdAt).getTime();
+    if (!title || !message) {
+      return res.status(400).json({
+        error: "Tit ak mesaj la obligatwa."
+      });
+    }
 
-      return Number.isFinite(created) &&
-        created <= now &&
-        now - created <= sevenDays;
-    });
-  }
+    if (audience === "specific" && !targetEmail) {
+      return res.status(400).json({
+        error: "Mete imèl kliyan ou vle kontakte a."
+      });
+    }
 
-  if (selected.length === 0) {
-    return res.status(404).json({
-      error: "Pa gen kliyan nan kategori sa a."
-    });
-  }
+    const customers = buildCustomerDirectory();
+    const now = Date.now();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
-  const createdAt = new Date().toISOString();
-  const results = {
-    audience,
-    recipients: selected.length,
-    notificationsSaved: 0,
-    emailsSent: 0,
-    emailsFailed: 0,
-    emailsSkipped: 0
-  };
+    let selected = customers;
 
-  for (const customer of selected) {
-    const notification = {
-      id: makeId(),
-      customerEmail: customer.email || "",
-      customerPhone: customer.phone || "",
-      customerName: customer.name || "",
-      title,
-      message,
-      read: false,
-      createdAt
+    if (audience === "specific") {
+      selected = customers.filter(
+        c => c.email === targetEmail
+      );
+
+      if (!selected.length) {
+        return res.status(404).json({
+          error: "Nou pa jwenn kliyan sa a. Verifye imèl la."
+        });
+      }
+    } else if (audience === "pending") {
+      selected = customers.filter(
+        c => c.orders.some(o => isPending(o.status))
+      );
+    } else if (audience === "validated") {
+      selected = customers.filter(
+        c => c.orders.some(o => isValidated(o.status))
+      );
+    } else if (audience === "new") {
+      selected = customers.filter(c => {
+        if (!c.createdAt) return false;
+
+        const created = new Date(c.createdAt).getTime();
+
+        return Number.isFinite(created) &&
+          created <= now &&
+          now - created <= sevenDays;
+      });
+    }
+
+    if (!selected.length) {
+      return res.status(404).json({
+        error: "Pa gen kliyan nan kategori sa a."
+      });
+    }
+
+    const createdAt = new Date().toISOString();
+
+    const results = {
+      audience,
+      recipients: selected.length,
+      notificationsSaved: 0,
+      emailsSent: 0,
+      emailsFailed: 0,
+      emailsSkipped: 0
     };
 
-    db.customerNotifications.unshift(notification);
-    results.notificationsSaved++;
+    for (const customer of selected) {
+      const notification = {
+        id: makeId(),
+        customerEmail: customer.email || "",
+        customerPhone: customer.phone || "",
+        customerName: customer.name || "",
+        title,
+        message,
+        read: false,
+        createdAt
+      };
 
-    if (!customer.email) {
-      results.emailsSkipped++;
-      continue;
+      db.customerNotifications.unshift(notification);
+      results.notificationsSaved++;
+
+      if (!customer.email) {
+        results.emailsSkipped++;
+        continue;
+      }
+
+      const emailResult = await sendCustomerEmail(
+        customer.email,
+        title,
+        message
+      );
+
+      if (emailResult.sent) {
+        results.emailsSent++;
+        notification.emailSent = true;
+        notification.emailSentAt = new Date().toISOString();
+      } else {
+        results.emailsFailed++;
+        notification.emailSent = false;
+      }
     }
 
-    const emailResult = await sendCustomerEmail(
-      customer.email,
-      title,
-      message
-    );
+    saveDB();
 
-    if (emailResult.sent) {
-      results.emailsSent++;
-      notification.emailSent = true;
-      notification.emailSentAt = new Date().toISOString();
-    } else {
-      results.emailsFailed++;
-      notification.emailSent = false;
-    }
+    res.status(201).json({
+      ok: true,
+      message: "Mesaj ADMIN nan anrejistre.",
+      results
+    });
   }
-
-  saveDB();
-
-  res.status(201).json({
-    ok: true,
-    message: "Mesaj ADMIN nan anrejistre.",
-    results
-  });
-});
+);
 
 /* =====================================================
    NOTIFIKASYON KLIYAN
 ===================================================== */
-
-/*
-  Aplikasyon kliyan an ka rele:
-  GET /api/customer-notifications?email=imel_kliyan
-
-  Oswa:
-  GET /api/customer-notifications?phone=numero_kliyan
-
-  Endpoint sa a retounen notifikasyon ki koresponn
-  ak imèl oswa nimewo kliyan an bay la.
-*/
 
 app.get("/api/customer-notifications", (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -817,20 +978,19 @@ app.get("/api/customer-notifications", (req, res) => {
     });
   }
 
-  const items = db.customerNotifications.filter(n => {
-    return (
-      email &&
+  const items = db.customerNotifications.filter(n =>
+    (
+      Boolean(email) &&
       normalizeEmail(n.customerEmail) === email
     ) || (
-      phone &&
+      Boolean(phone) &&
       text(n.customerPhone, 80) === phone
-    );
-  });
+    )
+  );
 
   res.json(items);
 });
 
-/* Make yon notifikasyon kliyan li */
 app.patch(
   "/api/customer-notifications/:id",
   (req, res) => {
@@ -846,8 +1006,10 @@ app.patch(
     const item = db.customerNotifications.find(n =>
       String(n.id) === req.params.id &&
       (
-        (email && normalizeEmail(n.customerEmail) === email) ||
-        (phone && text(n.customerPhone, 80) === phone)
+        (Boolean(email) &&
+          normalizeEmail(n.customerEmail) === email) ||
+        (Boolean(phone) &&
+          text(n.customerPhone, 80) === phone)
       )
     );
 
@@ -858,14 +1020,18 @@ app.patch(
     }
 
     item.read = Boolean(req.body && req.body.read);
+
     saveDB();
 
-    res.json({ ok: true, notification: item });
+    res.json({
+      ok: true,
+      notification: item
+    });
   }
 );
 
 /* =====================================================
-   ROUTES ADMIN PRIVEES
+   WOUT ADMIN PRIVE
 ===================================================== */
 
 for (const key of [
@@ -978,13 +1144,13 @@ app.put("/api/products/:id", requireAdmin, (req, res) => {
 });
 
 app.delete("/api/products/:id", requireAdmin, (req, res) => {
-  const oldLength = db.products.length;
+  const before = db.products.length;
 
   db.products = db.products.filter(
     p => String(p.id) !== req.params.id
   );
 
-  if (db.products.length === oldLength) {
+  if (db.products.length === before) {
     return res.status(404).json({
       error: "Produit introuvable."
     });
@@ -995,7 +1161,7 @@ app.delete("/api/products/:id", requireAdmin, (req, res) => {
 });
 
 /* =====================================================
-   CHANJE ESTATI KÒMAND AK RECHAJ
+   CHANJE ESTATI KÒMAND
 ===================================================== */
 
 app.patch("/api/orders/:id", requireAdmin, (req, res) => {
@@ -1010,7 +1176,15 @@ app.patch("/api/orders/:id", requireAdmin, (req, res) => {
   }
 
   if (req.body && req.body.status !== undefined) {
-    item.status = text(req.body.status, 80);
+    const status = text(req.body.status, 80);
+
+    if (!status) {
+      return res.status(400).json({
+        error: "Estati kòmand lan pa valab."
+      });
+    }
+
+    item.status = status;
   }
 
   item.updatedAt = new Date().toISOString();
@@ -1031,7 +1205,15 @@ app.patch("/api/recharges/:id", requireAdmin, (req, res) => {
   }
 
   if (req.body && req.body.status !== undefined) {
-    item.status = text(req.body.status, 80);
+    const status = text(req.body.status, 80);
+
+    if (!status) {
+      return res.status(400).json({
+        error: "Estati rechaj la pa valab."
+      });
+    }
+
+    item.status = status;
   }
 
   item.updatedAt = new Date().toISOString();
