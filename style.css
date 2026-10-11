@@ -1,3 +1,4 @@
+
 /* =========================================================
    SEBY UNIVERSE
    PREMIUM APRICOT YELLOW / BLACK / WHITE
@@ -1956,25 +1957,3 @@ body {
     outline: none !important;
 }
 
-/* SEBY UNIVERSE LOGO */
-.brand-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: #ffffff;
-  font-size: 21px;
-  font-weight: 800;
-}
-
-.brand-logo-img {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-
-.brand-logo-text strong {
-  color: #ffd700;
-}
