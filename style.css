@@ -1955,3 +1955,30 @@ body {
     color: inherit;
     outline: none !important;
 }
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.brand-logo img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.brand-logo strong {
+  color: #ffd700;
+}
+
+.brand-logo img:not([src]),
+.brand-logo img[src=""] {
+  display: none;
+}
