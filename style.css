@@ -2096,3 +2096,154 @@ animation: sebyLoading 1s ease-in-out infinite;
 animation: none;
 }
 }
+
+/* SEBY UNIVERSE — SU HEADER LOGO */
+
+.seby-auth-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.su-profile-logo {
+    position: relative;
+    width: 76px;
+    height: 76px;
+    flex: 0 0 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.su-profile-inner {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #ffd54f;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #080808, #292016);
+    box-shadow: 0 0 15px #ffb30088;
+    animation: suPulse 2s ease-in-out infinite;
+}
+
+.su-profile-letters {
+    color: #ffd54f;
+    font-size: 25px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -2px;
+    text-shadow: 0 0 10px #ffb300;
+}
+
+.su-crown {
+    position: absolute;
+    top: -10px;
+    right: 0;
+    color: #ffca28;
+    font-size: 17px;
+}
+
+.su-profile-orbit {
+    position: absolute;
+    width: 86px;
+    height: 30px;
+    border: 2px solid #ffca28;
+    border-left-color: transparent;
+    border-radius: 50%;
+    animation: suRotate 3s linear infinite;
+    pointer-events: none;
+}
+
+.su-spark {
+    position: absolute;
+    color: #ffe082;
+    text-shadow: 0 0 8px #ffb300;
+    pointer-events: none;
+    animation: suSparkle 1.5s infinite alternate;
+}
+
+.spark-1 {
+    top: 0;
+    right: 0;
+}
+
+.spark-2 {
+    bottom: 0;
+    left: 0;
+    animation-delay: .5s;
+}
+
+.spark-3 {
+    top: 12px;
+    left: -5px;
+    animation-delay: .8s;
+}
+
+.seby-brand-text h1 {
+    margin: 0;
+}
+
+.seby-brand-text p {
+    margin-top: 6px;
+}
+
+@keyframes suPulse {
+    50% {
+        box-shadow: 0 0 25px #ffb300cc;
+    }
+}
+
+@keyframes suRotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes suSparkle {
+    from {
+        opacity: .3;
+        transform: scale(.7);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1.3);
+    }
+}
+
+@media (max-width: 480px) {
+    .seby-auth-brand {
+        gap: 10px;
+    }
+
+    .su-profile-logo {
+        width: 64px;
+        height: 64px;
+        flex-basis: 64px;
+    }
+
+    .su-profile-inner {
+        width: 54px;
+        height: 54px;
+        border-radius: 15px;
+    }
+
+    .su-profile-orbit {
+        width: 72px;
+        height: 25px;
+    }
+
+    .su-profile-letters {
+        font-size: 22px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .su-profile-logo *,
+    .su-profile-logo {
+        animation: none !important;
+    }
+}
