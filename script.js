@@ -219,13 +219,17 @@ function showToast(message) {
 
     const toast = document.createElement("div");
     toast.className = "seby-toast";
+    toast.setAttribute("role", "status");
     toast.textContent = message;
     document.body.appendChild(toast);
 
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => toast.remove(), 4000);
 }
 
-/* Render API helper: verify JSON and HTTP status */
+/* =========================================================
+   RENDER API HELPER
+========================================================= */
+
 async function sebyApiPost(endpoint, payload) {
     let response;
 
@@ -266,6 +270,22 @@ async function sebyApiPost(endpoint, payload) {
     return result;
 }
 
+/* =========================================================
+   TRANSACTION VALIDATION
+   Accepted length: 10–20 digits
+========================================================= */
+
+function validTransactionId(id) {
+    const value = String(id || "").trim();
+
+    if (!/^\d{10,20}$/.test(value)) {
+        return false;
+    }
+
+    const used = getJSON(STORAGE_KEYS.USED_TXNS, []);
+    return !used.includes(value);
+}
+
 function markTransactionUsed(txn) {
     const used = getJSON(STORAGE_KEYS.USED_TXNS, []);
 
@@ -273,6 +293,56 @@ function markTransactionUsed(txn) {
         used.push(txn);
         setJSON(STORAGE_KEYS.USED_TXNS, used);
     }
+}
+
+function validateTransactionOrShowMessage(txn) {
+    const value = String(txn || "").trim();
+
+    if (!/^\d{10,20}$/.test(value)) {
+        showToast(
+            "Kòd tranzaksyon invalid. Li dwe gen ant 10 ak 20 chif. Verifye SMS la ankò."
+        );
+        return false;
+    }
+
+    const used = getJSON(STORAGE_KEYS.USED_TXNS, []);
+
+    if (used.includes(value)) {
+        showToast(
+            "Kòd tranzaksyon sa a deja itilize. Verifye SMS NatCash ou a."
+        );
+        return false;
+    }
+
+    return true;
+}
+
+function validEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validWhatsApp(number) {
+    let digits = String(number || "").replace(/\D/g, "");
+    if (digits.startsWith("509")) digits = digits.substring(3);
+    return digits.length === 8;
+}
+
+/* =========================================================
+   PHONE FORMAT
+========================================================= */
+
+function formatPhoneInput(input) {
+    let digits = input.value.replace(/\D/g, "");
+
+    if (digits.startsWith("509")) digits = digits.substring(3);
+    digits = digits.substring(0, 8);
+
+    let result = "+509 ";
+    if (digits.length > 0) result += digits.substring(0, 2);
+    if (digits.length > 2) result += " " + digits.substring(2, 4);
+    if (digits.length > 4) result += " " + digits.substring(4, 8);
+
+    input.value = result;
 }
 
 /* =========================================================
@@ -359,43 +429,6 @@ function togglePasswordVisibility(id, element) {
 }
 
 /* =========================================================
-   PHONE FORMAT & VALIDATION
-========================================================= */
-
-function formatPhoneInput(input) {
-    let digits = input.value.replace(/\D/g, "");
-
-    if (digits.startsWith("509")) digits = digits.substring(3);
-    digits = digits.substring(0, 8);
-
-    let result = "+509 ";
-    if (digits.length > 0) result += digits.substring(0, 2);
-    if (digits.length > 2) result += " " + digits.substring(2, 4);
-    if (digits.length > 4) result += " " + digits.substring(4, 8);
-
-    input.value = result;
-}
-
-function validEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function validTransactionId(id) {
-    const value = String(id || "").trim();
-
-    if (!/^\d{8,}$/.test(value)) return false;
-
-    const used = getJSON(STORAGE_KEYS.USED_TXNS, []);
-    return !used.includes(value);
-}
-
-function validWhatsApp(number) {
-    let digits = String(number || "").replace(/\D/g, "");
-    if (digits.startsWith("509")) digits = digits.substring(3);
-    return digits.length === 8;
-}
-
-/* =========================================================
    REGISTER
 ========================================================= */
 
@@ -410,6 +443,11 @@ function registerUser(data) {
 
     if (!data.firstName?.trim() || !data.lastName?.trim()) {
         showToast("Enter your first and last name.");
+        return false;
+    }
+
+    if (!validWhatsApp(data.whatsapp)) {
+        showToast("Enter a valid WhatsApp number.");
         return false;
     }
 
@@ -606,11 +644,14 @@ function createProductField(field) {
             <div class="form-group">
                 <label>Transaction ID</label>
                 <input type="text" id="productTxnId" inputmode="numeric"
-                    autocomplete="off" placeholder="Enter NatCash transaction ID"
-                    oninput="this.value=this.value.replace(/\\D/g,'')">
+                    autocomplete="off" maxlength="20"
+                    placeholder="Enter NatCash transaction ID"
+                    oninput="this.value=this.value.replace(/\\D/g,'').slice(0,20)">
                 <small class="hint-text">
-                    Send payment to NatCash ${NATCASH_NUMBER}.
-                    Enter the transaction ID shown after payment.
+                    Voye peman an nan NatCash ${NATCASH_NUMBER}.
+                    Kòd la dwe gen ant 10 ak 20 chif.
+                    Si SMS konfimasyon an poko rive, tann kèk segonn,
+                    verifye mesaj ou yo epi eseye ankò.
                 </small>
             </div>`;
     }
@@ -650,8 +691,8 @@ function openProductModal(productId) {
 
             <div class="form-group">
                 <label>Quantity</label>
-                <input type="number" id="productQuantity" min="1" value="1"
-                    onchange="updateProductQuantity()">
+                <input type="number" id="productQuantity" min="1" max="100"
+                    value="1" onchange="updateProductQuantity()">
             </div>
 
             <div id="productTotal" style="padding:13px;border-radius:10px;
@@ -687,9 +728,11 @@ function updateProductQuantity() {
     if (!input) return;
 
     const quantity = parseInt(input.value, 10);
-    selectedQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
-    input.value = selectedQuantity;
+    selectedQuantity = Number.isFinite(quantity) && quantity > 0
+        ? Math.min(quantity, 100)
+        : 1;
 
+    input.value = selectedQuantity;
     updateProductTotal();
 }
 
@@ -737,6 +780,7 @@ async function confirmProductOrder() {
     const region = value("productRegion");
     const gameId = value("productGameId");
     const konamiId = value("productKonamiId");
+
     const quantityValue = parseInt(value("productQuantity") || "1", 10);
     const quantity = Number.isFinite(quantityValue) && quantityValue > 0
         ? Math.min(quantityValue, 100)
@@ -768,10 +812,11 @@ async function confirmProductOrder() {
         return;
     }
 
-    if (!validTransactionId(txn)) {
+    if (!validateTransactionOrShowMessage(txn)) {
         const txnInput = document.getElementById("productTxnId");
-        if (txnInput) txnInput.value = "";
-        showToast("Transaction ID invalid or already used.");
+        if (txnInput && !/^\d{10,20}$/.test(txn)) {
+            txnInput.focus();
+        }
         return;
     }
 
@@ -846,7 +891,7 @@ async function confirmProductOrder() {
             gameId,
             konamiId,
             accountEmail: email,
-            status: "en_cours",
+            status: serverOrder.status || "En attente",
             createdAt: serverOrder.createdAt || new Date().toISOString()
         };
 
@@ -857,8 +902,7 @@ async function confirmProductOrder() {
         closeProductModal();
         renderOrders();
 
-        showToast("Kòmand lan voye bay SEBY UNIVERSE. Li an atant validasyon.");
-
+        showToast("Kòmand lan voye. Li an atant validasyon Admin lan.");
         openWhatsAppOrder(order);
     } catch (error) {
         console.error("SEBY order submission failed:", error);
@@ -995,7 +1039,9 @@ function checkoutCart() {
         return;
     }
 
-    showToast("Open a product, select its package, and enter its transaction ID to place an order.");
+    showToast(
+        "Open a product, select its package, and enter its transaction ID to place an order."
+    );
 }
 
 function closeCartModal() {
@@ -1044,9 +1090,10 @@ async function submitWalletRecharge() {
         return;
     }
 
-    if (!validTransactionId(txn)) {
-        if (txnInput) txnInput.value = "";
-        showToast("Transaction ID invalid or already used.");
+    if (!validateTransactionOrShowMessage(txn)) {
+        if (txnInput && !/^\d{10,20}$/.test(txn)) {
+            txnInput.focus();
+        }
         return;
     }
 
@@ -1095,7 +1142,7 @@ async function submitWalletRecharge() {
             },
             amount,
             transactionId: txn,
-            status: "en_cours",
+            status: serverRecharge.status || "En attente",
             createdAt: serverRecharge.createdAt || new Date().toISOString()
         });
 
@@ -1124,17 +1171,25 @@ async function submitWalletRecharge() {
 ========================================================= */
 
 function statusLabel(status) {
-    const normalized = String(status || "").toLowerCase();
+    const normalized = String(status || "").toLowerCase().trim();
 
-    if (["validee", "validée", "approved", "completed", "complete"].includes(normalized)) {
+    if ([
+        "validee", "validée", "approved", "completed", "complete",
+        "valide", "validated", "success"
+    ].includes(normalized)) {
         return "Validée";
     }
 
-    if (["refusee", "refusée", "rejected", "refused", "cancelled"].includes(normalized)) {
+    if ([
+        "refusee", "refusée", "rejected", "refused", "cancelled",
+        "annulee", "annulée", "failed"
+    ].includes(normalized)) {
         return "Refusée";
     }
 
-    if (["en attente", "pending", "en_attente"].includes(normalized)) {
+    if ([
+        "en attente", "pending", "en_attente", "attente"
+    ].includes(normalized)) {
         return "En attente";
     }
 
@@ -1166,8 +1221,12 @@ function renderOrders() {
             <p>Quantity: ${Number(order.quantity) || 1}</p>
             <p>Total: <strong>${formatGdes(order.total)}</strong></p>
             <p>Transaction ID: ${escapeHTML(order.transactionId)}</p>
-            <p>Date: ${escapeHTML(new Date(order.createdAt).toLocaleString())}</p>
-            <span class="status ${escapeHTML(order.status)}">
+            <p>Date: ${escapeHTML(
+                order.createdAt
+                    ? new Date(order.createdAt).toLocaleString()
+                    : ""
+            )}</p>
+            <span class="status ${escapeHTML(String(order.status || "en_cours").toLowerCase())}">
                 ${statusLabel(order.status)}
             </span>
         </div>`).join("");
@@ -1596,7 +1655,6 @@ function openAccountInformation() {
 document.addEventListener("DOMContentLoaded", function () {
     const getValue = id => document.getElementById(id)?.value || "";
 
-    /* LOGIN */
     document.getElementById("gateLoginForm")?.addEventListener(
         "submit",
         function (event) {
@@ -1609,7 +1667,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     );
 
-    /* REGISTER */
     document.getElementById("gateRegisterForm")?.addEventListener(
         "submit",
         function (event) {
@@ -1626,7 +1683,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     );
 
-    /* SIDEBAR */
     document.getElementById("openMenuBtn")
         ?.addEventListener("click", openSidebar);
 
@@ -1636,7 +1692,6 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("sidebarOverlay")
         ?.addEventListener("click", closeSidebar);
 
-    /* NAVIGATION */
     document.querySelectorAll(".nav-item[data-page]").forEach(item => {
         item.addEventListener("click", function (event) {
             event.preventDefault();
@@ -1644,56 +1699,47 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    /* SETTINGS */
     document.getElementById("paramsToggle")
         ?.addEventListener("click", function (event) {
             event.preventDefault();
             toggleSettings();
         });
 
-    /* ACCOUNT */
     document.getElementById("accountInfosBtn")
         ?.addEventListener("click", function (event) {
             event.preventDefault();
             openAccountInformation();
         });
 
-    /* LOGOUT */
     document.getElementById("logoutBtn")
         ?.addEventListener("click", function (event) {
             event.preventDefault();
             logout();
         });
 
-    /* PRO */
     document.getElementById("goProBtn")
         ?.addEventListener("click", function (event) {
             event.preventDefault();
             openProModal();
         });
 
-    /* CART */
     document.getElementById("cartBtn")
         ?.addEventListener("click", openCartModal);
 
-    /* NOTIFICATIONS */
     document.getElementById("notifBtn")
         ?.addEventListener("click", openNotifModal);
 
-    /* PROFILE */
     document.getElementById("profileHeaderBtn")
         ?.addEventListener("click", function () {
             showPage("profile-page");
         });
 
-    /* CATEGORIES */
     document.querySelectorAll(".cat-btn").forEach(button => {
         button.addEventListener("click", function () {
             filterProducts(this.dataset.cat);
         });
     });
 
-    /* OLD LOGIN FORM */
     document.getElementById("loginForm")
         ?.addEventListener("submit", function (event) {
             event.preventDefault();
@@ -1704,7 +1750,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
         });
 
-    /* OLD REGISTER FORM */
     document.getElementById("registerForm")
         ?.addEventListener("submit", function (event) {
             event.preventDefault();
@@ -1719,15 +1764,14 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
 
-    /* NUMERIC TRANSACTION INPUTS */
     document.querySelectorAll("#walletTxnId, #productTxnId")
         .forEach(input => {
+            input.setAttribute("maxlength", "20");
             input.addEventListener("input", function () {
-                this.value = this.value.replace(/\D/g, "");
+                this.value = this.value.replace(/\D/g, "").slice(0, 20);
             });
         });
 
-    /* INITIAL STATE */
     if (getCurrentUser()) {
         showApp();
     } else {
