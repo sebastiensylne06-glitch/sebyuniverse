@@ -1,23 +1,24 @@
-
 "use strict";
 
 /* =========================================================
-   SEBY UNIVERSE — MAIN SCRIPT
-   Render API • Customer Orders Sync • Notifications
+SEBY UNIVERSE — MAIN SCRIPT
+Render API • Customer Orders Sync • Notifications
 ========================================================= */
 
-/* CONFIGURATION & STORAGE */
+/* =========================================================
+CONFIGURATION & STORAGE
+========================================================= */
 
 const STORAGE_KEYS = {
-    USERS: "sebyUsers",
-    CURRENT_USER: "sebyCurrentUser",
-    ORDERS: "sebyUniverseOrders",
-    CART: "sebyUniverseCart",
-    WALLETS: "sebyWallets",
-    RECHARGES: "sebyWalletRecharges",
-    USED_TXNS: "sebyUsedTransactionIds",
-    LANGUAGE: "sebyLanguage",
-    NOTIFICATIONS: "sebyNotifications"
+USERS: "sebyUsers",
+CURRENT_USER: "sebyCurrentUser",
+ORDERS: "sebyUniverseOrders",
+CART: "sebyUniverseCart",
+WALLETS: "sebyWallets",
+RECHARGES: "sebyWalletRecharges",
+USED_TXNS: "sebyUsedTransactionIds",
+LANGUAGE: "sebyLanguage",
+NOTIFICATIONS: "sebyNotifications"
 };
 
 const SEBY_API_BASE = "https://sebyuniverse.onrender.com";
@@ -40,2220 +41,2047 @@ let orderRefreshTimer = null;
 let orderSubmitting = false;
 let rechargeSubmitting = false;
 
-/* PRODUCTS — PRICES PRESERVED */
+/* =========================================================
+PRODUCTS — PRICES PRESERVED
+========================================================= */
 
 const PRODUCTS = {
-    freefire: {
-        id: "freefire",
-        name: "Free Fire Diamonds",
-        category: "game",
-        description: "Get diamonds quickly to buy skins and passes!",
-        fields: ["region", "gameId", "whatsapp", "transaction"],
-        options: [
-            { id: "ff100", label: "100 + 10 Diamonds", price: 168 },
-            { id: "ff310", label: "310 + 31 Diamonds", price: 480 },
-            { id: "ff520", label: "520 + 52 Diamonds", price: 800 },
-            { id: "ff1060", label: "1 060 + 106 Diamonds", price: 1650 },
-            { id: "ff2180", label: "2 180 + 218 Diamonds", price: 3200 },
-            { id: "ff5600", label: "5 600 + 560 Diamonds", price: 8000 }
-        ]
-    },
+freefire: {
+id: "freefire",
+name: "Free Fire Diamonds",
+category: "game",
+description: "Get diamonds quickly to buy skins and passes!",
+fields: ["region", "gameId", "whatsapp", "transaction"],
+options: [
+{ id: "ff100", label: "100 + 10 Diamonds", price: 168 },
+{ id: "ff310", label: "310 + 31 Diamonds", price: 480 },
+{ id: "ff520", label: "520 + 52 Diamonds", price: 800 },
+{ id: "ff1060", label: "1 060 + 106 Diamonds", price: 1650 },
+{ id: "ff2180", label: "2 180 + 218 Diamonds", price: 3200 },
+{ id: "ff5600", label: "5 600 + 560 Diamonds", price: 8000 }
+]
+},
 
-    tiktok: {
-        id: "tiktok",
-        name: "TikTok Coins",
-        category: "social",
-        description: "Send gifts during live streams and support your favorite TikToker!",
-        fields: ["email", "whatsapp", "transaction"],
-        options: [
-            { id: "tt30", label: "30 Coins", price: 125 },
-            { id: "tt70", label: "70 Coins", price: 275 },
-            { id: "tt350", label: "350 Coins", price: 1260 },
-            { id: "tt700", label: "700 Coins", price: 2560 },
-            { id: "tt1400", label: "1 400 Coins", price: 5125 },
-            { id: "tt3500", label: "3 500 Coins", price: 14250 },
-            { id: "tt7000", label: "7 000 Coins", price: 24300 },
-            { id: "tt17500", label: "17 500 Coins", price: 55550 }
-        ]
-    },
+tiktok: {  
+    id: "tiktok",  
+    name: "TikTok Coins",  
+    category: "social",  
+    description: "Send gifts during live streams and support your favorite TikToker!",  
+    fields: ["email", "whatsapp", "transaction"],  
+    options: [  
+        { id: "tt30", label: "30 Coins", price: 125 },  
+        { id: "tt70", label: "70 Coins", price: 275 },  
+        { id: "tt350", label: "350 Coins", price: 1260 },  
+        { id: "tt700", label: "700 Coins", price: 2560 },  
+        { id: "tt1400", label: "1 400 Coins", price: 5125 },  
+        { id: "tt3500", label: "3 500 Coins", price: 14250 },  
+        { id: "tt7000", label: "7 000 Coins", price: 24300 },  
+        { id: "tt17500", label: "17 500 Coins", price: 55550 }  
+    ]  
+},  
 
-    netflix: {
-        id: "netflix",
-        name: "Netflix Premium",
-        category: "streaming",
-        description: "Watch great movies and series with a Premium subscription.",
-        fields: ["email", "whatsapp", "transaction"],
-        options: [
-            { id: "nf1", label: "1 Mois abonnement Premium", price: 500 },
-            { id: "nf2", label: "2 Mois abonnement Premium", price: 1000 },
-            { id: "nf3", label: "3 Mois abonnement Premium", price: 1450 }
-        ]
-    },
+netflix: {  
+    id: "netflix",  
+    name: "Netflix Premium",  
+    category: "streaming",  
+    description: "Watch great movies and series with a Premium subscription.",  
+    fields: ["email", "whatsapp", "transaction"],  
+    options: [  
+        { id: "nf1", label: "1 Mois abonnement Premium", price: 500 },  
+        { id: "nf2", label: "2 Mois abonnement Premium", price: 1000 },  
+        { id: "nf3", label: "3 Mois abonnement Premium", price: 1450 }  
+    ]  
+},  
 
-    efootball: {
-        id: "efootball",
-        name: "eFootball Coins",
-        category: "game",
-        description: "Get the best players and build your dream team!",
-        fields: ["konamiId", "email", "whatsapp", "transaction"],
-        options: [
-            { id: "ef130", label: "130 Coins", price: 250 },
-            { id: "ef300", label: "300 Coins", price: 600 },
-            { id: "ef550", label: "550 Coins", price: 950 },
-            { id: "ef1040", label: "1 040 Coins", price: 1700 },
-            { id: "ef2130", label: "2 130 Coins", price: 3200 },
-            { id: "ef12800", label: "12 800 Coins", price: 16480 }
-        ]
-    },
+efootball: {  
+    id: "efootball",  
+    name: "eFootball Coins",  
+    category: "game",  
+    description: "Get the best players and build your dream team!",  
+    fields: ["konamiId", "email", "whatsapp", "transaction"],  
+    options: [  
+        { id: "ef130", label: "130 Coins", price: 250 },  
+        { id: "ef300", label: "300 Coins", price: 600 },  
+        { id: "ef550", label: "550 Coins", price: 950 },  
+        { id: "ef1040", label: "1 040 Coins", price: 1700 },  
+        { id: "ef2130", label: "2 130 Coins", price: 3200 },  
+        { id: "ef12800", label: "12 800 Coins", price: 16480 }  
+    ]  
+},  
 
-    dls_gems: {
-        id: "dls_gems",
-        name: "DLS Diamonds",
-        category: "game",
-        description: "Upgrade your stadium and unlock great superstars!",
-        fields: ["email", "whatsapp", "transaction"],
-        options: [
-            { id: "dlsd1", label: "90 GEMS", price: 500 },
-            { id: "dlsd2", label: "400 GEMS", price: 1750 },
-            { id: "dlsd3", label: "910 GEMS", price: 3500 },
-            { id: "dlsd4", label: "2 700 GEMS", price: 8950 },
-            { id: "dlsd5", label: "6 000 GEMS", price: 21000 }
-        ]
-    },
+dls_gems: {  
+    id: "dls_gems",  
+    name: "DLS Diamonds",  
+    category: "game",  
+    description: "Upgrade your stadium and unlock great superstars!",  
+    fields: ["email", "whatsapp", "transaction"],  
+    options: [  
+        { id: "dlsd1", label: "90 GEMS", price: 500 },  
+        { id: "dlsd2", label: "400 GEMS", price: 1750 },  
+        { id: "dlsd3", label: "910 GEMS", price: 3500 },  
+        { id: "dlsd4", label: "2 700 GEMS", price: 8950 },  
+        { id: "dlsd5", label: "6 000 GEMS", price: 21000 }  
+    ]  
+},  
 
-    dls_coins: {
-        id: "dls_coins",
-        name: "DLS Coins",
-        category: "game",
-        description: "Increase your team level quickly in Dream League Football!",
-        fields: ["email", "whatsapp", "transaction"],
-        options: [
-            { id: "dlsc900", label: "900 COINS", price: 500 },
-            { id: "dlsc1950", label: "1 950 COINS", price: 1000 },
-            { id: "dlsc3450", label: "3 450 COINS", price: 1600 },
-            { id: "dlsc6700", label: "6 700 COINS", price: 2500 },
-            { id: "dlsc14000", label: "14 000 COINS", price: 4500 },
-            { id: "dlsc40500", label: "40 500 COINS", price: 10000 }
-        ]
-    },
+dls_coins: {  
+    id: "dls_coins",  
+    name: "DLS Coins",  
+    category: "game",  
+    description: "Increase your team level quickly in Dream League Football!",  
+    fields: ["email", "whatsapp", "transaction"],  
+    options: [  
+        { id: "dlsc900", label: "900 COINS", price: 500 },  
+        { id: "dlsc1950", label: "1 950 COINS", price: 1000 },  
+        { id: "dlsc3450", label: "3 450 COINS", price: 1600 },  
+        { id: "dlsc6700", label: "6 700 COINS", price: 2500 },  
+        { id: "dlsc14000", label: "14 000 COINS", price: 4500 },  
+        { id: "dlsc40500", label: "40 500 COINS", price: 10000 }  
+    ]  
+},  
 
-    flex_gold: {
-        id: "flex_gold",
-        name: "Flex City Gold",
-        category: "game",
-        description: "Build and dominate the city with powerful gold resources!",
-        fields: ["gameId", "whatsapp", "transaction"],
-        options: [
-            { id: "fg2100", label: "2 100 Gold", price: 660 },
-            { id: "fg6250", label: "6 250 Gold", price: 1900 },
-            { id: "fg17000", label: "17 000 Gold", price: 4950 },
-            { id: "fg40000", label: "40 000 Gold", price: 10700 },
-            { id: "fg77500", label: "77 500 Gold", price: 18900 }
-        ]
-    },
+flex_gold: {  
+    id: "flex_gold",  
+    name: "Flex City Gold",  
+    category: "game",  
+    description: "Build and dominate the city with powerful gold resources!",  
+    fields: ["gameId", "whatsapp", "transaction"],  
+    options: [  
+        { id: "fg2100", label: "2 100 Gold", price: 660 },  
+        { id: "fg6250", label: "6 250 Gold", price: 1900 },  
+        { id: "fg17000", label: "17 000 Gold", price: 4950 },  
+        { id: "fg40000", label: "40 000 Gold", price: 10700 },  
+        { id: "fg77500", label: "77 500 Gold", price: 18900 }  
+    ]  
+},  
 
-    flex_diamonds: {
-        id: "flex_diamonds",
-        name: "Flex City Diamonds",
-        category: "game",
-        description: "Buy exclusive vehicles and unlock advanced levels!",
-        fields: ["gameId", "whatsapp", "transaction"],
-        options: [
-            { id: "fd360", label: "360 Diamonds", price: 700 },
-            { id: "fd725", label: "725 Diamonds", price: 1400 },
-            { id: "fd1980", label: "1 980 Diamonds", price: 3400 },
-            { id: "fd8470", label: "8 470 Diamonds", price: 6750 },
-            { id: "fd17820", label: "17 820 Diamonds", price: 13250 },
-            { id: "fd27500", label: "27 500 Diamonds", price: 31900 },
-            { id: "fd49500", label: "49 500 Diamonds", price: 47850 },
-            { id: "fd70400", label: "70 400 Diamonds", price: 63950 }
-        ]
-    }
+flex_diamonds: {  
+    id: "flex_diamonds",  
+    name: "Flex City Diamonds",  
+    category: "game",  
+    description: "Buy exclusive vehicles and unlock advanced levels!",  
+    fields: ["gameId", "whatsapp", "transaction"],  
+    options: [  
+        { id: "fd360", label: "360 Diamonds", price: 700 },  
+        { id: "fd725", label: "725 Diamonds", price: 1400 },  
+        { id: "fd1980", label: "1 980 Diamonds", price: 3400 },  
+        { id: "fd8470", label: "8 470 Diamonds", price: 6750 },  
+        { id: "fd17820", label: "17 820 Diamonds", price: 13250 },  
+        { id: "fd27500", label: "27 500 Diamonds", price: 31900 },  
+        { id: "fd49500", label: "49 500 Diamonds", price: 47850 },  
+        { id: "fd70400", label: "70 400 Diamonds", price: 63950 }  
+    ]  
+}
+
 };
 
-/* HELPERS */
+/* =========================================================
+HELPERS
+========================================================= */
 
 function getJSON(key, fallback) {
-    try {
-        const value = localStorage.getItem(key);
-        return value ? JSON.parse(value) : fallback;
-    } catch (_) {
-        return fallback;
-    }
+try {
+const value = localStorage.getItem(key);
+return value ? JSON.parse(value) : fallback;
+} catch (_) {
+return fallback;
+}
 }
 
 function setJSON(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
+localStorage.setItem(key, JSON.stringify(value));
 }
 
 function generateId() {
-    return "SU-" + Date.now().toString(36) + "-" +
-        Math.random().toString(36).slice(2, 7).toUpperCase();
+return "SU-" + Date.now().toString(36) + "-" +
+Math.random().toString(36).slice(2, 7).toUpperCase();
 }
 
 function escapeHTML(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+return String(value ?? "")
+.replace(/&/g, "&")
+.replace(/</g, "<")
+.replace(/>/g, ">")
+.replace(/"/g, """)
+.replace(/'/g, "'");
 }
 
 function formatGdes(amount) {
-    return Number(amount || 0).toLocaleString("en-US") + " Gdes";
+return Number(amount || 0).toLocaleString("en-US") + " Gdes";
 }
 
 function getCurrentUser() {
-    return getJSON(STORAGE_KEYS.CURRENT_USER, null);
+return getJSON(STORAGE_KEYS.CURRENT_USER, null);
 }
 
 function saveCurrentUser(user) {
-    setJSON(STORAGE_KEYS.CURRENT_USER, user);
+setJSON(STORAGE_KEYS.CURRENT_USER, user);
 }
 
 function showToast(message) {
-    document.querySelector(".seby-toast")?.remove();
+document.querySelector(".seby-toast")?.remove();
 
-    const toast = document.createElement("div");
-    toast.className = "seby-toast";
-    toast.setAttribute("role", "status");
-    toast.textContent = message;
-    document.body.appendChild(toast);
+const toast = document.createElement("div");  
+toast.className = "seby-toast";  
+toast.setAttribute("role", "status");  
+toast.textContent = message;  
+document.body.appendChild(toast);  
 
-    setTimeout(() => toast.remove(), 4000);
+setTimeout(() => toast.remove(), 4000);
+
 }
 
-/* RENDER API HELPER */
+/* =========================================================
+RENDER API HELPER
+========================================================= */
 
 async function sebyApiPost(endpoint, payload) {
-    let response;
+let response;
 
-    try {
-        response = await fetch(SEBY_API_BASE + endpoint, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify(payload),
-            cache: "no-store"
-        });
-    } catch (_) {
-        throw new Error(
-            "Pa ka konekte ak sèvè a. Verifye entènèt ou epi eseye ankò."
-        );
-    }
+try {  
+    response = await fetch(SEBY_API_BASE + endpoint, {  
+        method: "POST",  
+        headers: {  
+            "Content-Type": "application/json",  
+            "Accept": "application/json"  
+        },  
+        body: JSON.stringify(payload),  
+        cache: "no-store"  
+    });  
+} catch (_) {  
+    throw new Error(  
+        "Pa ka konekte ak sèvè a. Verifye entènèt ou epi eseye ankò."  
+    );  
+}  
 
-    const raw = await response.text();
-    let result = {};
+const raw = await response.text();  
+let result = {};  
 
-    try {
-        result = raw ? JSON.parse(raw) : {};
-    } catch (_) {
-        throw new Error(
-            "Sèvè a pa voye yon repons JSON ki valab. Verifye API Render la."
-        );
-    }
+try {  
+    result = raw ? JSON.parse(raw) : {};  
+} catch (_) {  
+    throw new Error(  
+        "Sèvè a pa voye yon repons JSON ki valab. Verifye API Render la."  
+    );  
+}  
 
-    if (!response.ok || result.ok === false) {
-        throw new Error(
-            result.error || result.message ||
-            "Erè sèvè a: " + response.status
-        );
-    }
+if (!response.ok || result.ok === false) {  
+    throw new Error(  
+        result.error || result.message ||  
+        "Erè sèvè a: " + response.status  
+    );  
+}  
 
-    return result;
+return result;
+
 }
 
-/* TRANSACTION VALIDATION — 10 TO 20 DIGITS */
+/* =========================================================
+TRANSACTION VALIDATION — 10 TO 20 DIGITS
+========================================================= */
 
 function validTransactionId(id) {
-    const value = String(id || "").trim();
+const value = String(id || "").trim();
 
-    if (!/^\d{10,20}$/.test(value)) return false;
+if (!/^\d{10,20}$/.test(value)) return false;  
 
-    const used = getJSON(STORAGE_KEYS.USED_TXNS, []);
-    return !used.includes(value);
+const used = getJSON(STORAGE_KEYS.USED_TXNS, []);  
+return !used.includes(value);
+
 }
 
 function markTransactionUsed(txn) {
-    const used = getJSON(STORAGE_KEYS.USED_TXNS, []);
+const used = getJSON(STORAGE_KEYS.USED_TXNS, []);
 
-    if (!used.includes(txn)) {
-        used.push(txn);
-        setJSON(STORAGE_KEYS.USED_TXNS, used);
-    }
+if (!used.includes(txn)) {  
+    used.push(txn);  
+    setJSON(STORAGE_KEYS.USED_TXNS, used);  
+}
+
 }
 
 function validateTransactionOrShowMessage(txn) {
-    const value = String(txn || "").trim();
+const value = String(txn || "").trim();
 
-    if (!/^\d{10,20}$/.test(value)) {
-        showToast(
-            "Kòd tranzaksyon invalid. Li dwe gen ant 10 ak 20 chif. Verifye SMS la ankò."
-        );
-        return false;
-    }
+if (!/^\d{10,20}$/.test(value)) {  
+    showToast(  
+        "Kòd tranzaksyon invalid. Li dwe gen ant 10 ak 20 chif. Verifye SMS la ankò."  
+    );  
+    return false;  
+}  
 
-    const used = getJSON(STORAGE_KEYS.USED_TXNS, []);
+const used = getJSON(STORAGE_KEYS.USED_TXNS, []);  
 
-    if (used.includes(value)) {
-        showToast(
-            "Kòd tranzaksyon sa a deja itilize. Verifye SMS NatCash ou a."
-        );
-        return false;
-    }
+if (used.includes(value)) {  
+    showToast(  
+        "Kòd tranzaksyon sa a deja itilize. Verifye SMS NatCash ou a."  
+    );  
+    return false;  
+}  
 
-    return true;
+return true;
+
 }
 
 function validEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+return /^[^\s@]+@[^\s@]+.[^\s@]+$/.test(email);
 }
 
 function validWhatsApp(number) {
-    let digits = String(number || "").replace(/\D/g, "");
-    if (digits.startsWith("509")) digits = digits.substring(3);
-    return digits.length === 8;
+let digits = String(number || "").replace(/\D/g, "");
+if (digits.startsWith("509")) digits = digits.substring(3);
+return digits.length === 8;
 }
 
-/* PHONE FORMAT */
+/* =========================================================
+PHONE FORMAT
+========================================================= */
 
 function formatPhoneInput(input) {
-    let digits = input.value.replace(/\D/g, "");
+let digits = input.value.replace(/\D/g, "");
 
-    if (digits.startsWith("509")) digits = digits.substring(3);
-    digits = digits.substring(0, 8);
+if (digits.startsWith("509")) digits = digits.substring(3);  
+digits = digits.substring(0, 8);  
 
-    let result = "+509 ";
-    if (digits.length > 0) result += digits.substring(0, 2);
-    if (digits.length > 2) result += " " + digits.substring(2, 4);
-    if (digits.length > 4) result += " " + digits.substring(4, 8);
+let result = "+509 ";  
+if (digits.length > 0) result += digits.substring(0, 2);  
+if (digits.length > 2) result += " " + digits.substring(2, 4);  
+if (digits.length > 4) result += " " + digits.substring(4, 8);  
 
-    input.value = result;
+input.value = result;
+
 }
 
-/* AUTH GATE */
+/* =========================================================
+AUTH GATE
+========================================================= */
 
 function showApp() {
-    const gate = document.getElementById("sebyAuthGate");
-    const app = document.getElementById("sebyApp");
+const gate = document.getElementById("sebyAuthGate");
+const app = document.getElementById("sebyApp");
 
-    if (gate) gate.style.display = "none";
-    if (app) app.classList.add("app-visible");
+if (gate) gate.style.display = "none";  
+if (app) app.classList.add("app-visible");  
 
-    loadProfile();
-    renderOrders();
-    startOrderPolling();
-    renderWallet();
-    updateCartBadge();
-    updateNotificationBadge();
+loadProfile();  
+renderOrders();  
+startOrderPolling();  
+renderWallet();  
+updateCartBadge();  
+updateNotificationBadge();  
 
-    fetchCustomerNotifications();
-    startNotificationPolling();
+fetchCustomerNotifications();  
+startNotificationPolling();
+
 }
 
 function showAuthGate() {
-    const gate = document.getElementById("sebyAuthGate");
-    const app = document.getElementById("sebyApp");
+const gate = document.getElementById("sebyAuthGate");
+const app = document.getElementById("sebyApp");
 
-    if (gate) gate.style.display = "flex";
-    if (app) app.classList.remove("app-visible");
+if (gate) gate.style.display = "flex";  
+if (app) app.classList.remove("app-visible");  
 
-    stopOrderPolling();
-    stopNotificationPolling();
+stopOrderPolling();  
+stopNotificationPolling();
+
 }
 
 function switchGateAuth(type) {
-    const loginForm = document.getElementById("gateLoginForm");
-    const registerForm = document.getElementById("gateRegisterForm");
-    const title = document.getElementById("gateAuthTitle");
-    const subtitle = document.getElementById("gateAuthSubtitle");
+const loginForm = document.getElementById("gateLoginForm");
+const registerForm = document.getElementById("gateRegisterForm");
+const title = document.getElementById("gateAuthTitle");
+const subtitle = document.getElementById("gateAuthSubtitle");
 
-    if (type === "register") {
-        loginForm?.classList.remove("active");
-        registerForm?.classList.add("active");
+if (type === "register") {  
+    loginForm?.classList.remove("active");  
+    registerForm?.classList.add("active");  
 
-        if (title) title.textContent = "Create your SEBY UNIVERSE account";
-        if (subtitle) subtitle.textContent = "Create your account to continue.";
-    } else {
-        registerForm?.classList.remove("active");
-        loginForm?.classList.add("active");
+    if (title) title.textContent = "Create your SEBY UNIVERSE account";  
+    if (subtitle) subtitle.textContent = "Create your account to continue.";  
+} else {  
+    registerForm?.classList.remove("active");  
+    loginForm?.classList.add("active");  
 
-        if (title) title.textContent = "Welcome to SEBY UNIVERSE";
-        if (subtitle) subtitle.textContent = "Sign in or create your account to continue.";
-    }
+    if (title) title.textContent = "Welcome to SEBY UNIVERSE";  
+    if (subtitle) subtitle.textContent = "Sign in or create your account to continue.";  
 }
 
-/* PASSWORD VISIBILITY */
+}
+
+/* =========================================================
+PASSWORD VISIBILITY
+========================================================= */
 
 function toggleGatePassword(id, button) {
-    const input = document.getElementById(id);
-    if (!input) return;
+const input = document.getElementById(id);
+if (!input) return;
 
-    const visible = input.type === "password";
-    input.type = visible ? "text" : "password";
+const visible = input.type === "password";  
+input.type = visible ? "text" : "password";  
 
-    if (button) {
-        button.innerHTML = visible
-            ? '<i class="fa-regular fa-eye-slash"></i>'
-            : '<i class="fa-regular fa-eye"></i>';
-    }
+if (button) {  
+    button.innerHTML = visible  
+        ? '<i class="fa-regular fa-eye-slash"></i>'  
+        : '<i class="fa-regular fa-eye"></i>';  
+}
+
 }
 
 function togglePasswordVisibility(id, element) {
-    const input = document.getElementById(id);
-    if (!input) return;
+const input = document.getElementById(id);
+if (!input) return;
 
-    const visible = input.type === "password";
-    input.type = visible ? "text" : "password";
+const visible = input.type === "password";  
+input.type = visible ? "text" : "password";  
 
-    if (element) {
-        element.classList.toggle("fa-eye", !visible);
-        element.classList.toggle("fa-eye-slash", visible);
-    }
+if (element) {  
+    element.classList.toggle("fa-eye", !visible);  
+    element.classList.toggle("fa-eye-slash", visible);  
 }
 
-/* REGISTER */
+}
+
+/* =========================================================
+REGISTER
+========================================================= */
 
 function registerUser(data) {
-    const users = getJSON(STORAGE_KEYS.USERS, []);
-    const email = String(data.email || "").trim().toLowerCase();
+const users = getJSON(STORAGE_KEYS.USERS, []);
+const email = String(data.email || "").trim().toLowerCase();
 
-    if (!validEmail(email)) {
-        showToast("Invalid email address.");
-        return false;
-    }
+if (!validEmail(email)) {  
+    showToast("Invalid email address.");  
+    return false;  
+}  
 
-    if (!data.firstName?.trim() || !data.lastName?.trim()) {
-        showToast("Enter your first and last name.");
-        return false;
-    }
+if (!data.firstName?.trim() || !data.lastName?.trim()) {  
+    showToast("Enter your first and last name.");  
+    return false;  
+}  
 
-    if (!validWhatsApp(data.whatsapp)) {
-        showToast("Enter a valid WhatsApp number.");
-        return false;
-    }
+if (!validWhatsApp(data.whatsapp)) {  
+    showToast("Enter a valid WhatsApp number.");  
+    return false;  
+}  
 
-    if (String(data.password || "").length < 6) {
-        showToast("Password must contain at least 6 characters.");
-        return false;
-    }
+if (String(data.password || "").length < 6) {  
+    showToast("Password must contain at least 6 characters.");  
+    return false;  
+}  
 
-    if (data.password !== data.confirmPassword) {
-        showToast("Passwords do not match.");
-        return false;
-    }
+if (data.password !== data.confirmPassword) {  
+    showToast("Passwords do not match.");  
+    return false;  
+}  
 
-    if (users.some(user => user.email === email)) {
-        showToast("This email is already registered.");
-        return false;
-    }
+if (users.some(user => user.email === email)) {  
+    showToast("This email is already registered.");  
+    return false;  
+}  
 
-    const user = {
-        id: generateId(),
-        firstName: data.firstName.trim(),
-        lastName: data.lastName.trim(),
-        whatsapp: String(data.whatsapp || "").trim(),
-        email,
-        password: data.password,
-        createdAt: new Date().toISOString()
-    };
+const user = {  
+    id: generateId(),  
+    firstName: data.firstName.trim(),  
+    lastName: data.lastName.trim(),  
+    whatsapp: String(data.whatsapp || "").trim(),  
+    email,  
+    password: data.password,  
+    createdAt: new Date().toISOString()  
+};  
 
-    users.push(user);
-    setJSON(STORAGE_KEYS.USERS, users);
+users.push(user);  
+setJSON(STORAGE_KEYS.USERS, users);  
 
-    const wallets = getJSON(STORAGE_KEYS.WALLETS, {});
-    wallets[user.id] = 0;
-    setJSON(STORAGE_KEYS.WALLETS, wallets);
+const wallets = getJSON(STORAGE_KEYS.WALLETS, {});  
+wallets[user.id] = 0;  
+setJSON(STORAGE_KEYS.WALLETS, wallets);  
 
-    saveCurrentUser(user);
-    showToast("Account created successfully.");
-    showApp();
+saveCurrentUser(user);  
+showToast("Account created successfully.");  
+showApp();  
 
-    return true;
+return true;
+
 }
 
-/* LOGIN & PROFILE STORAGE */
+/* =========================================================
+LOGIN & PROFILE STORAGE
+========================================================= */
 
 function loginUser(email, password) {
-    const users = getJSON(STORAGE_KEYS.USERS, []);
-    const normalizedEmail = String(email || "").trim().toLowerCase();
+const users = getJSON(STORAGE_KEYS.USERS, []);
+const normalizedEmail = String(email || "").trim().toLowerCase();
 
-    const user = users.find(item =>
-        item.email === normalizedEmail && item.password === password
-    );
+const user = users.find(item =>  
+    item.email === normalizedEmail && item.password === password  
+);  
 
-    if (!user) {
-        showToast("Incorrect email or password.");
-        return false;
-    }
+if (!user) {  
+    showToast("Incorrect email or password.");  
+    return false;  
+}  
 
-    saveCurrentUser(user);
-    showToast("Welcome back!");
-    showApp();
+saveCurrentUser(user);  
+showToast("Welcome back!");  
+showApp();  
 
-    return true;
+return true;
+
 }
 
 function updateStoredUser(user) {
-    const users = getJSON(STORAGE_KEYS.USERS, []);
-    const index = users.findIndex(item => item.id === user.id);
+const users = getJSON(STORAGE_KEYS.USERS, []);
+const index = users.findIndex(item => item.id === user.id);
 
-    if (index !== -1) {
-        users[index] = user;
-        setJSON(STORAGE_KEYS.USERS, users);
-    }
+if (index !== -1) {  
+    users[index] = user;  
+    setJSON(STORAGE_KEYS.USERS, users);  
+}  
 
-    saveCurrentUser(user);
+saveCurrentUser(user);
+
 }
 
 /* =========================================================
-   SIDEBAR & NAVIGATION
+SIDEBAR & NAVIGATION
 ========================================================= */
 
 function openSidebar() {
-    document.getElementById("sidebar")?.classList.add("open");
-    document.getElementById("sidebarOverlay")?.classList.add("active");
+document.getElementById("sidebar")?.classList.add("open");
+document.getElementById("sidebarOverlay")?.classList.add("active");
 }
 
 function closeSidebar() {
-    document.getElementById("sidebar")?.classList.remove("open");
-    document.getElementById("sidebarOverlay")?.classList.remove("active");
+document.getElementById("sidebar")?.classList.remove("open");
+document.getElementById("sidebarOverlay")?.classList.remove("active");
 }
 
 function showPage(pageId) {
-    document.querySelectorAll(".page-section").forEach(section => {
-        section.classList.remove("active");
-    });
+document.querySelectorAll(".page-section").forEach(section => {
+section.classList.remove("active");
+});
 
-    document.getElementById(pageId)?.classList.add("active");
+document.getElementById(pageId)?.classList.add("active");  
 
-    document.querySelectorAll(".nav-item[data-page]").forEach(item => {
-        item.classList.toggle("active", item.dataset.page === pageId);
-    });
+document.querySelectorAll(".nav-item[data-page]").forEach(item => {  
+    item.classList.toggle("active", item.dataset.page === pageId);  
+});  
 
-    if (pageId === "orders-page") {
-        renderOrders();
-        fetchCustomerOrders();
-    }
+if (pageId === "orders-page") {  
+    renderOrders();  
+    fetchCustomerOrders();  
+}  
 
-    if (pageId === "wallet-page") {
-        renderWallet();
-    }
+if (pageId === "wallet-page") renderWallet();  
+if (pageId === "profile-page") loadProfile();  
 
-    if (pageId === "profile-page") {
-        loadProfile();
-    }
+closeSidebar();
 
-    closeSidebar();
 }
 
 function toggleSettings() {
-    document.getElementById("paramsMenu")?.classList.toggle("open");
-    document.getElementById("paramsToggle")?.classList.toggle("open");
+document.getElementById("paramsMenu")?.classList.toggle("open");
+document.getElementById("paramsToggle")?.classList.toggle("open");
 }
 
 /* =========================================================
-   PRODUCT FILTER
+PRODUCT FILTER
 ========================================================= */
 
 function filterProducts(category) {
-    document.querySelectorAll(".cat-btn").forEach(button => {
-        button.classList.toggle("active", button.dataset.cat === category);
-    });
+document.querySelectorAll(".cat-btn").forEach(button => {
+button.classList.toggle("active", button.dataset.cat === category);
+});
 
-    document.querySelectorAll(".product-card").forEach(card => {
-        const cardCategory = card.dataset.category;
+document.querySelectorAll(".product-card").forEach(card => {  
+    const cardCategory = card.dataset.category;  
+    card.style.display =  
+        category === "all" || cardCategory === category ? "" : "none";  
+});
 
-        card.style.display =
-            category === "all" || cardCategory === category
-                ? ""
-                : "none";
-    });
 }
 
 /* =========================================================
-   PRODUCT FORM FIELDS
+PRODUCT MODAL & FIELDS
 ========================================================= */
 
 function createProductField(field) {
-    const user = getCurrentUser() || {};
+const user = getCurrentUser();
 
-    if (field === "region") {
-        return `
-            <label for="productRegion">Région du compte</label>
-            <select id="productRegion" required>
-                <option value="">Choisir une région</option>
-                <option value="North America">North America</option>
-                <option value="United States">United States</option>
-                <option value="Europe">Europe</option>
-            </select>
-        `;
-    }
+if (field === "region") {  
+    return `  
+        <div class="form-group">  
+            <label>Region</label>  
+            <select id="productRegion">  
+                <option value="">Select Region</option>  
+                <option value="Amérique du Nord">Amérique du Nord</option>  
+                <option value="États-Unis">États-Unis</option>  
+                <option value="Europe">Europe</option>  
+            </select>  
+        </div>`;  
+}  
 
-    if (field === "gameId") {
-        return `
-            <label for="productGameId">Game ID / Player ID</label>
-            <input
-                id="productGameId"
-                type="text"
-                inputmode="numeric"
-                placeholder="Entre ton Game ID"
-                required
-            >
-        `;
-    }
+if (field === "gameId") {  
+    return `  
+        <div class="form-group">  
+            <label>Game ID</label>  
+            <input type="text" id="productGameId" inputmode="numeric"  
+                autocomplete="off" placeholder="Enter ID"  
+                oninput="this.value=this.value.replace(/\\D/g,'')">  
+        </div>`;  
+}  
 
-    if (field === "konamiId") {
-        return `
-            <label for="productKonamiId">Konami ID</label>
-            <input
-                id="productKonamiId"
-                type="text"
-                placeholder="Entre ton Konami ID"
-                required
-            >
-        `;
-    }
+if (field === "konamiId") {  
+    return `  
+        <div class="form-group">  
+            <label>Konami ID</label>  
+            <input type="text" id="productKonamiId"  
+                autocomplete="off" placeholder="Enter Konami ID">  
+        </div>`;  
+}  
 
-    if (field === "email") {
-        return `
-            <label for="productAccountEmail">E-mail du compte</label>
-            <input
-                id="productAccountEmail"
-                type="email"
-                value="${escapeHTML(user.email || "")}"
-                placeholder="E-mail associé au compte"
-                required
-            >
-        `;
-    }
+if (field === "email") {  
+    return `  
+        <div class="form-group">  
+            <label>E-mail</label>  
+            <input type="email" id="productEmail" autocomplete="email"  
+                value="${escapeHTML(user?.email || "")}"  
+                placeholder="Enter your e-mail">  
+        </div>`;  
+}  
 
-    if (field === "whatsapp") {
-        return `
-            <label for="productWhatsApp">Numéro WhatsApp</label>
-            <input
-                id="productWhatsApp"
-                type="tel"
-                value="${escapeHTML(user.whatsapp || "")}"
-                placeholder="+509 XX XX XXXX"
-                oninput="formatPhoneInput(this)"
-                required
-            >
-        `;
-    }
+if (field === "whatsapp") {  
+    return `  
+        <div class="form-group">  
+            <label>WhatsApp Number</label>  
+            <input type="text" id="productWhatsapp" inputmode="tel"  
+                value="${escapeHTML(user?.whatsapp || "+509 ")}"  
+                oninput="formatPhoneInput(this)"  
+                placeholder="+509 XX XX XXXX">  
+        </div>`;  
+}  
 
-    if (field === "transaction") {
-        return `
-            <label for="productTxnId">ID de transaction NatCash</label>
-            <input
-                id="productTxnId"
-                type="text"
-                inputmode="numeric"
-                maxlength="20"
-                placeholder="Entre l'ID de transaction"
-                oninput="this.value=this.value.replace(/\\D/g,'').slice(0,20)"
-                required
-            >
-            <small>
-                Envoie ton paiement au ${NATCASH_NUMBER}.
-                L'ID doit contenir entre 10 et 20 chiffres.
-                Le paiement doit être vérifié avant validation.
-            </small>
-        `;
-    }
+if (field === "transaction") {  
+    return `  
+        <div class="form-group">  
+            <label>Transaction ID</label>  
+            <input type="text" id="productTxnId" inputmode="numeric"  
+                autocomplete="off" maxlength="20"  
+                placeholder="Enter NatCash transaction ID"  
+                oninput="this.value=this.value.replace(/\\D/g,'').slice(0,20)">  
+            <small class="hint-text">  
+                Voye peman an nan NatCash ${NATCASH_NUMBER}.  
+                Kòd la dwe gen ant 10 ak 20 chif.  
+                Si SMS konfimasyon an poko rive, tann,  
+                verifye mesaj ou yo epi eseye ankò.  
+            </small>  
+        </div>`;  
+}  
 
-    return "";
+return "";
+
 }
-
-/* =========================================================
-   PRODUCT MODAL
-========================================================= */
 
 function openProductModal(productId) {
-    const product = PRODUCTS[productId];
+const product = PRODUCTS[productId];
+if (!product) return;
 
-    if (!product) {
-        showToast("Produit introuvable.", "error");
-        return;
-    }
+selectedProduct = product;  
+selectedOption = null;  
+selectedQuantity = 1;  
 
-    selectedProduct = product;
-    selectedOption = product.options?.[0] || null;
-    selectedQuantity = 1;
+const modal = document.getElementById("productModal");  
+const body = document.getElementById("modalBody");  
+if (!modal || !body) return;  
 
-    const modalBody = document.getElementById("modalBody");
+body.innerHTML = `  
+    <h2 class="product-modal-title">${escapeHTML(product.name)}</h2>  
+    <p class="product-modal-description">${escapeHTML(product.description)}</p>  
 
-    if (!modalBody) {
-        showToast("La fenêtre du produit est introuvable.", "error");
-        return;
-    }
+    <div class="product-options">  
+        ${product.options.map(option => `  
+            <div class="product-option"  
+                data-option-id="${escapeHTML(option.id)}"  
+                onclick="selectProductOption('${escapeHTML(option.id)}')">  
+                <span>${escapeHTML(option.label)}</span>  
+                <strong>${formatGdes(option.price)}</strong>  
+            </div>  
+        `).join("")}  
+    </div>  
 
-    const optionsHTML = (product.options || []).map((option, index) => `
-        <button
-            type="button"
-            class="product-option ${index === 0 ? "active" : ""}"
-            data-option-index="${index}"
-            onclick="selectProductOption(${index})"
-        >
-            <span>${escapeHTML(option.label)}</span>
-            <strong>${formatGdes(option.price)} Gdes</strong>
-        </button>
-    `).join("");
+    <div class="order-fields">  
+        ${product.fields.map(createProductField).join("")}  
 
-    const fieldsHTML = (product.fields || [])
-        .map(field => createProductField(field))
-        .join("");
+        <div class="form-group">  
+            <label>Quantity</label>  
+            <input type="number" id="productQuantity" min="1" max="100"  
+                value="1" onchange="updateProductQuantity()">  
+        </div>  
 
-    modalBody.innerHTML = `
-        <div class="product-modal-content">
-            <h2>${escapeHTML(product.name)}</h2>
-            <p>${escapeHTML(product.description || "")}</p>
+        <div id="productTotal" style="padding:13px;border-radius:10px;  
+            background:#f0f9ff;color:#0284c7;font-weight:900;margin-bottom:12px">  
+            Select a package  
+        </div>  
+    </div>  
 
-            <div class="product-options">
-                ${optionsHTML}
-            </div>
+    <div class="modal-actions">  
+        <button class="btn-primary" onclick="confirmProductOrder()">Commander</button>  
+        <button class="btn-whatsapp" onclick="addSelectedToCart()">  
+            <i class="fa-solid fa-cart-plus"></i> Add to Cart  
+        </button>  
+    </div>`;  
 
-            <div class="product-required-fields">
-                ${fieldsHTML}
-            </div>
+modal.classList.add("active");
 
-            <label for="productQuantity">Quantité</label>
-            <input
-                id="productQuantity"
-                type="number"
-                min="1"
-                max="100"
-                value="1"
-                oninput="updateProductQuantity(this.value)"
-            >
-
-            <div class="product-total">
-                Total :
-                <strong id="productTotal">0 Gdes</strong>
-            </div>
-
-            <div class="product-modal-actions">
-                <button
-                    type="button"
-                    onclick="confirmProductOrder()"
-                    id="confirmProductOrderBtn"
-                >
-                    Confirmer la commande
-                </button>
-
-                <button
-                    type="button"
-                    onclick="addSelectedToCart()"
-                >
-                    Ajouter au panier
-                </button>
-            </div>
-        </div>
-    `;
-
-    updateProductTotal();
-
-    document.getElementById("productModal")?.classList.add("active");
-    document.getElementById("productModal")?.classList.remove("hidden");
 }
 
-function selectProductOption(index) {
-    if (!selectedProduct || !selectedProduct.options?.[index]) {
-        return;
-    }
+function selectProductOption(optionId) {
+if (!selectedProduct) return;
 
-    selectedOption = selectedProduct.options[index];
+selectedOption = selectedProduct.options.find(option => option.id === optionId);  
 
-    document.querySelectorAll(".product-option").forEach((button, i) => {
-        button.classList.toggle("active", i === index);
-    });
+document.querySelectorAll(".product-option").forEach(option => {  
+    option.classList.toggle("selected", option.dataset.optionId === optionId);  
+});  
 
-    updateProductTotal();
+updateProductTotal();
+
 }
 
-function updateProductQuantity(value) {
-    const quantityInput = document.getElementById("productQuantity");
-    let quantity = Number.parseInt(value, 10);
+function updateProductQuantity() {
+const input = document.getElementById("productQuantity");
+if (!input) return;
 
-    if (!Number.isFinite(quantity) || quantity < 1) {
-        quantity = 1;
-    }
+const quantity = parseInt(input.value, 10);  
+selectedQuantity = Number.isFinite(quantity) && quantity > 0  
+    ? Math.min(quantity, 100)  
+    : 1;  
 
-    if (quantity > 100) {
-        quantity = 100;
-    }
+input.value = selectedQuantity;  
+updateProductTotal();
 
-    selectedQuantity = quantity;
-
-    if (quantityInput && String(quantityInput.value) !== String(quantity)) {
-        quantityInput.value = String(quantity);
-    }
-
-    updateProductTotal();
 }
 
 function updateProductTotal() {
-    const totalElement = document.getElementById("productTotal");
+const element = document.getElementById("productTotal");
+if (!element) return;
 
-    if (!totalElement || !selectedOption) {
-        return;
-    }
+element.textContent = selectedOption  
+    ? "Total: " + formatGdes(selectedOption.price * selectedQuantity)  
+    : "Select a package";
 
-    const quantityInput = document.getElementById("productQuantity");
-    const quantity = Math.max(
-        1,
-        Math.min(100, Number.parseInt(quantityInput?.value || "1", 10) || 1)
-    );
-
-    selectedQuantity = quantity;
-    totalElement.textContent =
-        `${formatGdes(selectedOption.price * quantity)} Gdes`;
 }
 
 function closeProductModal() {
-    document.getElementById("productModal")?.classList.remove("active");
-    document.getElementById("productModal")?.classList.add("hidden");
+document.getElementById("productModal")?.classList.remove("active");
+selectedProduct = null;
+selectedOption = null;
+selectedQuantity = 1;
 }
 
 /* =========================================================
-   CONFIRM PRODUCT ORDER — API
+ORDERS — SEND TO RENDER API
 ========================================================= */
 
 async function confirmProductOrder() {
-    if (orderSubmitting) {
-        return;
-    }
+if (orderSubmitting) return;
 
-    if (!selectedProduct || !selectedOption) {
-        showToast("Chwazi yon pwodwi ak yon opsyon anvan.", "error");
-        return;
-    }
+if (!selectedProduct || !selectedOption) {  
+    showToast("Please select a package.");  
+    return;  
+}  
 
-    const user = getCurrentUser();
+const user = getCurrentUser();  
 
-    if (!user) {
-        showToast("Konekte sou kont ou anvan ou pase kòmand.", "error");
-        showAuthGate?.();
-        return;
-    }
+if (!user) {  
+    showToast("Please sign in first.");  
+    return;  
+}  
 
-    const value = id =>
-        (document.getElementById(id)?.value || "").trim();
+const value = id =>  
+    String(document.getElementById(id)?.value || "").trim();  
 
-    const whatsapp = value("productWhatsApp");
-    const txn = value("productTxnId");
-    const email = value("productAccountEmail").toLowerCase();
-    const region = value("productRegion");
-    const gameId = value("productGameId");
-    const konamiId = value("productKonamiId");
-    const quantity = Math.max(
-        1,
-        Math.min(
-            100,
-            Number.parseInt(
-                document.getElementById("productQuantity")?.value || "1",
-                10
-            ) || 1
-        )
-    );
+const whatsapp = value("productWhatsapp");  
+const txn = value("productTxnId");  
+const email = value("productEmail").toLowerCase();  
+const region = value("productRegion");  
+const gameId = value("productGameId");  
+const konamiId = value("productKonamiId");  
 
-    if (!validWhatsApp(whatsapp)) {
-        showToast("Antre yon nimewo WhatsApp ki valab.", "error");
-        return;
-    }
+const quantityValue = parseInt(value("productQuantity") || "1", 10);  
+const quantity = Number.isFinite(quantityValue) && quantityValue > 0  
+    ? Math.min(quantityValue, 100)  
+    : 1;  
 
-    const fields = selectedProduct.fields || [];
+if (!validWhatsApp(whatsapp)) {  
+    showToast("Enter a valid WhatsApp number.");  
+    return;  
+}  
 
-    if (fields.includes("region") && !region) {
-        showToast("Chwazi rejyon kont lan.", "error");
-        return;
-    }
+if (selectedProduct.fields.includes("region") && !region) {  
+    showToast("Select a region.");  
+    return;  
+}  
 
-    if (fields.includes("gameId") && !/^\d+$/.test(gameId)) {
-        showToast("Antre yon Game ID ki valab.", "error");
-        return;
-    }
+if (selectedProduct.fields.includes("gameId") &&  
+    (!gameId || !/^\d+$/.test(gameId))) {  
+    showToast("Enter a valid numeric ID.");  
+    return;  
+}  
 
-    if (fields.includes("konamiId") && !konamiId) {
-        showToast("Antre Konami ID ou.", "error");
-        return;
-    }
+if (selectedProduct.fields.includes("konamiId") && !konamiId) {  
+    showToast("Enter your Konami ID.");  
+    return;  
+}  
 
-    if (fields.includes("email") && !validEmail(email)) {
-        showToast("Antre yon e-mail kont ki valab.", "error");
-        return;
-    }
+if (selectedProduct.fields.includes("email") && !validEmail(email)) {  
+    showToast("Enter a valid e-mail.");  
+    return;  
+}  
 
-    if (fields.includes("transaction")) {
-        if (!/^\d{10,20}$/.test(txn)) {
-            showToast("ID tranzaksyon an dwe gen 10 a 20 chif.", "error");
-            return;
-        }
+if (!validateTransactionOrShowMessage(txn)) {  
+    const txnInput = document.getElementById("productTxnId");  
+    if (txnInput && !/^\d{10,20}$/.test(txn)) txnInput.focus();  
+    return;  
+}  
 
-        if (isTransactionUsed(txn)) {
-            showToast("ID tranzaksyon sa a deja anrejistre.", "error");
-            return;
-        }
-    }
+const total = selectedOption.price * quantity;  
+const customerName = [  
+    user.firstName || "",  
+    user.lastName || ""  
+].join(" ").trim() || user.email || "Customer";  
 
-    const total = selectedOption.price * quantity;
-    const customerName = [
-        user.firstName || user.firstname || "",
-        user.lastName || user.lastname || ""
-    ].filter(Boolean).join(" ") || user.name || user.email || "Client";
+const descriptionParts = [  
+    "Option: " + selectedOption.label,  
+    "Transaction ID: " + txn,  
+    "Customer ID: " + (user.id || ""),  
+    "WhatsApp: " + whatsapp  
+];  
 
-    const descriptionParts = [
-        "Option: " + selectedOption.label,
-        "Transaction ID: " + (txn || "Non fourni"),
-        "Customer ID: " + (user.id || ""),
-        "WhatsApp: " + whatsapp
-    ];
+if (region) descriptionParts.push("Region: " + region);  
+if (gameId) descriptionParts.push("Game ID: " + gameId);  
+if (konamiId) descriptionParts.push("Konami ID: " + konamiId);  
+if (email) descriptionParts.push("Product account email: " + email);  
 
-    if (region) {
-        descriptionParts.push("Region: " + region);
-    }
+const button = document.querySelector(  
+    "#productModal .modal-actions .btn-primary"  
+);  
 
-    if (gameId) {
-        descriptionParts.push("Game ID: " + gameId);
-    }
+orderSubmitting = true;  
 
-    if (konamiId) {
-        descriptionParts.push("Konami ID: " + konamiId);
-    }
+if (button) {  
+    button.disabled = true;  
+    button.textContent = "Envoi...";  
+}  
 
-    if (email) {
-        descriptionParts.push("Product account email: " + email);
-    }
+try {  
+    const result = await sebyApiPost("/api/orders", {  
+        productName: selectedProduct.name + " — " + selectedOption.label,  
+        customerName,  
+        customerPhone: whatsapp,  
+        customerEmail: user.email || email,  
+        amount: total,  
+        quantity,  
+        description  
+    });  
 
-    // CORRECTION : description doit être définie avant l'envoi à l'API.
-    const description = descriptionParts.join(" | ");
+    if (result.ok !== true || !result.order) {  
+        throw new Error(  
+            result.error || "Sèvè a pa konfime anrejistreman kòmand lan."  
+        );  
+    }  
 
-    const button = document.getElementById("confirmProductOrderBtn");
-    const originalButtonText = button?.textContent || "Confirmer la commande";
+    const serverOrder = result.order;  
+    const orders = getJSON(STORAGE_KEYS.ORDERS, []);  
 
-    orderSubmitting = true;
+    const order = {  
+        id: generateId(),  
+        remoteOrderId: String(serverOrder.id || serverOrder._id || ""),  
+        userId: user.id,  
+        customer: {  
+            firstName: user.firstName || "",  
+            lastName: user.lastName || "",  
+            email: user.email || "",  
+            whatsapp  
+        },  
+        productId: selectedProduct.id,  
+        productName: selectedProduct.name,  
+        optionId: selectedOption.id,  
+        optionLabel: selectedOption.label,  
+        quantity,  
+        price: selectedOption.price,  
+        total,  
+        transactionId: txn,  
+        region,  
+        gameId,  
+        konamiId,  
+        accountEmail: email,  
+        status: serverOrder.status || "En attente",  
+        createdAt: serverOrder.createdAt || new Date().toISOString()  
+    };  
 
-    if (button) {
-        button.disabled = true;
-        button.textContent = "Envoi...";
-    }
+    orders.push(order);  
+    setJSON(STORAGE_KEYS.ORDERS, orders);  
+    markTransactionUsed(txn);  
 
-    try {
-        const result = await sebyApiPost("/api/orders", {
-            productName: `${selectedProduct.name} — ${selectedOption.label}`,
-            customerName,
-            customerPhone: whatsapp,
-            customerEmail: user.email || email,
-            amount: total,
-            quantity,
-            description
-        });
+    closeProductModal();  
+    renderOrders();  
+    fetchCustomerOrders();  
 
-        if (!result || result.ok !== true || !result.order) {
-            throw new Error(
-                result?.message || "Le serveur n'a pas confirmé la commande."
-            );
-        }
+    showToast("Kòmand lan voye. Li an atant validasyon Admin lan.");  
+    openWhatsAppOrder(order);  
+} catch (error) {  
+    console.error("SEBY order submission failed:", error);  
+    showToast(error.message || "Kòmand lan pa pase. Eseye ankò.");  
+} finally {  
+    orderSubmitting = false;  
 
-        const serverOrder = result.order;
-
-        const order = {
-            id: generateId(),
-            remoteOrderId: String(serverOrder.id || serverOrder._id || ""),
-            userId: String(user.id || user.email || user.whatsapp || ""),
-            customerName,
-            customerPhone: whatsapp,
-            customerEmail: user.email || email,
-            productId: selectedProduct.id || "",
-            productName: selectedProduct.name,
-            optionLabel: selectedOption.label,
-            productOption: selectedOption.label,
-            quantity,
-            price: selectedOption.price,
-            total,
-            amount: total,
-            transactionId: txn,
-            region,
-            gameId,
-            konamiId,
-            accountEmail: email,
-            description,
-            status: serverOrder.status || "En attente",
-            createdAt: serverOrder.createdAt || serverOrder.created_at || new Date().toISOString()
-        };
-
-        const orders = getJSON(STORAGE_KEYS.ORDERS, []);
-        orders.unshift(order);
-        setJSON(STORAGE_KEYS.ORDERS, orders);
-
-        if (txn) {
-            markTransactionUsed(txn);
-        }
-
-        closeProductModal();
-        renderOrders();
-        fetchCustomerOrders();
-
-        showToast(
-            "Kòmand lan voye. Li rete tann verifikasyon administratè a.",
-            "success"
-        );
-
-        openWhatsAppOrder(order);
-    } catch (error) {
-        console.error("SEBY order error:", error);
-
-        showToast(
-            error?.message || "Nou pa t kapab voye kòmand lan. Eseye ankò.",
-            "error"
-        );
-    } finally {
-        orderSubmitting = false;
-
-        if (button) {
-            button.disabled = false;
-            button.textContent = originalButtonText;
-        }
-    }
+    if (button) {  
+        button.disabled = false;  
+        button.textContent = "Commander";  
+    }  
 }
 
-/* =========================================================
-   WHATSAPP ORDER MESSAGE
-========================================================= */
+}
 
 function openWhatsAppOrder(order) {
-    if (!order) {
-        return;
-    }
+let message =
+Bonjour, mwen vle pase yon kòmand sou sit la.\n\n +
+Produit: ${order.productName}\n +
+Offre: ${order.optionLabel}\n +
+Quantité: ${order.quantity}\n +
+Prix total: ${order.total} Gdes\n +
+ID Transaction: ${order.transactionId}\n +
+WhatsApp: ${order.customer.whatsapp}\n;
 
-    const lines = [
-        "Bonjour SEBY UNIVERSE !",
-        "",
-        "Nouvelle commande",
-        "Produit : " + (order.productName || ""),
-        "Option : " + (order.optionLabel || order.productOption || ""),
-        "Quantité : " + (order.quantity || 1),
-        "Total : " + formatGdes(order.total || order.amount || 0) + " Gdes",
-        "Transaction ID : " + (order.transactionId || "Non fourni"),
-        "WhatsApp client : " + (order.customerPhone || ""),
-        "Statut : En attente de vérification"
-    ];
+if (order.region) message += `Region: ${order.region}\n`;  
+if (order.gameId) message += `ID: ${order.gameId}\n`;  
+if (order.konamiId) message += `Konami ID: ${order.konamiId}\n`;  
+if (order.accountEmail) message += `E-mail: ${order.accountEmail}\n`;  
 
-    if (order.region) {
-        lines.push("Région : " + order.region);
-    }
+message += "\nStatut: En attente de validation.";  
 
-    if (order.gameId) {
-        lines.push("Game ID : " + order.gameId);
-    }
+const url = "https://wa.me/" + WHATSAPP_NUMBER +  
+    "?text=" + encodeURIComponent(message);  
 
-    if (order.konamiId) {
-        lines.push("Konami ID : " + order.konamiId);
-    }
+window.open(url, "_blank", "noopener");
 
-    if (order.accountEmail) {
-        lines.push("E-mail du compte : " + order.accountEmail);
-    }
-
-    lines.push("", "Merci !");
-
-    const url =
-        `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
-
-    window.open(url, "_blank", "noopener,noreferrer");
 }
 
 /* =========================================================
-   CART
+CART
 ========================================================= */
 
 function getCart() {
-    const cart = getJSON(STORAGE_KEYS.CART, []);
-    return Array.isArray(cart) ? cart : [];
+return getJSON(STORAGE_KEYS.CART, []);
 }
 
 function updateCartBadge() {
-    const cart = getCart();
-    const count = cart.reduce(
-        (sum, item) => sum + (Number(item.quantity) || 1),
-        0
-    );
+const badge = document.getElementById("cartBadge");
+if (!badge) return;
 
-    ["cartBadge", "cart-count"].forEach(id => {
-        const badge = document.getElementById(id);
-        if (badge) {
-            badge.textContent = String(count);
-            badge.style.display = count > 0 ? "" : "none";
-        }
-    });
+badge.textContent = getCart().length;  
+badge.style.display = getCart().length ? "" : "none";
+
 }
 
 function addSelectedToCart() {
-    if (!selectedProduct || !selectedOption) {
-        showToast("Chwazi yon pwodwi anvan.", "error");
-        return;
-    }
+if (!selectedProduct || !selectedOption) {
+showToast("Please select a package.");
+return;
+}
 
-    const cart = getCart();
-    const key = `${selectedProduct.id || selectedProduct.name}|${selectedOption.label}`;
+const cart = getCart();  
 
-    const existing = cart.find(item => item.key === key);
+cart.push({  
+    id: generateId(),  
+    productId: selectedProduct.id,  
+    productName: selectedProduct.name,  
+    optionId: selectedOption.id,  
+    optionLabel: selectedOption.label,  
+    price: selectedOption.price,  
+    quantity: selectedQuantity  
+});  
 
-    if (existing) {
-        existing.quantity = Math.min(
-            100,
-            (Number(existing.quantity) || 1) + (Number(selectedQuantity) || 1)
-        );
-    } else {
-        cart.push({
-            key,
-            productId: selectedProduct.id || "",
-            productName: selectedProduct.name,
-            optionLabel: selectedOption.label,
-            price: Number(selectedOption.price) || 0,
-            quantity: Math.max(1, Number(selectedQuantity) || 1)
-        });
-    }
+setJSON(STORAGE_KEYS.CART, cart);  
+updateCartBadge();  
+showToast("Added to cart.");
 
-    setJSON(STORAGE_KEYS.CART, cart);
-    updateCartBadge();
-    closeProductModal();
-    showToast("Pwodwi a ajoute nan panyen an.", "success");
 }
 
 function openCartModal() {
-    const cart = getCart();
-    const modal = document.getElementById("cartModal");
-    const body = document.getElementById("cartModalBody")
-        || document.getElementById("cartItems")
-        || document.getElementById("cartContent");
+const modal = document.getElementById("cartModal");
+const body = document.getElementById("cartModalBody");
+if (!modal || !body) return;
 
-    if (!modal || !body) {
-        showToast("Fenèt panyen an pa jwenn nan HTML la.", "error");
-        return;
-    }
+const cart = getCart();  
 
-    if (cart.length === 0) {
-        body.innerHTML = `
-            <div class="empty-state">
-                <p>Panyen ou vid.</p>
-            </div>
-        `;
-    } else {
-        const itemsHTML = cart.map((item, index) => `
-            <div class="cart-item">
-                <div>
-                    <strong>${escapeHTML(item.productName || "Produit")}</strong>
-                    <p>${escapeHTML(item.optionLabel || "")}</p>
-                    <p>Quantité : ${Number(item.quantity) || 1}</p>
-                    <strong>
-                        ${formatGdes((Number(item.price) || 0) *
-                            (Number(item.quantity) || 1))} Gdes
-                    </strong>
-                </div>
-                <button type="button" onclick="removeCartItem(${index})">
-                    Retirer
-                </button>
-            </div>
-        `).join("");
+if (!cart.length) {  
+    body.innerHTML = '<div class="empty-state">Your cart is empty.</div>';  
+    modal.classList.add("active");  
+    return;  
+}  
 
-        const total = cart.reduce(
-            (sum, item) =>
-                sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
-            0
-        );
+let total = 0;  
 
-        body.innerHTML = `
-            ${itemsHTML}
-            <div class="cart-total">
-                Total : <strong>${formatGdes(total)} Gdes</strong>
-            </div>
-            <button type="button" onclick="checkoutCart()">
-                Continuer mes achats
-            </button>
-        `;
-    }
+body.innerHTML = cart.map((item, index) => {  
+    const itemTotal = Number(item.price) * Number(item.quantity);  
+    total += itemTotal;  
 
-    modal.classList.add("active");
-    modal.classList.remove("hidden");
+    return `  
+        <div class="cart-item">  
+            <div class="cart-item-top">  
+                <strong>${escapeHTML(item.productName)}</strong>  
+                <button onclick="removeCartItem(${index})"  
+                    style="border:0;background:none;color:#dc2626">  
+                    <i class="fa-solid fa-trash"></i>  
+                </button>  
+            </div>  
+            <p>${escapeHTML(item.optionLabel)}</p>  
+            <p>Quantity: ${Number(item.quantity) || 1}</p>  
+            <strong>${formatGdes(itemTotal)}</strong>  
+        </div>`;  
+}).join("");  
+
+body.innerHTML += `  
+    <div class="cart-total">  
+        <span>Total</span><span>${formatGdes(total)}</span>  
+    </div>  
+    <button class="btn-primary full-btn" style="margin-top:15px"  
+        onclick="checkoutCart()">Commander</button>`;  
+
+modal.classList.add("active");
+
 }
 
 function removeCartItem(index) {
-    const cart = getCart();
+const cart = getCart();
+if (index < 0 || index >= cart.length) return;
 
-    if (index < 0 || index >= cart.length) {
-        return;
-    }
+cart.splice(index, 1);  
+setJSON(STORAGE_KEYS.CART, cart);  
+updateCartBadge();  
+openCartModal();
 
-    cart.splice(index, 1);
-    setJSON(STORAGE_KEYS.CART, cart);
-    updateCartBadge();
-    openCartModal();
 }
 
 function checkoutCart() {
-    showToast(
-        "Ouvri yon pwodwi, chwazi opsyon an epi antre ID tranzaksyon an pou pase kòmand.",
-        "info"
-    );
+if (!getCart().length) {
+showToast("Your cart is empty.");
+return;
+}
+
+showToast(  
+    "Open a product, select its package, and enter its transaction ID to place an order."  
+);
+
 }
 
 function closeCartModal() {
-    document.getElementById("cartModal")?.classList.remove("active");
-    document.getElementById("cartModal")?.classList.add("hidden");
+document.getElementById("cartModal")?.classList.remove("active");
 }
 
 /* =========================================================
-   WALLET / NATCASH RECHARGE
+WALLET & NATCASH RECHARGE
 ========================================================= */
 
 function renderWallet() {
-    const user = getCurrentUser();
+const user = getCurrentUser();
+const balanceElement = document.getElementById("userWalletBalance");
 
-    if (!user) {
-        return;
-    }
+if (!user || !balanceElement) return;  
 
-    const wallets = getJSON(STORAGE_KEYS.WALLETS, {});
-    const userKey = String(user.id || user.email || user.whatsapp || "");
-    const wallet = wallets[userKey] || { balance: 0, transactions: [] };
+const wallets = getJSON(STORAGE_KEYS.WALLETS, {});  
+const balance = Number(wallets[user.id] || 0);  
 
-    const balance = Number(wallet.balance) || 0;
+balanceElement.textContent = balance.toLocaleString("en-US") + " Gdes";
 
-    const balanceElement = document.getElementById("walletBalance");
-    if (balanceElement) {
-        balanceElement.textContent = `${formatGdes(balance)} Gdes`;
-    }
-
-    const transactions = Array.isArray(wallet.transactions)
-        ? wallet.transactions
-        : [];
-
-    const transactionContainer =
-        document.getElementById("walletTransactions");
-
-    if (transactionContainer) {
-        transactionContainer.innerHTML = transactions.length
-            ? transactions.map(transaction => `
-                <div class="transaction-item">
-                    <strong>${escapeHTML(transaction.type || "Transaction")}</strong>
-                    <span>${formatGdes(Number(transaction.amount) || 0)} Gdes</span>
-                    <small>${escapeHTML(transaction.status || "En attente")}</small>
-                </div>
-            `).join("")
-            : `<p class="empty-state">Pa gen tranzaksyon pou kounye a.</p>`;
-    }
 }
 
 async function submitWalletRecharge() {
-    const user = getCurrentUser();
+if (rechargeSubmitting) return;
 
-    if (!user) {
-        showToast("Konekte anvan ou fè yon depo.", "error");
-        return;
-    }
+const user = getCurrentUser();  
 
-    const amountInput = document.getElementById("walletAmount");
-    const txnInput = document.getElementById("walletTxnId");
+if (!user) {  
+    showToast("Please sign in first.");  
+    return;  
+}  
 
-    const amount = Number(amountInput?.value);
-    const txn = (txnInput?.value || "").trim();
+const amountInput = document.getElementById("rechargeAmount");  
+const txnInput = document.getElementById("walletTxnId");  
 
-    if (!Number.isInteger(amount) || amount < 150) {
-        showToast("Montan minimòm depo a se 150 Gdes.", "error");
-        return;
-    }
+const amount = Number(amountInput?.value || 0);  
+const txn = String(txnInput?.value || "").trim();  
 
-    if (!/^\d{10,20}$/.test(txn)) {
-        showToast("ID tranzaksyon an dwe gen 10 a 20 chif.", "error");
-        return;
-    }
+if (!Number.isFinite(amount) || amount < 150) {  
+    showToast("Minimum recharge amount is 150 Gdes.");  
+    return;  
+}  
 
-    if (isTransactionUsed(txn)) {
-        showToast("ID tranzaksyon sa a deja anrejistre.", "error");
-        return;
-    }
+if (!Number.isSafeInteger(amount)) {  
+    showToast("Enter a valid whole-number amount.");  
+    return;  
+}  
 
-    const button = document.querySelector(
-        '[onclick*="submitWalletRecharge"]'
-    );
-    const originalText = button?.textContent || "Soumettre";
+if (!validateTransactionOrShowMessage(txn)) {  
+    if (txnInput && !/^\d{10,20}$/.test(txn)) txnInput.focus();  
+    return;  
+}  
 
-    if (button) {
-        button.disabled = true;
-        button.textContent = "Envoi...";
-    }
+const customerName = [  
+    user.firstName || "",  
+    user.lastName || ""  
+].join(" ").trim() || user.email || "Customer";  
 
-    try {
-        const customerName = [
-            user.firstName || user.firstname || "",
-            user.lastName || user.lastname || ""
-        ].filter(Boolean).join(" ") || user.name || user.email || "Client";
+const submitButton = document.querySelector(  
+    '[onclick*="submitWalletRecharge"]'  
+);  
 
-        const result = await sebyApiPost("/api/recharges", {
-            customerName,
-            phone: user.whatsapp || "",
-            amount,
-            transactionId: txn
-        });
+rechargeSubmitting = true;  
 
-        if (!result || result.ok !== true || !result.recharge) {
-            throw new Error(
-                result?.message || "Le serveur n'a pas confirmé le dépôt."
-            );
-        }
+if (submitButton) {  
+    submitButton.disabled = true;  
+    submitButton.textContent = "Envoi...";  
+}  
 
-        const recharge = result.recharge;
-        const recharges = getJSON(STORAGE_KEYS.RECHARGES, []);
+try {  
+    const result = await sebyApiPost("/api/recharges", {  
+        customerName,  
+        phone: user.whatsapp || "",  
+        amount,  
+        transactionId: txn  
+    });  
 
-        recharges.unshift({
-            id: generateId(),
-            remoteId: String(recharge.id || recharge._id || ""),
-            userId: String(user.id || user.email || user.whatsapp || ""),
-            customerName,
-            phone: user.whatsapp || "",
-            amount,
-            transactionId: txn,
-            status: recharge.status || "En attente",
-            createdAt: recharge.createdAt || new Date().toISOString()
-        });
+    if (result.ok !== true || !result.recharge) {  
+        throw new Error(  
+            result.error || "Sèvè a pa konfime demann depo a."  
+        );  
+    }  
 
-        setJSON(STORAGE_KEYS.RECHARGES, recharges);
-        markTransactionUsed(txn);
+    const serverRecharge = result.recharge;  
+    const recharges = getJSON(STORAGE_KEYS.RECHARGES, []);  
 
-        if (amountInput) amountInput.value = "";
-        if (txnInput) txnInput.value = "";
+    recharges.push({  
+        id: generateId(),  
+        remoteRechargeId: serverRecharge.id || serverRecharge._id || "",  
+        userId: user.id,  
+        customer: {  
+            firstName: user.firstName || "",  
+            lastName: user.lastName || "",  
+            email: user.email || "",  
+            whatsapp: user.whatsapp || ""  
+        },  
+        amount,  
+        transactionId: txn,  
+        status: serverRecharge.status || "En attente",  
+        createdAt: serverRecharge.createdAt || new Date().toISOString()  
+    });  
 
-        showToast(
-            "Demann depo a voye. Li rete tann administratè a verifye peman an.",
-            "success"
-        );
+    setJSON(STORAGE_KEYS.RECHARGES, recharges);  
+    markTransactionUsed(txn);  
 
-        renderWallet();
-    } catch (error) {
-        console.error("SEBY wallet recharge error:", error);
-        showToast(
-            error?.message || "Nou pa t kapab voye demann depo a.",
-            "error"
-        );
-    } finally {
-        if (button) {
-            button.disabled = false;
-            button.textContent = originalText;
-        }
-    }
+    if (amountInput) amountInput.value = "";  
+    if (txnInput) txnInput.value = "";  
+
+    showToast("Demann depo a voye. Li an atant validasyon Admin lan.");  
+} catch (error) {  
+    console.error("SEBY recharge submission failed:", error);  
+    showToast(error.message || "Depo a pa pase. Eseye ankò.");  
+} finally {  
+    rechargeSubmitting = false;  
+
+    if (submitButton) {  
+        submitButton.disabled = false;  
+        submitButton.textContent = "Confirmer le dépôt";  
+    }  
+}
+
 }
 
 /* =========================================================
-   ORDER STATUS HELPERS
+ORDERS DISPLAY — LIVE RENDER API SYNC
 ========================================================= */
 
 function normalizeOrderStatus(status) {
-    return String(status || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .trim();
+return String(status || "")
+.normalize("NFD")
+.replace(/[\u0300-\u036f]/g, "")
+.toLowerCase()
+.replace(/[_-]+/g, " ")
+.trim();
 }
 
 function statusLabel(status) {
-    const normalized = normalizeOrderStatus(status);
+const value = normalizeOrderStatus(status);
 
-    if (
-        normalized.includes("refus") ||
-        normalized.includes("reject") ||
-        normalized.includes("cancel")
-    ) {
-        return "Refusée";
-    }
+if (  
+    value.includes("refus") ||  
+    value.includes("reject") ||  
+    value.includes("cancel") ||  
+    value.includes("failed")  
+) {  
+    return "Refusée";  
+}  
 
-    if (
-        normalized.includes("termine") ||
-        normalized.includes("complete") ||
-        normalized.includes("delivered")
-    ) {
-        return "Terminé";
-    }
+if (  
+    value.includes("termine") ||  
+    value.includes("complete") ||  
+    value.includes("livre")  
+) {  
+    return "Terminé";  
+}  
 
-    if (
-        normalized.includes("valid") ||
-        normalized.includes("approved") ||
-        normalized.includes("paid")
-    ) {
-        return "Validée";
-    }
+if (  
+    value.includes("valide") ||  
+    value.includes("approved") ||  
+    value.includes("success")  
+) {  
+    return "Validée";  
+}  
 
-    if (
-        normalized.includes("cours") ||
-        normalized.includes("process")
-    ) {
-        return "En cours";
-    }
+if (  
+    value.includes("attente") ||  
+    value.includes("pending")  
+) {  
+    return "En attente";  
+}  
 
-    return "En attente";
+if (value.includes("cours")) {  
+    return "En cours";  
+}  
+
+return status || "En attente";
+
 }
 
-/* =========================================================
-   CUSTOMER ORDERS — API SYNC
-========================================================= */
+/*
 
-let fetchingCustomerOrders = false;
+Rekipere estati yo nan baz done Render la.
 
+API a konpare imèl ak/oswa nimewo telefòn kliyan an.
+*/
 async function fetchCustomerOrders() {
-    if (fetchingCustomerOrders) {
-        return;
-    }
+if (orderRequestRunning) return;
 
-    const user = getCurrentUser();
+const user = getCurrentUser();
 
-    if (!user || (!user.email && !user.whatsapp)) {
-        return;
-    }
+if (!user || (!user.email && !user.whatsapp)) return;
 
-    fetchingCustomerOrders = true;
+orderRequestRunning = true;
 
-    try {
-        const params = new URLSearchParams();
+try {
+const params = new URLSearchParams();
 
-        if (user.email) {
-            params.set("email", user.email);
-        }
+if (user.email) {  
+     params.set("email", user.email.trim().toLowerCase());  
+ }  
 
-        if (user.whatsapp) {
-            params.set("phone", user.whatsapp);
-        }
+ if (user.whatsapp) {  
+     params.set("phone", user.whatsapp.trim());  
+ }  
 
-        const response = await fetch(
-            `${SEBY_API_BASE}/api/customer-orders?${params.toString()}`,
-            {
-                method: "GET",
-                headers: { Accept: "application/json" }
-            }
-        );
+ const response = await fetch(  
+     SEBY_API_BASE + "/api/customer-orders?" + params.toString(),  
+     {  
+         method: "GET",  
+         headers: { "Accept": "application/json" },  
+         cache: "no-store"  
+     }  
+ );  
 
-        const contentType = response.headers.get("content-type") || "";
+ if (!response.ok) {  
+     throw new Error("Customer orders API: " + response.status);  
+ }  
 
-        if (!contentType.includes("application/json")) {
-            throw new Error("Le serveur n'a pas renvoyé de JSON.");
-        }
+ const result = await response.json();  
 
-        const data = await response.json();
+ if (!Array.isArray(result)) {  
+     throw new Error("Repons kòmand sèvè a pa valab.");  
+ }  
 
-        if (!response.ok) {
-            throw new Error(data?.message || "Erreur de chargement des commandes.");
-        }
+ const currentUser = getCurrentUser();  
 
-        const remoteOrders = Array.isArray(data)
-            ? data
-            : Array.isArray(data.orders)
-                ? data.orders
-                : Array.isArray(data.data)
-                    ? data.data
-                    : [];
+ if (!currentUser || currentUser.id !== user.id) return;  
 
-        const currentUser = getCurrentUser();
+ const orders = getJSON(STORAGE_KEYS.ORDERS, []);  
 
-        if (
-            !currentUser ||
-            String(currentUser.id || currentUser.email || currentUser.whatsapp) !==
-            String(user.id || user.email || user.whatsapp)
-        ) {
-            return;
-        }
+ result.forEach(remote => {  
+     if (!remote || !remote.id) return;  
 
-        const orders = getJSON(STORAGE_KEYS.ORDERS, []);
-        const userId = String(user.id || user.email || user.whatsapp || "");
+     const remoteId = String(remote.id);  
 
-        remoteOrders.forEach(remote => {
-            const remoteId = String(remote.id || remote._id || "");
+     let existing = orders.find(order =>  
+         String(order.remoteOrderId || "") === remoteId  
+     );  
 
-            if (!remoteId) {
-                return;
-            }
+     if (!existing) {  
+         /*  
+          * Kòmand lan sou sèvè a men li pa nan localStorage.  
+          * Ajoute li pou li ka parèt nan My Orders.  
+          */  
+         existing = {  
+             id: "remote-" + remoteId,  
+             remoteOrderId: remoteId,  
+             userId: currentUser.id,  
+             productName: remote.productName || "Commande",  
+             optionLabel: "",  
+             quantity: Number(remote.quantity) || 1,  
+             price: Number(remote.amount) || 0,  
+             total: Number(remote.amount) || 0,  
+             transactionId: "",  
+             status: remote.status || "En attente",  
+             createdAt: remote.createdAt || "",  
+             updatedAt: remote.updatedAt || null  
+         };  
 
-            const existing = orders.find(order =>
-                String(order.remoteOrderId || "") === remoteId
-            );
+         orders.push(existing);  
+     } else {  
+         /*  
+          * Estati ki sou Render la ranplase ansyen estati lokal la.  
+          */  
+         existing.status = remote.status || existing.status;  
+         existing.updatedAt =  
+             remote.updatedAt || existing.updatedAt || null;  
 
-            if (existing) {
-                existing.status = remote.status || existing.status;
-                existing.updatedAt = remote.updatedAt || new Date().toISOString();
+         if (remote.createdAt) {  
+             existing.createdAt = remote.createdAt;  
+         }  
 
-                if (remote.productName || remote.product) {
-                    existing.remoteProductName =
-                        remote.productName || remote.product;
-                }
+         if (remote.productName) {  
+             existing.remoteProductName = remote.productName;  
+         }  
 
-                if (remote.amount != null) {
-                    existing.remoteAmount = Number(remote.amount);
-                }
+         if (remote.amount !== undefined && remote.amount !== null) {  
+             existing.remoteAmount = Number(remote.amount);  
+         }  
+     }  
+ });  
 
-                return;
-            }
+ setJSON(STORAGE_KEYS.ORDERS, orders);  
 
-            orders.unshift({
-                id: generateId(),
-                remoteOrderId: remoteId,
-                userId,
-                customerName: remote.customerName || user.name || "",
-                customerEmail: remote.customerEmail || user.email || "",
-                customerPhone: remote.customerPhone || user.whatsapp || "",
-                productName: remote.productName || remote.product || "Commande",
-                amount: Number(remote.amount) || 0,
-                remoteAmount: Number(remote.amount) || 0,
-                quantity: Number(remote.quantity) || 1,
-                status: remote.status || "En attente",
-                createdAt: remote.createdAt || remote.created_at ||
-                    new Date().toISOString()
-            });
-        });
+ renderOrders({ skipRemote: true });
 
-        setJSON(STORAGE_KEYS.ORDERS, orders);
-        renderOrders({ skipRemote: true });
-    } catch (error) {
-        console.warn("SEBY customer orders sync:", error);
-    } finally {
-        fetchingCustomerOrders = false;
-    }
+} catch (error) {
+console.warn(
+"My Orders pa t kapab rafrechi:",
+error.message
+);
+} finally {
+orderRequestRunning = false;
+}
 }
 
-let orderPollingTimer = null;
 
 function startOrderPolling() {
-    stopOrderPolling();
+stopOrderPolling();
 
-    if (!getCurrentUser()) {
-        return;
-    }
+if (!getCurrentUser()) return;  
 
-    fetchCustomerOrders();
+fetchCustomerOrders();  
 
-    orderPollingTimer = setInterval(() => {
-        if (!getCurrentUser()) {
-            stopOrderPolling();
-            return;
-        }
+orderRefreshTimer = setInterval(() => {  
+    if (getCurrentUser()) {  
+        fetchCustomerOrders();  
+    } else {  
+        stopOrderPolling();  
+    }  
+}, 15000);
 
-        fetchCustomerOrders();
-    }, 15000);
 }
 
 function stopOrderPolling() {
-    if (orderPollingTimer) {
-        clearInterval(orderPollingTimer);
-        orderPollingTimer = null;
-    }
+if (orderRefreshTimer) {
+clearInterval(orderRefreshTimer);
+orderRefreshTimer = null;
+}
 }
 
 function renderOrders(options = {}) {
-    const container = document.getElementById("ordersList");
+const list = document.getElementById("ordersList");
+const user = getCurrentUser();
 
-    if (!container) {
-        return;
-    }
+if (!list || !user) return;  
 
-    const user = getCurrentUser();
+if (!options.skipRemote) {  
+    fetchCustomerOrders();  
+}  
 
-    if (!user) {
-        container.innerHTML = `<p class="empty-state">Konekte pou wè kòmand ou yo.</p>`;
-        return;
-    }
+const orders = getJSON(STORAGE_KEYS.ORDERS, []);  
 
-    const userId = String(user.id || user.email || user.whatsapp || "");
-    const orders = getJSON(STORAGE_KEYS.ORDERS, []);
+const userOrders = orders.filter(order =>  
+    order.userId === user.id  
+);  
 
-    const customerOrders = orders.filter(order =>
-        String(order.userId || "") === userId ||
-        (
-            !order.userId &&
-            (
-                (user.email && order.customerEmail === user.email) ||
-                (user.whatsapp && order.customerPhone === user.whatsapp)
-            )
-        )
-    );
+if (!userOrders.length) {  
+    list.innerHTML = `  
+        <div class="empty-state">  
+            <i class="fa-solid fa-bag-shopping"></i>  
+            <p>No orders yet.</p>  
+        </div>`;  
+    return;  
+}  
 
-    if (!options.skipRemote) {
-        fetchCustomerOrders();
-    }
+list.innerHTML = userOrders.slice().reverse().map(order => {  
+    const status = statusLabel(order.status);  
 
-    if (customerOrders.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>Ou poko gen kòmand.</p>
-            </div>
-        `;
-        return;
-    }
+    const statusClass =  
+        status === "Validée" ? "validated" :  
+        status === "Terminé" ? "completed" :  
+        status === "Refusée" ? "rejected" :  
+        status === "En attente" ? "pending" :  
+        "in-progress";  
 
-    container.innerHTML = customerOrders.map(order => {
-        const productName =
-            order.remoteProductName ||
-            order.productName ||
-            "Commande";
+    const displayedTotal =  
+        order.remoteAmount !== undefined  
+            ? order.remoteAmount  
+            : order.total;  
 
-        const amount = order.remoteAmount != null
-            ? Number(order.remoteAmount)
-            : Number(order.total ?? order.amount) || 0;
+    return `  
+        <div class="order-card">  
+            <h3>${escapeHTML(order.remoteProductName || order.productName || "Commande")}</h3>  
 
-        const status = statusLabel(order.status);
-        const statusClass = normalizeOrderStatus(status)
-            .replace(/\s+/g, "-");
+            ${  
+                order.optionLabel  
+                    ? `<p>Offer: ${escapeHTML(order.optionLabel)}</p>`  
+                    : ""  
+            }  
 
-        const date = order.createdAt
-            ? new Date(order.createdAt).toLocaleString("fr-FR")
-            : "Date inconnue";
+            <p>Quantity: ${Number(order.quantity) || 1}</p>  
 
-        return `
-            <article class="order-card">
-                <div class="order-card-header">
-                    <strong>${escapeHTML(productName)}</strong>
-                    <span class="order-status ${escapeHTML(statusClass)}">
-                        ${escapeHTML(status)}
-                    </span>
-                </div>
+            <p>  
+                Total:  
+                <strong>${formatGdes(displayedTotal)}</strong>  
+            </p>  
 
-                <p>Quantité : ${Number(order.quantity) || 1}</p>
-                <p>Total : ${formatGdes(amount)} Gdes</p>
-                ${order.transactionId
-                    ? `<p>ID transaction : ${escapeHTML(order.transactionId)}</p>`
-                    : ""}
-                <small>${escapeHTML(date)}</small>
-            </article>
-        `;
-    }).join("");
+            ${  
+                order.transactionId  
+                    ? `<p>Transaction ID: ${escapeHTML(order.transactionId)}</p>`  
+                    : ""  
+            }  
+
+            <p>Date: ${escapeHTML(  
+                order.createdAt  
+                    ? new Date(order.createdAt).toLocaleString()  
+                    : ""  
+            )}</p>  
+
+            <span class="status ${statusClass}">  
+                ${escapeHTML(status)}  
+            </span>  
+        </div>`;  
+}).join("");
+
 }
 
 /* =========================================================
-   CUSTOMER PROFILE
+PROFILE
 ========================================================= */
 
 function loadProfile() {
-    const user = getCurrentUser();
-    const container = document.getElementById("profileContent");
+const user = getCurrentUser();
+const content = document.getElementById("profileContent");
 
-    if (!container) {
-        return;
-    }
+if (!user || !content) return;  
 
-    if (!user) {
-        container.innerHTML = `<p>Konekte pou wè pwofil ou.</p>`;
-        return;
-    }
+content.innerHTML = `  
+    <div class="profile-row">  
+        <span class="profile-label">First Name</span>  
+        <span class="profile-value">${escapeHTML(user.firstName)}</span>  
+    </div>  
+    <div class="profile-row">  
+        <span class="profile-label">Last Name</span>  
+        <span class="profile-value">${escapeHTML(user.lastName)}</span>  
+    </div>  
+    <div class="profile-row">  
+        <span class="profile-label">WhatsApp</span>  
+        <span class="profile-value">${escapeHTML(user.whatsapp)}</span>  
+    </div>  
+    <div class="profile-row">  
+        <span class="profile-label">Email</span>  
+        <span class="profile-value">${escapeHTML(user.email)}</span>  
+    </div>  
+    <div class="profile-row">  
+        <span class="profile-label">Customer ID</span>  
+        <span class="profile-value">${escapeHTML(user.id)}</span>  
+    </div>`;
 
-    const firstName = user.firstName || user.firstname || "";
-    const lastName = user.lastName || user.lastname || "";
-
-    container.innerHTML = `
-        <div class="profile-details">
-            <p><strong>Prénom :</strong> ${escapeHTML(firstName)}</p>
-            <p><strong>Nom :</strong> ${escapeHTML(lastName)}</p>
-            <p><strong>WhatsApp :</strong> ${escapeHTML(user.whatsapp || "")}</p>
-            <p><strong>E-mail :</strong> ${escapeHTML(user.email || "")}</p>
-            <p><strong>ID client :</strong> ${escapeHTML(String(user.id || ""))}</p>
-        </div>
-    `;
 }
 
 /* =========================================================
-   NOTIFICATIONS — LOCAL + REMOTE
+CUSTOMER NOTIFICATIONS — RENDER API
 ========================================================= */
 
-let remoteNotifications = [];
-let fetchingCustomerNotifications = false;
-let notificationPollingTimer = null;
-
 function getLocalNotifications() {
-    const notifications = getJSON(STORAGE_KEYS.NOTIFICATIONS, []);
-    return Array.isArray(notifications) ? notifications : [];
+return getJSON(STORAGE_KEYS.NOTIFICATIONS, []);
 }
 
 function getNotifications() {
-    const local = getLocalNotifications();
-    const remote = Array.isArray(remoteNotifications)
-        ? remoteNotifications
-        : [];
+const local = getLocalNotifications();
+const remote = Array.isArray(remoteNotifications) ? remoteNotifications : [];
 
-    const combined = [...remote];
+const combined = [...remote, ...local];  
+const seen = new Set();  
 
-    local.forEach(item => {
-        const id = String(item.id || item._id || "");
+return combined.filter(item => {  
+    const key = String(  
+        item.id || item._id || item.title + "|" + item.message  
+    );  
 
-        if (!combined.some(remoteItem =>
-            String(remoteItem.id || remoteItem._id || "") === id
-        )) {
-            combined.push(item);
-        }
-    });
+    if (seen.has(key)) return false;  
+    seen.add(key);  
+    return true;  
+});
 
-    return combined;
 }
 
 function notificationRead(item) {
-    return Boolean(item.read || item.isRead || item.readAt);
+return item.read === true ||
+item.isRead === true ||
+item.status === "read" ||
+item.readAt != null;
 }
 
 function notificationTitle(item) {
-    return item.title || item.subject || "Notification SEBY UNIVERSE";
+return item.title || item.subject || item.heading || "SEBY UNIVERSE";
 }
 
 function notificationMessage(item) {
-    return item.message || item.body || item.description || "";
+return item.message || item.body || item.text || item.content || "";
 }
 
 function notificationDate(item) {
-    const dateValue = item.createdAt || item.created_at || item.date;
+const value = item.createdAt || item.created_at || item.date || item.timestamp;
+if (!value) return "";
 
-    if (!dateValue) {
-        return "";
-    }
+const date = new Date(value);  
+return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
 
-    const date = new Date(dateValue);
-
-    return Number.isNaN(date.getTime())
-        ? ""
-        : date.toLocaleString("fr-FR");
 }
 
 function updateNotificationBadge() {
-    const unread = getNotifications().filter(item => !notificationRead(item)).length;
+const badge = document.getElementById("notifBadge");
+if (!badge) return;
 
-    ["notificationBadge", "notifBadge", "notification-count"].forEach(id => {
-        const element = document.getElementById(id);
+const unread = getNotifications().filter(  
+    item => !notificationRead(item)  
+).length;  
 
-        if (element) {
-            element.textContent = String(unread);
-            element.style.display = unread > 0 ? "" : "none";
-        }
-    });
+badge.textContent = unread > 99 ? "99+" : String(unread);  
+badge.style.display = unread > 0 ? "" : "none";
+
 }
 
 function getNotificationContainer() {
-    return document.getElementById("notifModalBody")
-        || document.getElementById("notificationList")
-        || document.getElementById("customerNotificationsList")
-        || document.querySelector("#notifModal .seby-notification-list");
+const candidates = [
+"notifModalBody",
+"notificationList",
+"customerNotificationsList"
+];
+
+for (const id of candidates) {  
+    const element = document.getElementById(id);  
+    if (element) return element;  
+}  
+
+const modal = document.getElementById("notifModal");  
+if (!modal) return null;  
+
+let container = modal.querySelector(".seby-notification-list");  
+
+if (!container) {  
+    container = document.createElement("div");  
+    container.className = "seby-notification-list";  
+    modal.appendChild(container);  
+}  
+
+return container;
+
 }
 
 function renderCustomerNotifications() {
-    let container = getNotificationContainer();
+const container = getNotificationContainer();
 
-    if (!container) {
-        const modal = document.getElementById("notifModal");
+if (!container) {  
+    updateNotificationBadge();  
+    return;  
+}  
 
-        if (!modal) {
-            updateNotificationBadge();
-            return;
-        }
+const notifications = getNotifications();  
 
-        container = document.createElement("div");
-        container.className = "seby-notification-list";
-        modal.appendChild(container);
-    }
+if (!notifications.length) {  
+    container.innerHTML = `  
+        <div class="empty-state">  
+            <i class="fa-regular fa-bell"></i>  
+            <p>No notifications yet.</p>  
+        </div>`;  
 
-    const notifications = getNotifications();
+    updateNotificationBadge();  
+    return;  
+}  
 
-    if (notifications.length === 0) {
-        container.innerHTML = `<p class="empty-state">Pa gen notifikasyon pou kounye a.</p>`;
-        updateNotificationBadge();
-        return;
-    }
+container.innerHTML = notifications.map(item => {  
+    const id = item.id || item._id || "";  
 
-    container.innerHTML = notifications.map(item => {
-        const id = String(item.id || item._id || "");
-        const read = notificationRead(item);
-        const isRemote = remoteNotifications.some(remote =>
-            String(remote.id || remote._id || "") === id
-        );
+    const isRemote = remoteNotifications.some(remote =>  
+        String(remote.id || remote._id) === String(id)  
+    );  
 
-        return `
-            <article class="notification-card ${read ? "read" : "unread"}">
-                <strong>${escapeHTML(notificationTitle(item))}</strong>
-                <p>${escapeHTML(notificationMessage(item))}</p>
-                <small>${escapeHTML(notificationDate(item))}</small>
-                ${read ? "" : `
-                    <button
-                        type="button"
-                        onclick="markCustomerNotificationRead('${escapeHTML(id)}', ${isRemote})"
-                    >
-                        Marquer comme lu
-                    </button>
-                `}
-            </article>
-        `;
-    }).join("");
+    return `  
+        <article class="seby-notification-item ${  
+            notificationRead(item) ? "is-read" : "is-unread"  
+        }">  
+            <div class="seby-notification-heading">  
+                <strong>${escapeHTML(notificationTitle(item))}</strong>  
+                ${notificationRead(item)  
+                    ? ""  
+                    : '<span class="seby-notification-dot"></span>'}  
+            </div>  
+            <p>${escapeHTML(notificationMessage(item))}</p>  
+            ${notificationDate(item)  
+                ? `<small>${escapeHTML(notificationDate(item))}</small>`  
+                : ""}  
+            ${!notificationRead(item) && id  
+                ? `<button type="button" class="seby-notification-read"  
+                    onclick="markCustomerNotificationRead('${escapeHTML(id)}', ${isRemote})">  
+                    Mark as read  
+                   </button>`  
+                : ""}  
+        </article>`;  
+}).join("");  
 
-    updateNotificationBadge();
+updateNotificationBadge();
+
 }
 
 async function fetchCustomerNotifications() {
-    if (fetchingCustomerNotifications) {
-        return;
-    }
+const user = getCurrentUser();
 
-    const user = getCurrentUser();
+if (!user || !user.email || notificationRequestRunning) return;  
 
-    if (!user?.email) {
-        renderCustomerNotifications();
-        return;
-    }
+notificationRequestRunning = true;  
 
-    fetchingCustomerNotifications = true;
+try {  
+    const url = SEBY_API_BASE +  
+        "/api/customer-notifications?email=" +  
+        encodeURIComponent(user.email);  
 
-    try {
-        const response = await fetch(
-            `${SEBY_API_BASE}/api/customer-notifications?email=${encodeURIComponent(user.email)}`,
-            { headers: { Accept: "application/json" } }
-        );
+    const response = await fetch(url, {  
+        method: "GET",  
+        headers: { "Accept": "application/json" },  
+        cache: "no-store"  
+    });  
 
-        const contentType = response.headers.get("content-type") || "";
+    if (!response.ok) {  
+        throw new Error("Notifications API returned " + response.status);  
+    }  
 
-        if (!contentType.includes("application/json")) {
-            throw new Error("Réponse de notification non valide.");
-        }
+    const result = await response.json();  
 
-        const data = await response.json();
+    const notifications = Array.isArray(result)  
+        ? result  
+        : Array.isArray(result.notifications)  
+            ? result.notifications  
+            : Array.isArray(result.data)  
+                ? result.data  
+                : [];  
 
-        if (!response.ok) {
-            throw new Error(data?.message || "Erreur de notification.");
-        }
+    remoteNotifications = notifications.filter(item => {  
+        const targetEmail = String(  
+            item.email || item.customerEmail || item.recipientEmail || ""  
+        ).toLowerCase();  
 
-        const list = Array.isArray(data)
-            ? data
-            : Array.isArray(data.notifications)
-                ? data.notifications
-                : Array.isArray(data.data)
-                    ? data.data
-                    : [];
+        const audience = String(  
+            item.audience || item.target || ""  
+        ).toLowerCase();  
 
-        remoteNotifications = list.filter(item => {
-            const target = String(
-                item.email || item.customerEmail || item.targetEmail || ""
-            ).toLowerCase();
+        return !targetEmail ||  
+            targetEmail === user.email.toLowerCase() ||  
+            audience === "all";  
+    });  
 
-            const audience = String(item.audience || "").toLowerCase();
+    renderCustomerNotifications();  
+} catch (error) {  
+    console.warn(  
+        "SEBY notifications could not be loaded:",  
+        error.message  
+    );  
 
-            return !target ||
-                target === user.email.toLowerCase() ||
-                audience === "all";
-        });
-
-        renderCustomerNotifications();
-    } catch (error) {
-        console.warn("SEBY notification sync:", error);
-        renderCustomerNotifications();
-    } finally {
-        fetchingCustomerNotifications = false;
-    }
+    updateNotificationBadge();  
+} finally {  
+    notificationRequestRunning = false;  
 }
 
-async function markCustomerNotificationRead(id, isRemote = false) {
-    const user = getCurrentUser();
-
-    if (!user) {
-        return;
-    }
-
-    const targetId = String(id);
-
-    if (isRemote) {
-        try {
-            const response = await fetch(
-                `${SEBY_API_BASE}/api/customer-notifications/${encodeURIComponent(targetId)}`,
-                {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        email: user.email || "",
-                        phone: user.whatsapp || "",
-                        read: true
-                    })
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error("La notification n'a pas pu être mise à jour.");
-            }
-
-            remoteNotifications = remoteNotifications.map(item => {
-                const itemId = String(item.id || item._id || "");
-
-                return itemId === targetId
-                    ? { ...item, read: true }
-                    : item;
-            });
-        } catch (error) {
-            console.warn("SEBY mark notification read:", error);
-            showToast("Nou pa t kapab make notifikasyon an kòm li.", "error");
-            return;
-        }
-    } else {
-        const local = getLocalNotifications().map(item => {
-            const itemId = String(item.id || item._id || "");
-
-            return itemId === targetId
-                ? { ...item, read: true }
-                : item;
-        });
-
-        setJSON(STORAGE_KEYS.NOTIFICATIONS, local);
-    }
-
-    renderCustomerNotifications();
 }
 
-function openNotifModal() {
-    const modal = document.getElementById("notifModal");
+async function markCustomerNotificationRead(id, isRemote) {
+const user = getCurrentUser();
+if (!user) return;
 
-    if (!modal) {
-        showToast("Fenèt notifikasyon an pa jwenn.", "error");
-        return;
-    }
+if (isRemote) {  
+    try {  
+        const response = await fetch(  
+            SEBY_API_BASE + "/api/customer-notifications/" +  
+            encodeURIComponent(id),  
+            {  
+                method: "PATCH",  
+                headers: {  
+                    "Content-Type": "application/json",  
+                    "Accept": "application/json"  
+                },  
+                body: JSON.stringify({  
+                    email: user.email,  
+                    phone: user.whatsapp,  
+                    read: true  
+                })  
+            }  
+        );  
 
-    modal.classList.add("active");
-    modal.classList.remove("hidden");
+        if (!response.ok) {  
+            throw new Error("Could not mark remote notification as read.");  
+        }  
 
-    renderCustomerNotifications();
-    fetchCustomerNotifications();
+        remoteNotifications = remoteNotifications.map(item => {  
+            const itemId = String(item.id || item._id || "");  
+
+            return itemId === String(id)  
+                ? { ...item, read: true }  
+                : item;  
+        });  
+    } catch (error) {  
+        console.warn("Remote read status was not saved:", error.message);  
+        showToast("Could not update the notification. Try again later.");  
+        return;  
+    }  
+} else {  
+    const local = getLocalNotifications().map(item => {  
+        const itemId = String(item.id || item._id || "");  
+
+        return itemId === String(id)  
+            ? { ...item, read: true }  
+            : item;  
+    });  
+
+    setJSON(STORAGE_KEYS.NOTIFICATIONS, local);  
+}  
+
+renderCustomerNotifications();
+
+}
+
+async function openNotifModal() {
+const modal = document.getElementById("notifModal");
+if (!modal) return;
+
+modal.classList.add("active");  
+renderCustomerNotifications();  
+await fetchCustomerNotifications();  
+renderCustomerNotifications();
+
 }
 
 function closeNotifModal() {
-    document.getElementById("notifModal")?.classList.remove("active");
-    document.getElementById("notifModal")?.classList.add("hidden");
+document.getElementById("notifModal")?.classList.remove("active");
 }
 
 function startNotificationPolling() {
-    stopNotificationPolling();
+stopNotificationPolling();
 
-    if (!getCurrentUser()) {
-        return;
-    }
+if (getCurrentUser()) {  
+    fetchCustomerNotifications();  
 
-    fetchCustomerNotifications();
+    notificationRefreshTimer = setInterval(() => {  
+        if (getCurrentUser()) {  
+            fetchCustomerNotifications();  
+        } else {  
+            stopNotificationPolling();  
+        }  
+    }, 45000);  
+}
 
-    notificationPollingTimer = setInterval(() => {
-        if (!getCurrentUser()) {
-            stopNotificationPolling();
-            return;
-        }
-
-        fetchCustomerNotifications();
-    }, 45000);
 }
 
 function stopNotificationPolling() {
-    if (notificationPollingTimer) {
-        clearInterval(notificationPollingTimer);
-        notificationPollingTimer = null;
-    }
+if (notificationRefreshTimer) {
+clearInterval(notificationRefreshTimer);
+notificationRefreshTimer = null;
+}
 }
 
 /* =========================================================
-   AUTH MODAL COMPATIBILITY
+AUTH MODAL COMPATIBILITY
 ========================================================= */
 
 function switchAuthTab(type) {
-    const isRegister = type === "register";
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const loginBtn = document.getElementById("tabLoginBtn");
+const registerBtn = document.getElementById("tabRegisterBtn");
 
-    const loginForm = document.getElementById("loginForm");
-    const registerForm = document.getElementById("registerForm");
-
-    if (loginForm) {
-        loginForm.style.display = isRegister ? "none" : "";
-    }
-
-    if (registerForm) {
-        registerForm.style.display = isRegister ? "" : "none";
-    }
-
-    document.getElementById("loginTab")?.classList.toggle("active", !isRegister);
-    document.getElementById("registerTab")?.classList.toggle("active", isRegister);
+if (type === "register") {  
+    loginForm?.classList.remove("active");  
+    registerForm?.classList.add("active");  
+    loginBtn?.classList.remove("active");  
+    registerBtn?.classList.add("active");  
+} else {  
+    registerForm?.classList.remove("active");  
+    loginForm?.classList.add("active");  
+    registerBtn?.classList.remove("active");  
+    loginBtn?.classList.add("active");  
 }
 
-function socialAuth(provider) {
-    showToast(
-        `${provider} login requires Google Identity configuration.`,
-        "info"
-    );
 }
 
 /* =========================================================
-   PRO MODAL
+GOOGLE / SOCIAL AUTH PLACEHOLDER
+========================================================= */
+
+function socialAuth(provider) {
+showToast(provider + " login requires Google Identity configuration.");
+}
+
+/* =========================================================
+PRO MODAL
 ========================================================= */
 
 function openProModal() {
-    const modal = document.getElementById("proModal");
-
-    if (modal) {
-        modal.classList.add("active");
-        modal.classList.remove("hidden");
-    } else {
-        showToast("Fonksyon Pro a poko konfigire.", "info");
-    }
+document.getElementById("proModal")?.classList.add("active");
 }
 
 function closeProModal() {
-    document.getElementById("proModal")?.classList.remove("active");
-    document.getElementById("proModal")?.classList.add("hidden");
+document.getElementById("proModal")?.classList.remove("active");
 }
 
 /* =========================================================
-   CLIPBOARD
+COPY
 ========================================================= */
 
-async function copyToClipboard(text) {
-    const value = String(text ?? "");
+function copyToClipboard(text) {
+if (navigator.clipboard && window.isSecureContext) {
+navigator.clipboard.writeText(String(text))
+.then(() => showToast("Copied."))
+.catch(() => showToast("Copy failed."));
+return;
+}
 
-    try {
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(value);
-        } else {
-            const textarea = document.createElement("textarea");
+const textarea = document.createElement("textarea");  
+textarea.value = String(text);  
+textarea.style.position = "fixed";  
+textarea.style.opacity = "0";  
+document.body.appendChild(textarea);  
+textarea.select();  
 
-            textarea.value = value;
-            textarea.style.position = "fixed";
-            textarea.style.opacity = "0";
+try {  
+    document.execCommand("copy");  
+    showToast("Copied.");  
+} catch (_) {  
+    showToast("Copy failed.");  
+} finally {  
+    textarea.remove();  
+}
 
-            document.body.appendChild(textarea);
-            textarea.select();
-
-            const copied = document.execCommand("copy");
-            textarea.remove();
-
-            if (!copied) {
-                throw new Error("Copy failed");
-            }
-        }
-
-        showToast("Kopye avèk siksè.", "success");
-    } catch (error) {
-        console.error("SEBY clipboard error:", error);
-        showToast("Nou pa t kapab kopye tèks la.", "error");
-    }
 }
 
 /* =========================================================
-   LOGOUT / ACCOUNT INFORMATION
+LOGOUT & ACCOUNT INFORMATION
 ========================================================= */
 
 function logout() {
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+remoteNotifications = [];
 
-    remoteNotifications = [];
+stopOrderPolling();  
+stopNotificationPolling();  
 
-    stopOrderPolling();
-    stopNotificationPolling();
+showAuthGate();  
+switchGateAuth("login");  
+updateNotificationBadge();  
 
-    showAuthGate();
-    switchGateAuth("login");
-    updateNotificationBadge();
+showToast("You have been signed out.");
 
-    showToast("Ou dekonekte sou kont ou.", "success");
 }
 
 function openAccountInformation() {
-    loadProfile();
-
-    const profilePage = document.getElementById("profile-page");
-
-    if (profilePage) {
-        showPage("profile-page");
-    } else {
-        showToast("Paj pwofil la pa jwenn.", "error");
-    }
+if (!getCurrentUser()) return;
+showPage("profile-page");
 }
 
 /* =========================================================
-   DOM READY
+EVENT LISTENERS
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-    const bindForm = (id, callback) => {
-        const form = document.getElementById(id);
+document.addEventListener("DOMContentLoaded", function () {
+const getValue = id => document.getElementById(id)?.value || "";
 
-        if (form) {
-            form.addEventListener("submit", event => {
-                event.preventDefault();
-                callback(form);
-            });
-        }
-    };
+document.getElementById("gateLoginForm")?.addEventListener(  
+    "submit",  
+    function (event) {  
+        event.preventDefault();  
 
-    bindForm("gateLoginForm", form => {
-        loginUser(
-            form.querySelector('[name="email"]')?.value
-                || document.getElementById("gateLoginEmail")?.value
-                || "",
-            form.querySelector('[name="password"]')?.value
-                || document.getElementById("gateLoginPassword")?.value
-                || ""
-        );
-    });
+        loginUser(  
+            getValue("gateLoginEmail"),  
+            getValue("gateLoginPassword")  
+        );  
+    }  
+);  
 
-    bindForm("gateRegisterForm", form => {
-        registerUser({
-            firstName:
-                form.querySelector('[name="firstName"]')?.value
-                || document.getElementById("gateFirstName")?.value
-                || "",
-            lastName:
-                form.querySelector('[name="lastName"]')?.value
-                || document.getElementById("gateLastName")?.value
-                || "",
-            whatsapp:
-                form.querySelector('[name="whatsapp"]')?.value
-                || document.getElementById("gateWhatsApp")?.value
-                || "",
-            email:
-                form.querySelector('[name="email"]')?.value
-                || document.getElementById("gateRegisterEmail")?.value
-                || "",
-            password:
-                form.querySelector('[name="password"]')?.value
-                || document.getElementById("gateRegisterPassword")?.value
-                || "",
-            confirmPassword:
-                form.querySelector('[name="confirmPassword"]')?.value
-                || document.getElementById("gateConfirmPassword")?.value
-                || ""
-        });
-    });
+document.getElementById("gateRegisterForm")?.addEventListener(  
+    "submit",  
+    function (event) {  
+        event.preventDefault();  
 
-    bindForm("loginForm", form => {
-        loginUser(
-            form.querySelector('[name="email"]')?.value
-                || document.getElementById("loginEmail")?.value
-                || "",
-            form.querySelector('[name="password"]')?.value
-                || document.getElementById("loginPassword")?.value
-                || ""
-        );
-    });
+        registerUser({  
+            firstName: getValue("gateFirstName"),  
+            lastName: getValue("gateLastName"),  
+            whatsapp: getValue("gateWhatsapp"),  
+            email: getValue("gateRegisterEmail"),  
+            password: getValue("gateRegisterPassword"),  
+            confirmPassword: getValue("gateConfirmPassword")  
+        });  
+    }  
+);  
 
-    bindForm("registerForm", form => {
-        registerUser({
-            firstName:
-                form.querySelector('[name="firstName"]')?.value
-                || document.getElementById("firstName")?.value
-                || "",
-            lastName:
-                form.querySelector('[name="lastName"]')?.value
-                || document.getElementById("lastName")?.value
-                || "",
-            whatsapp:
-                form.querySelector('[name="whatsapp"]')?.value
-                || document.getElementById("registerWhatsApp")?.value
-                || "",
-            email:
-                form.querySelector('[name="email"]')?.value
-                || document.getElementById("registerEmail")?.value
-                || "",
-            password:
-                form.querySelector('[name="password"]')?.value
-                || document.getElementById("registerPassword")?.value
-                || "",
-            confirmPassword:
-                form.querySelector('[name="confirmPassword"]')?.value
-                || document.getElementById("confirmPassword")?.value
-                || ""
-        });
-    });
+document.getElementById("openMenuBtn")  
+    ?.addEventListener("click", openSidebar);  
 
-    document.getElementById("menuToggle")?.addEventListener("click", openSidebar);
-    document.getElementById("closeSidebar")?.addEventListener("click", closeSidebar);
-    document.getElementById("sidebarOverlay")?.addEventListener("click", closeSidebar);
+document.getElementById("closeMenuBtn")  
+    ?.addEventListener("click", closeSidebar);  
 
-    document.querySelectorAll(".nav-item[data-page]").forEach(item => {
-        item.addEventListener("click", () => {
-            showPage(item.dataset.page);
-        });
-    });
+document.getElementById("sidebarOverlay")  
+    ?.addEventListener("click", closeSidebar);  
 
-    document.getElementById("paramsToggle")?.addEventListener("click", toggleSettings);
-    document.getElementById("accountInformationBtn")?.addEventListener("click", openAccountInformation);
-    document.getElementById("logoutBtn")?.addEventListener("click", logout);
-    document.getElementById("goProBtn")?.addEventListener("click", openProModal);
-    document.getElementById("cartBtn")?.addEventListener("click", openCartModal);
-    document.getElementById("notifBtn")?.addEventListener("click", openNotifModal);
-    document.getElementById("profileBtn")?.addEventListener("click", () => showPage("profile-page"));
+document.querySelectorAll(".nav-item[data-page]").forEach(item => {  
+    item.addEventListener("click", function (event) {  
+        event.preventDefault();  
+        showPage(this.dataset.page);  
+    });  
+});  
 
-    document.querySelectorAll(".cat-btn[data-cat]").forEach(button => {
-        button.addEventListener("click", () => filterProducts(button.dataset.cat));
-    });
+document.getElementById("paramsToggle")  
+    ?.addEventListener("click", function (event) {  
+        event.preventDefault();  
+        toggleSettings();  
+    });  
 
-    ["walletTxnId", "productTxnId"].forEach(id => {
-        const input = document.getElementById(id);
+document.getElementById("accountInfosBtn")  
+    ?.addEventListener("click", function (event) {  
+        event.preventDefault();  
+        openAccountInformation();  
+    });  
 
-        input?.addEventListener("input", () => {
-            input.value = input.value.replace(/\D/g, "").slice(0, 20);
-        });
-    });
+document.getElementById("logoutBtn")  
+    ?.addEventListener("click", function (event) {  
+        event.preventDefault();  
+        logout();  
+    });  
 
-    const user = getCurrentUser();
+document.getElementById("goProBtn")  
+    ?.addEventListener("click", function (event) {  
+        event.preventDefault();  
+        openProModal();  
+    });  
 
-    if (user) {
-        showApp();
-        startOrderPolling();
-        startNotificationPolling();
-    } else {
-        showAuthGate();
-    }
+document.getElementById("cartBtn")  
+    ?.addEventListener("click", openCartModal);  
 
-    updateCartBadge();
-    updateNotificationBadge();
+document.getElementById("notifBtn")  
+    ?.addEventListener("click", openNotifModal);  
+
+document.getElementById("profileHeaderBtn")  
+    ?.addEventListener("click", function () {  
+        showPage("profile-page");  
+    });  
+
+document.querySelectorAll(".cat-btn").forEach(button => {  
+    button.addEventListener("click", function () {  
+        filterProducts(this.dataset.cat);  
+    });  
+});  
+
+document.getElementById("loginForm")  
+    ?.addEventListener("submit", function (event) {  
+        event.preventDefault();  
+
+        loginUser(  
+            getValue("loginEmail"),  
+            getValue("loginPassword")  
+        );  
+    });  
+
+document.getElementById("registerForm")  
+    ?.addEventListener("submit", function (event) {  
+        event.preventDefault();  
+
+        registerUser({  
+            firstName: getValue("regFirstName"),  
+            lastName: getValue("regLastName"),  
+            whatsapp: getValue("regWhatsapp"),  
+            email: getValue("regEmail"),  
+            password: getValue("regPassword"),  
+            confirmPassword: getValue("regConfirmPassword")  
+        });  
+    });  
+
+document.querySelectorAll("#walletTxnId, #productTxnId")  
+    .forEach(input => {  
+        input.setAttribute("maxlength", "20");  
+
+        input.addEventListener("input", function () {  
+            this.value = this.value.replace(/\D/g, "").slice(0, 20);  
+        });  
+    });  
+
+if (getCurrentUser()) {  
+    showApp();  
+} else {  
+    showAuthGate();  
+}  
+
+updateCartBadge();  
+updateNotificationBadge();
+
 });
 
 /* =========================================================
-   GLOBAL FUNCTIONS USED BY INLINE HTML HANDLERS
+GLOBAL FUNCTIONS FOR HTML onclick=""
 ========================================================= */
 
-Object.assign(window, {
-    toggleGatePassword,
-    switchGateAuth,
-    togglePasswordVisibility,
-    formatPhoneInput,
+window.toggleGatePassword = toggleGatePassword;
+window.switchGateAuth = switchGateAuth;
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.formatPhoneInput = formatPhoneInput;
 
-    openSidebar,
-    closeSidebar,
-    toggleSettings,
-    showPage,
-    filterProducts,
+window.openProductModal = openProductModal;
+window.closeProductModal = closeProductModal;
+window.selectProductOption = selectProductOption;
+window.updateProductQuantity = updateProductQuantity;
+window.confirmProductOrder = confirmProductOrder;
 
-    openProductModal,
-    closeProductModal,
-    selectProductOption,
-    updateProductQuantity,
-    updateProductTotal,
-    confirmProductOrder,
+window.addSelectedToCart = addSelectedToCart;
+window.openCartModal = openCartModal;
+window.closeCartModal = closeCartModal;
+window.removeCartItem = removeCartItem;
+window.checkoutCart = checkoutCart;
 
-    addSelectedToCart,
-    openCartModal,
-    closeCartModal,
-    removeCartItem,
-    checkoutCart,
+window.submitWalletRecharge = submitWalletRecharge;
 
-    renderWallet,
-    submitWalletRecharge,
+window.openNotifModal = openNotifModal;
+window.closeNotifModal = closeNotifModal;
+window.fetchCustomerNotifications = fetchCustomerNotifications;
+window.markCustomerNotificationRead = markCustomerNotificationRead;
 
-    fetchCustomerOrders,
-    renderOrders,
+window.switchAuthTab = switchAuthTab;
+window.socialAuth = socialAuth;
 
-    loadProfile,
-    openAccountInformation,
+window.openProModal = openProModal;
+window.closeProModal = closeProModal;
 
-    openNotifModal,
-    closeNotifModal,
-    fetchCustomerNotifications,
-    markCustomerNotificationRead,
+window.copyToClipboard = copyToClipboard;
+window.showPage = showPage;
+window.logout = logout;
+window.filterProducts = filterProducts;
+window.openAccountInformation = openAccountInformation;
+window.fetchCustomerOrders = fetchCustomerOrders;
+window.renderOrders = renderOrders;
 
-    switchAuthTab,
-    socialAuth,
-
-    openProModal,
-    closeProModal,
-    copyToClipboard,
-    logout
-});
