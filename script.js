@@ -1,10 +1,10 @@
 
+"use strict";
+
 /* =========================================================
    SEBY UNIVERSE — MAIN SCRIPT
-   English Default • Customer Notifications • Render API
+   Render API • Customer Orders Sync • Notifications
 ========================================================= */
-
-"use strict";
 
 /* =========================================================
    CONFIGURATION & STORAGE
@@ -35,6 +35,10 @@ let selectedQuantity = 1;
 let remoteNotifications = [];
 let notificationRequestRunning = false;
 let notificationRefreshTimer = null;
+
+let orderRequestRunning = false;
+let orderRefreshTimer = null;
+
 let orderSubmitting = false;
 let rechargeSubmitting = false;
 
@@ -179,7 +183,7 @@ function getJSON(key, fallback) {
     try {
         const value = localStorage.getItem(key);
         return value ? JSON.parse(value) : fallback;
-    } catch (error) {
+    } catch (_) {
         return fallback;
     }
 }
@@ -243,7 +247,7 @@ async function sebyApiPost(endpoint, payload) {
             body: JSON.stringify(payload),
             cache: "no-store"
         });
-    } catch (error) {
+    } catch (_) {
         throw new Error(
             "Pa ka konekte ak sèvè a. Verifye entènèt ou epi eseye ankò."
         );
@@ -254,7 +258,7 @@ async function sebyApiPost(endpoint, payload) {
 
     try {
         result = raw ? JSON.parse(raw) : {};
-    } catch (error) {
+    } catch (_) {
         throw new Error(
             "Sèvè a pa voye yon repons JSON ki valab. Verifye API Render la."
         );
@@ -271,16 +275,13 @@ async function sebyApiPost(endpoint, payload) {
 }
 
 /* =========================================================
-   TRANSACTION VALIDATION
-   Accepted length: 10–20 digits
+   TRANSACTION VALIDATION — 10 TO 20 DIGITS
 ========================================================= */
 
 function validTransactionId(id) {
     const value = String(id || "").trim();
 
-    if (!/^\d{10,20}$/.test(value)) {
-        return false;
-    }
+    if (!/^\d{10,20}$/.test(value)) return false;
 
     const used = getJSON(STORAGE_KEYS.USED_TXNS, []);
     return !used.includes(value);
@@ -358,6 +359,7 @@ function showApp() {
 
     loadProfile();
     renderOrders();
+    startOrderPolling();
     renderWallet();
     updateCartBadge();
     updateNotificationBadge();
@@ -373,6 +375,7 @@ function showAuthGate() {
     if (gate) gate.style.display = "flex";
     if (app) app.classList.remove("app-visible");
 
+    stopOrderPolling();
     stopNotificationPolling();
 }
 
@@ -551,7 +554,11 @@ function showPage(pageId) {
         item.classList.toggle("active", item.dataset.page === pageId);
     });
 
-    if (pageId === "orders-page") renderOrders();
+    if (pageId === "orders-page") {
+        renderOrders();
+        fetchCustomerOrders();
+    }
+
     if (pageId === "wallet-page") renderWallet();
     if (pageId === "profile-page") loadProfile();
 
@@ -650,7 +657,7 @@ function createProductField(field) {
                 <small class="hint-text">
                     Voye peman an nan NatCash ${NATCASH_NUMBER}.
                     Kòd la dwe gen ant 10 ak 20 chif.
-                    Si SMS konfimasyon an poko rive, tann kèk segonn,
+                    Si SMS konfimasyon an poko rive, tann,
                     verifye mesaj ou yo epi eseye ankò.
                 </small>
             </div>`;
@@ -814,9 +821,7 @@ async function confirmProductOrder() {
 
     if (!validateTransactionOrShowMessage(txn)) {
         const txnInput = document.getElementById("productTxnId");
-        if (txnInput && !/^\d{10,20}$/.test(txn)) {
-            txnInput.focus();
-        }
+        if (txnInput && !/^\d{10,20}$/.test(txn)) txnInput.focus();
         return;
     }
 
@@ -857,7 +862,7 @@ async function confirmProductOrder() {
             customerEmail: user.email || email,
             amount: total,
             quantity,
-            description: descriptionParts.join(" | ")
+            description
         });
 
         if (result.ok !== true || !result.order) {
@@ -871,7 +876,7 @@ async function confirmProductOrder() {
 
         const order = {
             id: generateId(),
-            remoteOrderId: serverOrder.id || serverOrder._id || "",
+            remoteOrderId: String(serverOrder.id || serverOrder._id || ""),
             userId: user.id,
             customer: {
                 firstName: user.firstName || "",
@@ -901,6 +906,7 @@ async function confirmProductOrder() {
 
         closeProductModal();
         renderOrders();
+        fetchCustomerOrders();
 
         showToast("Kòmand lan voye. Li an atant validasyon Admin lan.");
         openWhatsAppOrder(order);
@@ -1049,7 +1055,7 @@ function closeCartModal() {
 }
 
 /* =========================================================
-   WALLET & NATCASH RECHARGE — SEND TO RENDER API
+   WALLET & NATCASH RECHARGE
 ========================================================= */
 
 function renderWallet() {
@@ -1091,9 +1097,7 @@ async function submitWalletRecharge() {
     }
 
     if (!validateTransactionOrShowMessage(txn)) {
-        if (txnInput && !/^\d{10,20}$/.test(txn)) {
-            txnInput.focus();
-        }
+        if (txnInput && !/^\d{10,20}$/.test(txn)) txnInput.focus();
         return;
     }
 
@@ -1167,43 +1171,213 @@ async function submitWalletRecharge() {
 }
 
 /* =========================================================
-   ORDERS DISPLAY
+   ORDERS DISPLAY — LIVE RENDER API SYNC
 ========================================================= */
 
+function normalizeOrderStatus(status) {
+    return String(status || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[_-]+/g, " ")
+        .trim();
+}
+
 function statusLabel(status) {
-    const normalized = String(status || "").toLowerCase().trim();
+    const value = normalizeOrderStatus(status);
 
-    if ([
-        "validee", "validée", "approved", "completed", "complete",
-        "valide", "validated", "success"
-    ].includes(normalized)) {
-        return "Validée";
-    }
-
-    if ([
-        "refusee", "refusée", "rejected", "refused", "cancelled",
-        "annulee", "annulée", "failed"
-    ].includes(normalized)) {
+    if (
+        value.includes("refus") ||
+        value.includes("reject") ||
+        value.includes("cancel") ||
+        value.includes("failed")
+    ) {
         return "Refusée";
     }
 
-    if ([
-        "en attente", "pending", "en_attente", "attente"
-    ].includes(normalized)) {
+    if (
+        value.includes("termine") ||
+        value.includes("complete") ||
+        value.includes("livre")
+    ) {
+        return "Terminé";
+    }
+
+    if (
+        value.includes("valide") ||
+        value.includes("approved") ||
+        value.includes("success")
+    ) {
+        return "Validée";
+    }
+
+    if (
+        value.includes("attente") ||
+        value.includes("pending")
+    ) {
         return "En attente";
     }
 
-    return "En cours";
+    if (value.includes("cours")) {
+        return "En cours";
+    }
+
+    return status || "En attente";
 }
 
-function renderOrders() {
+/*
+ * Rekipere estati yo nan baz done Render la.
+ * API a konpare imèl ak/oswa nimewo telefòn kliyan an.
+ */
+async function fetchCustomerOrders() {
+    if (orderRequestRunning) return;
+
+    const user = getCurrentUser();
+
+    if (!user || (!user.email && !user.whatsapp)) return;
+
+    orderRequestRunning = true;
+
+    try {
+        const params = new URLSearchParams();
+
+        if (user.email) {
+            params.set("email", user.email.trim().toLowerCase());
+        }
+
+        if (user.whatsapp) {
+            params.set("phone", user.whatsapp.trim());
+        }
+
+        const response = await fetch(
+            SEBY_API_BASE + "/api/customer-orders?" + params.toString(),
+            {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Customer orders API: " + response.status);
+        }
+
+        const result = await response.json();
+
+        if (!Array.isArray(result)) {
+            throw new Error("Repons kòmand sèvè a pa valab.");
+        }
+
+        const currentUser = getCurrentUser();
+
+        if (!currentUser || currentUser.id !== user.id) return;
+
+        const orders = getJSON(STORAGE_KEYS.ORDERS, []);
+
+        result.forEach(remote => {
+            if (!remote || !remote.id) return;
+
+            const remoteId = String(remote.id);
+
+            let existing = orders.find(order =>
+                String(order.remoteOrderId || "") === remoteId
+            );
+
+            if (!existing) {
+                /*
+                 * Kòmand lan sou sèvè a men li pa nan localStorage.
+                 * Ajoute li pou li ka parèt nan My Orders.
+                 */
+                existing = {
+                    id: "remote-" + remoteId,
+                    remoteOrderId: remoteId,
+                    userId: currentUser.id,
+                    productName: remote.productName || "Commande",
+                    optionLabel: "",
+                    quantity: Number(remote.quantity) || 1,
+                    price: Number(remote.amount) || 0,
+                    total: Number(remote.amount) || 0,
+                    transactionId: "",
+                    status: remote.status || "En attente",
+                    createdAt: remote.createdAt || "",
+                    updatedAt: remote.updatedAt || null
+                };
+
+                orders.push(existing);
+            } else {
+                /*
+                 * Estati ki sou Render la ranplase ansyen estati lokal la.
+                 */
+                existing.status = remote.status || existing.status;
+                existing.updatedAt =
+                    remote.updatedAt || existing.updatedAt || null;
+
+                if (remote.createdAt) {
+                    existing.createdAt = remote.createdAt;
+                }
+
+                if (remote.productName) {
+                    existing.remoteProductName = remote.productName;
+                }
+
+                if (remote.amount !== undefined && remote.amount !== null) {
+                    existing.remoteAmount = Number(remote.amount);
+                }
+            }
+        });
+
+        setJSON(STORAGE_KEYS.ORDERS, orders);
+
+        renderOrders({ skipRemote: true });
+
+    } catch (error) {
+        console.warn(
+            "My Orders pa t kapab rafrechi:",
+            error.message
+        );
+    } finally {
+        orderRequestRunning = false;
+    }
+}
+
+function startOrderPolling() {
+    stopOrderPolling();
+
+    if (!getCurrentUser()) return;
+
+    fetchCustomerOrders();
+
+    orderRefreshTimer = setInterval(() => {
+        if (getCurrentUser()) {
+            fetchCustomerOrders();
+        } else {
+            stopOrderPolling();
+        }
+    }, 15000);
+}
+
+function stopOrderPolling() {
+    if (orderRefreshTimer) {
+        clearInterval(orderRefreshTimer);
+        orderRefreshTimer = null;
+    }
+}
+
+function renderOrders(options = {}) {
     const list = document.getElementById("ordersList");
     const user = getCurrentUser();
 
     if (!list || !user) return;
 
+    if (!options.skipRemote) {
+        fetchCustomerOrders();
+    }
+
     const orders = getJSON(STORAGE_KEYS.ORDERS, []);
-    const userOrders = orders.filter(order => order.userId === user.id);
+
+    const userOrders = orders.filter(order =>
+        order.userId === user.id
+    );
 
     if (!userOrders.length) {
         list.innerHTML = `
@@ -1214,22 +1388,55 @@ function renderOrders() {
         return;
     }
 
-    list.innerHTML = userOrders.slice().reverse().map(order => `
-        <div class="order-card">
-            <h3>${escapeHTML(order.productName)}</h3>
-            <p>Offer: ${escapeHTML(order.optionLabel)}</p>
-            <p>Quantity: ${Number(order.quantity) || 1}</p>
-            <p>Total: <strong>${formatGdes(order.total)}</strong></p>
-            <p>Transaction ID: ${escapeHTML(order.transactionId)}</p>
-            <p>Date: ${escapeHTML(
-                order.createdAt
-                    ? new Date(order.createdAt).toLocaleString()
-                    : ""
-            )}</p>
-            <span class="status ${escapeHTML(String(order.status || "en_cours").toLowerCase())}">
-                ${statusLabel(order.status)}
-            </span>
-        </div>`).join("");
+    list.innerHTML = userOrders.slice().reverse().map(order => {
+        const status = statusLabel(order.status);
+
+        const statusClass =
+            status === "Validée" ? "validated" :
+            status === "Terminé" ? "completed" :
+            status === "Refusée" ? "rejected" :
+            status === "En attente" ? "pending" :
+            "in-progress";
+
+        const displayedTotal =
+            order.remoteAmount !== undefined
+                ? order.remoteAmount
+                : order.total;
+
+        return `
+            <div class="order-card">
+                <h3>${escapeHTML(order.remoteProductName || order.productName || "Commande")}</h3>
+
+                ${
+                    order.optionLabel
+                        ? `<p>Offer: ${escapeHTML(order.optionLabel)}</p>`
+                        : ""
+                }
+
+                <p>Quantity: ${Number(order.quantity) || 1}</p>
+
+                <p>
+                    Total:
+                    <strong>${formatGdes(displayedTotal)}</strong>
+                </p>
+
+                ${
+                    order.transactionId
+                        ? `<p>Transaction ID: ${escapeHTML(order.transactionId)}</p>`
+                        : ""
+                }
+
+                <p>Date: ${escapeHTML(
+                    order.createdAt
+                        ? new Date(order.createdAt).toLocaleString()
+                        : ""
+                )}</p>
+
+                <span class="status ${statusClass}">
+                    ${escapeHTML(status)}
+                </span>
+            </div>`;
+    }).join("");
 }
 
 /* =========================================================
@@ -1482,6 +1689,7 @@ async function markCustomerNotificationRead(id, isRemote) {
                     },
                     body: JSON.stringify({
                         email: user.email,
+                        phone: user.whatsapp,
                         read: true
                     })
                 }
@@ -1620,7 +1828,7 @@ function copyToClipboard(text) {
     try {
         document.execCommand("copy");
         showToast("Copied.");
-    } catch (error) {
+    } catch (_) {
         showToast("Copy failed.");
     } finally {
         textarea.remove();
@@ -1635,7 +1843,9 @@ function logout() {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     remoteNotifications = [];
 
+    stopOrderPolling();
     stopNotificationPolling();
+
     showAuthGate();
     switchGateAuth("login");
     updateNotificationBadge();
@@ -1767,6 +1977,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("#walletTxnId, #productTxnId")
         .forEach(input => {
             input.setAttribute("maxlength", "20");
+
             input.addEventListener("input", function () {
                 this.value = this.value.replace(/\D/g, "").slice(0, 20);
             });
@@ -1821,3 +2032,5 @@ window.showPage = showPage;
 window.logout = logout;
 window.filterProducts = filterProducts;
 window.openAccountInformation = openAccountInformation;
+window.fetchCustomerOrders = fetchCustomerOrders;
+window.renderOrders = renderOrders;
