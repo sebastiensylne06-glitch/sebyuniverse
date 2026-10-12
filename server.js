@@ -166,6 +166,7 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: "100kb" }));
+
 app.use(express.urlencoded({
   extended: false,
   limit: "100kb"
@@ -272,14 +273,31 @@ function transactionAlreadyUsed(transactionId) {
   return orderUsesId || rechargeUsesId;
 }
 
+function matchesCustomer(record, email, phone, userId) {
+  const recordEmail = normalizeEmail(
+    record.email ||
+    record.customerEmail
+  );
+
+  const recordPhone = text(
+    record.phone ||
+    record.customerPhone ||
+    record.whatsapp,
+    80
+  );
+
+  const recordUserId = text(record.userId, 200);
+
+  return (
+    (Boolean(email) && recordEmail === email) ||
+    (Boolean(phone) && recordPhone === phone) ||
+    (Boolean(userId) && recordUserId === userId)
+  );
+}
+
 /* =====================================================
    WALLET KLIYAN
 ===================================================== */
-
-/*
-  Chak bous konsève sou sèvè a.
-  Nou idantifye kliyan an ak imèl li oswa telefòn li.
-*/
 
 function findCustomerWallet(email, phone, userId) {
   const normalizedEmail = normalizeEmail(email);
@@ -288,7 +306,13 @@ function findCustomerWallet(email, phone, userId) {
 
   let wallet = null;
 
-  if (normalizedEmail) {
+  if (normalizedUserId) {
+    wallet = db.wallets.find(
+      w => text(w.userId, 200) === normalizedUserId
+    );
+  }
+
+  if (!wallet && normalizedEmail) {
     wallet = db.wallets.find(
       w => normalizeEmail(w.email) === normalizedEmail
     );
@@ -297,12 +321,6 @@ function findCustomerWallet(email, phone, userId) {
   if (!wallet && normalizedPhone) {
     wallet = db.wallets.find(
       w => text(w.phone, 80) === normalizedPhone
-    );
-  }
-
-  if (!wallet && normalizedUserId) {
-    wallet = db.wallets.find(
-      w => w.userId === normalizedUserId
     );
   }
 
@@ -339,12 +357,9 @@ function findCustomerWallet(email, phone, userId) {
   return wallet;
 }
 
-/*
-  GET /api/customer-wallet?email=...&phone=...
-
-  Nòt: pou pwodiksyon reyèl, route sa a dwe mare ak
-  yon sesyon kliyan verifye, pa sèlman enfòmasyon piblik.
-*/
+/* =====================================================
+   BALANS WALLET KLIYAN
+===================================================== */
 
 app.get("/api/customer-wallet", (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -355,7 +370,7 @@ app.get("/api/customer-wallet", (req, res) => {
 
   if (!email && !phone && !userId) {
     return res.status(400).json({
-      error: "Imèl oswa telefòn kliyan an obligatwa."
+      error: "Imèl, telefòn oswa ID kliyan an obligatwa."
     });
   }
 
@@ -370,6 +385,8 @@ app.get("/api/customer-wallet", (req, res) => {
   res.json({
     ok: true,
     wallet: {
+      id: wallet.id,
+      userId: wallet.userId || "",
       email: wallet.email || "",
       phone: wallet.phone || "",
       balance: Number(wallet.balance) || 0,
@@ -622,6 +639,8 @@ app.post("/api/orders", (req, res) => {
     b.customerEmail || b.email
   );
 
+  const userId = text(b.userId, 200);
+
   const amount = Number(b.amount ?? b.price ?? 0);
 
   const quantity = Math.max(
@@ -664,7 +683,7 @@ app.post("/api/orders", (req, res) => {
 
   const order = {
     id: makeId(),
-    userId: text(b.userId, 200),
+    userId,
     productName,
     customerName,
     customerPhone,
@@ -720,7 +739,7 @@ app.post("/api/orders", (req, res) => {
 });
 
 /* =====================================================
-   KLIYAN KA GADE ESTATI KÒMAND YO
+   ISTWA KÒMAND KLIYAN
 ===================================================== */
 
 app.get("/api/customer-orders", (req, res) => {
@@ -728,39 +747,27 @@ app.get("/api/customer-orders", (req, res) => {
 
   const email = normalizeEmail(req.query.email);
   const phone = text(req.query.phone, 80);
+  const userId = text(req.query.userId, 200);
 
-  if (!email && !phone) {
+  if (!email && !phone && !userId) {
     return res.status(400).json({
-      error: "Bay imèl kliyan an oswa nimewo telefòn li."
+      error: "Bay imèl, telefòn oswa ID kliyan an."
     });
   }
 
   const orders = db.orders
-    .filter(order => {
-      const orderEmail = normalizeEmail(
-        order.customerEmail || order.email
-      );
-
-      const orderPhone = text(
-        order.customerPhone ||
-        order.phone ||
-        order.whatsapp,
-        80
-      );
-
-      return (
-        (Boolean(email) && orderEmail === email) ||
-        (Boolean(phone) && orderPhone === phone)
-      );
-    })
+    .filter(order =>
+      matchesCustomer(order, email, phone, userId)
+    )
     .map(order => ({
       id: order.id,
+      userId: order.userId || "",
       productName: order.productName,
       customerName: order.customerName,
-      amount: order.amount,
-      quantity: order.quantity,
-      status: order.status,
-      createdAt: order.createdAt,
+      amount: Number(order.amount) || 0,
+      quantity: Number(order.quantity) || 1,
+      status: order.status || "En attente",
+      createdAt: order.createdAt || null,
       updatedAt: order.updatedAt || null
     }));
 
@@ -796,9 +803,9 @@ app.post("/api/recharges", (req, res) => {
     200
   );
 
-  if (!email && !phone) {
+  if (!email && !phone && !userId) {
     return res.status(400).json({
-      error: "Imèl oswa WhatsApp kliyan an obligatwa pou asosye bous la."
+      error: "Imèl, WhatsApp oswa ID kliyan an obligatwa pou asosye bous la."
     });
   }
 
@@ -842,7 +849,7 @@ app.post("/api/recharges", (req, res) => {
   db.notifications.unshift({
     id: makeId(),
     title: "Nouvelle demande de recharge",
-    message: `${amount} Gdes — ${customerName || phone || email}`,
+    message: `${amount} Gdes — ${customerName || phone || email || userId}`,
     read: false,
     createdAt
   });
@@ -852,6 +859,97 @@ app.post("/api/recharges", (req, res) => {
   res.status(201).json({
     ok: true,
     recharge
+  });
+});
+
+/* =====================================================
+   ISTWA RECHAJ KLIYAN
+===================================================== */
+
+app.get("/api/customer-recharges", (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const email = normalizeEmail(req.query.email);
+  const phone = text(req.query.phone, 80);
+  const userId = text(req.query.userId, 200);
+
+  if (!email && !phone && !userId) {
+    return res.status(400).json({
+      error: "Bay imèl, telefòn oswa ID kliyan an."
+    });
+  }
+
+  const recharges = db.recharges
+    .filter(recharge =>
+      matchesCustomer(recharge, email, phone, userId)
+    )
+    .map(recharge => ({
+      id: recharge.id,
+      userId: recharge.userId || "",
+      amount: Number(recharge.amount) || 0,
+      transactionId: recharge.transactionId || "",
+      status: recharge.status || "En attente",
+      createdAt: recharge.createdAt || null,
+      updatedAt: recharge.updatedAt || null,
+      creditedAt: recharge.creditedAt || null
+    }));
+
+  res.json({
+    ok: true,
+    recharges
+  });
+});
+
+/* =====================================================
+   ISTWA TRANZAKSYON KLIYAN
+===================================================== */
+
+app.get("/api/customer-transactions", (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const email = normalizeEmail(req.query.email);
+  const phone = text(req.query.phone, 80);
+  const userId = text(req.query.userId, 200);
+
+  if (!email && !phone && !userId) {
+    return res.status(400).json({
+      error: "Bay imèl, telefòn oswa ID kliyan an."
+    });
+  }
+
+  const transactions = db.transactions
+    .filter(transaction => {
+      if (matchesCustomer(transaction, email, phone, userId)) {
+        return true;
+      }
+
+      if (transaction.walletId) {
+        const wallet = db.wallets.find(
+          w => String(w.id) === String(transaction.walletId)
+        );
+
+        if (
+          wallet &&
+          matchesCustomer(wallet, email, phone, userId)
+        ) {
+          return true;
+        }
+      }
+
+      return false;
+    })
+    .map(transaction => ({
+      id: transaction.id,
+      type: transaction.type || "",
+      amount: Number(transaction.amount) || 0,
+      status: transaction.status || "",
+      description: transaction.description || "",
+      createdAt: transaction.createdAt || null
+    }));
+
+  res.json({
+    ok: true,
+    transactions
   });
 });
 
@@ -1333,26 +1431,14 @@ app.patch(
     }
 
     const nextIsValidated = isValidated(requestedStatus);
-    const currentIsValidated = isValidated(item.status);
 
-    const nextIsRejected = normalizeStatus(requestedStatus)
-      .includes("refuse") ||
+    const nextIsRejected =
+      normalizeStatus(requestedStatus).includes("refuse") ||
       normalizeStatus(requestedStatus).includes("reject");
-
-    /*
-      Si yon rechaj deja kredite, pa kite yon lòt
-      estati efase tras kredi a oswa pèmèt doub kredi.
-    */
 
     if (item.creditedAt && !nextIsValidated) {
       return res.status(409).json({
         error: "Rechaj sa a deja kredite. Estati li pa ka chanje isit la."
-      });
-    }
-
-    if (nextIsRejected && item.creditedAt) {
-      return res.status(409).json({
-        error: "Rechaj sa a deja kredite."
       });
     }
 
@@ -1371,33 +1457,31 @@ app.patch(
         });
       }
 
-      /*
-        Mete creditedAt nan menm operasyon an.
-        Yon dezyèm klik admin pa ajoute menm lajan an ankò.
-      */
+      const now = new Date().toISOString();
 
       wallet.balance =
         (Number(wallet.balance) || 0) + amount;
 
-      wallet.updatedAt = new Date().toISOString();
+      wallet.updatedAt = now;
 
-      item.creditedAt = wallet.updatedAt;
+      item.creditedAt = now;
       item.creditedAmount = amount;
       item.walletId = wallet.id;
       item.status = requestedStatus;
-      item.updatedAt = wallet.updatedAt;
+      item.updatedAt = now;
 
       db.transactions.unshift({
         id: makeId(),
         type: "recharge",
         rechargeId: item.id,
         walletId: wallet.id,
+        userId: item.userId || wallet.userId || "",
         email: wallet.email || item.email || "",
         phone: wallet.phone || item.phone || "",
         amount,
         status: "Validée",
         description: `Kredi bous pou rechaj ${item.transactionId}`,
-        createdAt: wallet.updatedAt
+        createdAt: now
       });
 
       db.customerNotifications.unshift({
@@ -1408,7 +1492,7 @@ app.patch(
         title: "Bous ou kredite",
         message: `${amount} Gdes ajoute nan bous SEBY UNIVERSE ou.`,
         read: false,
-        createdAt: wallet.updatedAt
+        createdAt: now
       });
 
       db.notifications.unshift({
@@ -1416,7 +1500,7 @@ app.patch(
         title: "Rechaj valide",
         message: `${amount} Gdes kredite pou ${item.customerName || item.phone || item.email}`,
         read: false,
-        createdAt: wallet.updatedAt
+        createdAt: now
       });
 
       saveDB();
@@ -1432,11 +1516,6 @@ app.patch(
         }
       });
     }
-
-    /*
-      Si li te deja valide san creditedAt, seksyon ki anlè a
-      kredite li kounye a. Si li deja kredite, pa rekredite li.
-    */
 
     item.status = requestedStatus;
     item.updatedAt = new Date().toISOString();
