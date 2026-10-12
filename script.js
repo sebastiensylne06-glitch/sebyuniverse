@@ -39,6 +39,9 @@ let notificationRefreshTimer = null;
 let orderRequestRunning = false;
 let orderRefreshTimer = null;
 
+let walletRequestRunning = false;
+let walletRefreshTimer = null;
+
 let orderSubmitting = false;
 let rechargeSubmitting = false;
 
@@ -183,7 +186,8 @@ function getJSON(key, fallback) {
     try {
         const value = localStorage.getItem(key);
         return value ? JSON.parse(value) : fallback;
-    } catch (_) {
+    } catch (error) {
+        console.warn("SEBY storage read error:", error);
         return fallback;
     }
 }
@@ -191,9 +195,11 @@ function getJSON(key, fallback) {
 function setJSON(key, value) {
     try {
         localStorage.setItem(key, JSON.stringify(value));
+        return true;
     } catch (error) {
         console.error("SEBY storage error:", error);
         showToast("Pa kapab sove done yo sou aparèy la.");
+        return false;
     }
 }
 
@@ -224,6 +230,8 @@ function saveCurrentUser(user) {
 }
 
 function showToast(message) {
+    if (!document.body) return;
+
     document.querySelector(".seby-toast")?.remove();
 
     const toast = document.createElement("div");
@@ -236,42 +244,45 @@ function showToast(message) {
 }
 
 /* =========================================================
-   RENDER API HELPER
+   RENDER API HELPERS
 ========================================================= */
 
-async function sebyApiPost(endpoint, payload) {
+async function sebyApiRequest(endpoint, options = {}) {
     let response;
 
     try {
         response = await fetch(SEBY_API_BASE + endpoint, {
-            method: "POST",
+            ...options,
             headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
+                "Accept": "application/json",
+                ...(options.body ? { "Content-Type": "application/json" } : {}),
+                ...(options.headers || {})
             },
-            body: JSON.stringify(payload),
             cache: "no-store"
         });
-    } catch (_) {
+    } catch (error) {
         throw new Error(
             "Pa ka konekte ak sèvè a. Verifye entènèt ou epi eseye ankò."
         );
     }
 
     const raw = await response.text();
-    let result;
+    let result = {};
 
-    try {
-        result = raw ? JSON.parse(raw) : {};
-    } catch (_) {
-        throw new Error(
-            "Sèvè a pa voye yon repons JSON ki valab. Verifye API Render la."
-        );
+    if (raw) {
+        try {
+            result = JSON.parse(raw);
+        } catch (_) {
+            throw new Error(
+                "Sèvè a pa voye yon repons JSON ki valab. Verifye API Render la."
+            );
+        }
     }
 
     if (!response.ok || result.ok === false) {
         throw new Error(
-            result.error || result.message ||
+            result.error ||
+            result.message ||
             "Erè sèvè a: " + response.status
         );
     }
@@ -279,8 +290,17 @@ async function sebyApiPost(endpoint, payload) {
     return result;
 }
 
+async function sebyApiPost(endpoint, payload) {
+    return sebyApiRequest(endpoint, {
+        method: "POST",
+        body: JSON.stringify(payload)
+    });
+}
+
 /* =========================================================
-   TRANSACTION VALIDATION — 10 TO 20 DIGITS
+   TRANSACTION VALIDATION
+   NOTE: This checks local history only. The server/admin must
+   verify real NatCash payments before approving a deposit.
 ========================================================= */
 
 function isTransactionUsed(txn) {
@@ -316,7 +336,7 @@ function validateTransactionOrShowMessage(txn) {
 
     if (isTransactionUsed(value)) {
         showToast(
-            "Kòd tranzaksyon sa a deja itilize. Verifye SMS NatCash ou a."
+            "Kòd tranzaksyon sa a deja itilize sou aparèy sa a."
         );
         return false;
     }
@@ -349,6 +369,7 @@ function formatPhoneInput(input) {
     digits = digits.substring(0, 8);
 
     let result = "+509 ";
+
     if (digits.length > 0) result += digits.substring(0, 2);
     if (digits.length > 2) result += " " + digits.substring(2, 4);
     if (digits.length > 4) result += " " + digits.substring(4, 8);
@@ -370,7 +391,11 @@ function showApp() {
     loadProfile();
     renderOrders();
     startOrderPolling();
+
     renderWallet();
+    fetchCustomerWallet();
+    startWalletPolling();
+
     updateCartBadge();
     updateNotificationBadge();
 
@@ -386,6 +411,7 @@ function showAuthGate() {
     if (app) app.classList.remove("app-visible");
 
     stopOrderPolling();
+    stopWalletPolling();
     stopNotificationPolling();
 }
 
@@ -406,8 +432,9 @@ function switchGateAuth(type) {
         loginForm?.classList.add("active");
 
         if (title) title.textContent = "Welcome to SEBY UNIVERSE";
-        if (subtitle) subtitle.textContent =
-            "Sign in or create your account to continue.";
+        if (subtitle) {
+            subtitle.textContent = "Sign in or create your account to continue.";
+        }
     }
 }
 
@@ -545,15 +572,8 @@ function updateStoredUser(user) {
 }
 
 /* =========================================================
-   GOOGLE SIGN-IN — GOOGLE IDENTITY SERVICES
+   GOOGLE SIGN-IN
 ========================================================= */
-
-/*
-  En index.html, mete Google Identity Services script la ak
-  g_id_onload la, epi mete menm Client ID Google Cloud la.
-  Fonksyon sa a dekode enfòmasyon yo pou afiche pwofil la.
-  Dekodaj nan navigatè a pa ranplase verifikasyon token sou sèvè.
-*/
 
 function decodeGoogleCredential(credential) {
     if (!credential || typeof credential !== "string") {
@@ -561,6 +581,7 @@ function decodeGoogleCredential(credential) {
     }
 
     const parts = credential.split(".");
+
     if (parts.length !== 3) {
         throw new Error("Credential Google la pa valab.");
     }
@@ -572,9 +593,8 @@ function decodeGoogleCredential(credential) {
     const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
     const binary = atob(padded);
     const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
-    const payloadText = new TextDecoder().decode(bytes);
 
-    return JSON.parse(payloadText);
+    return JSON.parse(new TextDecoder().decode(bytes));
 }
 
 function handleGoogleLogin(response) {
@@ -593,19 +613,19 @@ function handleGoogleLogin(response) {
         }
 
         const users = getJSON(STORAGE_KEYS.USERS, []);
+
         let user = users.find(item =>
             String(item.email || "").trim().toLowerCase() === email
         );
 
         if (user) {
-            /*
-              Si kont sa a te deja egziste, kenbe ID li ak wallet li.
-              Pa ranplase modpas oswa lòt done kliyan an.
-            */
-            user.firstName = user.firstName || payload.given_name ||
-                String(payload.name || "").split(" ")[0] || "Customer";
+            user.firstName = user.firstName ||
+                payload.given_name ||
+                String(payload.name || "").split(" ")[0] ||
+                "Customer";
 
-            user.lastName = user.lastName || payload.family_name ||
+            user.lastName = user.lastName ||
+                payload.family_name ||
                 String(payload.name || "").split(" ").slice(1).join(" ");
 
             user.googleId = user.googleId || payload.sub || "";
@@ -619,7 +639,8 @@ function handleGoogleLogin(response) {
             user = {
                 id: generateId(),
                 firstName: payload.given_name ||
-                    String(payload.name || "").split(" ")[0] || "Customer",
+                    String(payload.name || "").split(" ")[0] ||
+                    "Customer",
                 lastName: payload.family_name ||
                     String(payload.name || "").split(" ").slice(1).join(" "),
                 whatsapp: "",
@@ -637,18 +658,13 @@ function handleGoogleLogin(response) {
         setJSON(STORAGE_KEYS.USERS, users);
 
         const wallets = getJSON(STORAGE_KEYS.WALLETS, {});
+
         if (wallets[user.id] === undefined) {
             wallets[user.id] = 0;
             setJSON(STORAGE_KEYS.WALLETS, wallets);
         }
 
         saveCurrentUser(user);
-
-        const gate = document.getElementById("sebyAuthGate");
-        const app = document.getElementById("sebyApp");
-
-        if (gate) gate.style.display = "none";
-        if (app) app.classList.add("app-visible");
 
         showToast("Google login successful!");
         showApp();
@@ -671,6 +687,7 @@ function socialAuth(provider) {
             behavior: "smooth",
             block: "center"
         });
+
         showToast("Klike sou bouton Google la pou kontinye.");
     } else {
         showToast(
@@ -709,7 +726,11 @@ function showPage(pageId) {
         fetchCustomerOrders();
     }
 
-    if (pageId === "wallet-page") renderWallet();
+    if (pageId === "wallet-page") {
+        renderWallet();
+        fetchCustomerWallet();
+    }
+
     if (pageId === "profile-page") loadProfile();
 
     closeSidebar();
@@ -731,6 +752,7 @@ function filterProducts(category) {
 
     document.querySelectorAll(".product-card").forEach(card => {
         const cardCategory = card.dataset.category;
+
         card.style.display =
             category === "all" || cardCategory === category ? "" : "none";
     });
@@ -826,6 +848,7 @@ function openProductModal(productId) {
 
     const modal = document.getElementById("productModal");
     const body = document.getElementById("modalBody");
+
     if (!modal || !body) return;
 
     body.innerHTML = `
@@ -945,6 +968,7 @@ async function confirmProductOrder() {
     const konamiId = value("productKonamiId");
 
     const quantityValue = parseInt(value("productQuantity") || "1", 10);
+
     const quantity = Number.isFinite(quantityValue) && quantityValue > 0
         ? Math.min(quantityValue, 100)
         : 1;
@@ -979,11 +1003,16 @@ async function confirmProductOrder() {
 
     if (!validateTransactionOrShowMessage(txn)) {
         const txnInput = document.getElementById("productTxnId");
-        if (txnInput && !/^\d{10,20}$/.test(txn)) txnInput.focus();
+
+        if (txnInput && !/^\d{10,20}$/.test(txn)) {
+            txnInput.focus();
+        }
+
         return;
     }
 
     const total = selectedOption.price * quantity;
+
     const customerName = [
         user.firstName || "",
         user.lastName || ""
@@ -1016,7 +1045,8 @@ async function confirmProductOrder() {
 
     try {
         const result = await sebyApiPost("/api/orders", {
-            productName: selectedProduct.name + " — " + selectedOption.label,
+            userId: user.id,
+            customerId: user.id,
             customerName,
             customerPhone: whatsapp,
             customerEmail: user.email || email,
@@ -1148,6 +1178,7 @@ function addSelectedToCart() {
 function openCartModal() {
     const modal = document.getElementById("cartModal");
     const body = document.getElementById("cartModalBody");
+
     if (!modal || !body) return;
 
     const cart = getCart();
@@ -1191,6 +1222,7 @@ function openCartModal() {
 
 function removeCartItem(index) {
     const cart = getCart();
+
     if (index < 0 || index >= cart.length) return;
 
     cart.splice(index, 1);
@@ -1215,19 +1247,139 @@ function closeCartModal() {
 }
 
 /* =========================================================
-   WALLET & NATCASH RECHARGE
+   WALLET — SERVER-SYNCED BALANCE
 ========================================================= */
+
+/*
+  Backend endpoint:
+  GET /api/customer-wallet?email=...&phone=...&userId=...
+
+  Nou sipòte plizyè fòma repons pou script la pa depann
+  sèlman de yon sèl estrikti JSON.
+*/
+
+function getBalanceFromWalletResponse(result) {
+    const candidates = [
+        result?.balance,
+        result?.walletBalance,
+        result?.wallet?.balance,
+        result?.data?.balance,
+        result?.data?.wallet?.balance,
+        result?.customer?.balance
+    ];
+
+    for (const candidate of candidates) {
+        if (
+            candidate !== undefined &&
+            candidate !== null &&
+            candidate !== "" &&
+            Number.isFinite(Number(candidate))
+        ) {
+            return Math.max(0, Number(candidate));
+        }
+    }
+
+    return null;
+}
+
+function saveWalletBalance(user, balance) {
+    const wallets = getJSON(STORAGE_KEYS.WALLETS, {});
+    wallets[user.id] = Number(balance);
+    setJSON(STORAGE_KEYS.WALLETS, wallets);
+}
 
 function renderWallet() {
     const user = getCurrentUser();
     const balanceElement = document.getElementById("userWalletBalance");
 
-    if (!user || !balanceElement) return;
+    if (!balanceElement) return;
+
+    if (!user) {
+        balanceElement.textContent = "0 Gdes";
+        return;
+    }
 
     const wallets = getJSON(STORAGE_KEYS.WALLETS, {});
     const balance = Number(wallets[user.id] || 0);
 
-    balanceElement.textContent = balance.toLocaleString("en-US") + " Gdes";
+    balanceElement.textContent = formatGdes(balance);
+}
+
+async function fetchCustomerWallet() {
+    if (walletRequestRunning) return;
+
+    const user = getCurrentUser();
+
+    if (!user || (!user.email && !user.id && !user.whatsapp)) return;
+
+    walletRequestRunning = true;
+
+    try {
+        const params = new URLSearchParams();
+
+        if (user.email) {
+            params.set("email", user.email.trim().toLowerCase());
+        }
+
+        if (user.whatsapp) {
+            params.set("phone", user.whatsapp.trim());
+        }
+
+        if (user.id) {
+            params.set("userId", user.id);
+        }
+
+        const result = await sebyApiRequest(
+            "/api/customer-wallet?" + params.toString(),
+            { method: "GET" }
+        );
+
+        const currentUser = getCurrentUser();
+
+        // Evite qu'une réponse tardive mette à jour le wallet d'un autre compte.
+        if (!currentUser || currentUser.id !== user.id) return;
+
+        const balance = getBalanceFromWalletResponse(result);
+
+        if (balance === null) {
+            console.warn("Réponse wallet sans solde reconnu:", result);
+            return;
+        }
+
+        saveWalletBalance(currentUser, balance);
+        renderWallet();
+    } catch (error) {
+        /*
+          Si le serveur ne répond pas, on conserve le dernier solde local.
+          Ce solde local n'est pas une preuve du solde réel du compte.
+        */
+        console.warn("SEBY wallet sync failed:", error.message);
+    } finally {
+        walletRequestRunning = false;
+    }
+}
+
+function startWalletPolling() {
+    stopWalletPolling();
+
+    if (!getCurrentUser()) return;
+
+    fetchCustomerWallet();
+
+    walletRefreshTimer = setInterval(() => {
+        if (getCurrentUser()) {
+            fetchCustomerWallet();
+        } else {
+            stopWalletPolling();
+        }
+    }, 20000);
+}
+
+function stopWalletPolling() {
+    if (walletRefreshTimer) {
+        clearInterval(walletRefreshTimer);
+        walletRefreshTimer = null;
+    }
 }
 
 async function submitWalletRecharge() {
@@ -1257,7 +1409,10 @@ async function submitWalletRecharge() {
     }
 
     if (!validateTransactionOrShowMessage(txn)) {
-        if (txnInput && !/^\d{10,20}$/.test(txn)) txnInput.focus();
+        if (txnInput && !/^\d{10,20}$/.test(txn)) {
+            txnInput.focus();
+        }
+
         return;
     }
 
@@ -1279,6 +1434,10 @@ async function submitWalletRecharge() {
 
     try {
         const result = await sebyApiPost("/api/recharges", {
+            userId: user.id || "",
+            customerId: user.id || "",
+            email: user.email || "",
+            customerEmail: user.email || "",
             customerName,
             phone: user.whatsapp || "",
             amount,
@@ -1317,6 +1476,10 @@ async function submitWalletRecharge() {
         if (txnInput) txnInput.value = "";
 
         showToast("Demann depo a voye. Li an atant validasyon Admin lan.");
+
+        // Rafraîchit le solde depuis le serveur après la demande.
+        // Le solde ne doit augmenter qu'après approbation par l'Admin.
+        fetchCustomerWallet();
     } catch (error) {
         console.error("SEBY recharge submission failed:", error);
         showToast(error.message || "Depo a pa pase. Eseye ankò.");
@@ -1386,6 +1549,7 @@ async function fetchCustomerOrders() {
     if (orderRequestRunning) return;
 
     const user = getCurrentUser();
+
     if (!user || (!user.email && !user.whatsapp)) return;
 
     orderRequestRunning = true;
@@ -1399,6 +1563,10 @@ async function fetchCustomerOrders() {
 
         if (user.whatsapp) {
             params.set("phone", user.whatsapp.trim());
+        }
+
+        if (user.id) {
+            params.set("userId", user.id);
         }
 
         const response = await fetch(
@@ -1416,19 +1584,28 @@ async function fetchCustomerOrders() {
 
         const result = await response.json();
 
-        if (!Array.isArray(result)) {
+        const remoteOrders = Array.isArray(result)
+            ? result
+            : Array.isArray(result.orders)
+                ? result.orders
+                : Array.isArray(result.data)
+                    ? result.data
+                    : null;
+
+        if (!remoteOrders) {
             throw new Error("Repons kòmand sèvè a pa valab.");
         }
 
         const currentUser = getCurrentUser();
+
         if (!currentUser || currentUser.id !== user.id) return;
 
         const orders = getJSON(STORAGE_KEYS.ORDERS, []);
 
-        result.forEach(remote => {
-            if (!remote || !remote.id) return;
+        remoteOrders.forEach(remote => {
+            if (!remote || !(remote.id || remote._id)) return;
 
-            const remoteId = String(remote.id);
+            const remoteId = String(remote.id || remote._id);
 
             let existing = orders.find(order =>
                 String(order.remoteOrderId || "") === remoteId
@@ -1473,10 +1650,7 @@ async function fetchCustomerOrders() {
         setJSON(STORAGE_KEYS.ORDERS, orders);
         renderOrders({ skipRemote: true });
     } catch (error) {
-        console.warn(
-            "My Orders pa t kapab rafrechi:",
-            error.message
-        );
+        console.warn("My Orders pa t kapab rafrechi:", error.message);
     } finally {
         orderRequestRunning = false;
     }
@@ -1633,6 +1807,7 @@ function getNotifications() {
         );
 
         if (seen.has(key)) return false;
+
         seen.add(key);
         return true;
     });
@@ -1660,6 +1835,7 @@ function notificationDate(item) {
     if (!value) return "";
 
     const date = new Date(value);
+
     return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
 }
 
@@ -1787,6 +1963,10 @@ async function fetchCustomerNotifications() {
                     ? result.data
                     : [];
 
+        const currentUser = getCurrentUser();
+
+        if (!currentUser || currentUser.id !== user.id) return;
+
         remoteNotifications = notifications.filter(item => {
             const targetEmail = String(
                 item.email || item.customerEmail || item.recipientEmail || ""
@@ -1816,6 +1996,7 @@ async function fetchCustomerNotifications() {
 
 async function markCustomerNotificationRead(id, isRemote) {
     const user = getCurrentUser();
+
     if (!user) return;
 
     if (isRemote) {
@@ -1870,11 +2051,14 @@ async function markCustomerNotificationRead(id, isRemote) {
 
 async function openNotifModal() {
     const modal = document.getElementById("notifModal");
+
     if (!modal) return;
 
     modal.classList.add("active");
     renderCustomerNotifications();
+
     await fetchCustomerNotifications();
+
     renderCustomerNotifications();
 }
 
@@ -1948,20 +2132,28 @@ function copyToClipboard(text) {
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(String(text))
             .then(() => showToast("Copied."))
-            .catch(() => showToast("Copy failed."));
+            .catch(() => fallbackCopy(text));
+
         return;
     }
 
+    fallbackCopy(text);
+}
+
+function fallbackCopy(text) {
     const textarea = document.createElement("textarea");
+
     textarea.value = String(text);
     textarea.style.position = "fixed";
     textarea.style.opacity = "0";
+
     document.body.appendChild(textarea);
     textarea.select();
 
     try {
-        document.execCommand("copy");
-        showToast("Copied.");
+        const copied = document.execCommand("copy");
+
+        showToast(copied ? "Copied." : "Copy failed.");
     } catch (_) {
         showToast("Copy failed.");
     } finally {
@@ -1975,9 +2167,11 @@ function copyToClipboard(text) {
 
 function logout() {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+
     remoteNotifications = [];
 
     stopOrderPolling();
+    stopWalletPolling();
     stopNotificationPolling();
 
     showAuthGate();
@@ -1989,6 +2183,7 @@ function logout() {
 
 function openAccountInformation() {
     if (!getCurrentUser()) return;
+
     showPage("profile-page");
 }
 
@@ -2117,6 +2312,16 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
 
+    document.getElementById("gateWhatsapp")
+        ?.addEventListener("input", function () {
+            formatPhoneInput(this);
+        });
+
+    document.getElementById("regWhatsapp")
+        ?.addEventListener("input", function () {
+            formatPhoneInput(this);
+        });
+
     if (getCurrentUser()) {
         showApp();
     } else {
@@ -2151,6 +2356,8 @@ window.removeCartItem = removeCartItem;
 window.checkoutCart = checkoutCart;
 
 window.submitWalletRecharge = submitWalletRecharge;
+window.fetchCustomerWallet = fetchCustomerWallet;
+window.renderWallet = renderWallet;
 
 window.openNotifModal = openNotifModal;
 window.closeNotifModal = closeNotifModal;
