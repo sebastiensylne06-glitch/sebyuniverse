@@ -6,9 +6,7 @@
    Render API • Customer Orders Sync • Notifications
 ========================================================= */
 
-/* =========================================================
-   CONFIGURATION & STORAGE
-========================================================= */
+/* CONFIGURATION & STORAGE */
 
 const STORAGE_KEYS = {
     USERS: "sebyUsers",
@@ -42,9 +40,7 @@ let orderRefreshTimer = null;
 let orderSubmitting = false;
 let rechargeSubmitting = false;
 
-/* =========================================================
-   PRODUCTS — PRICES PRESERVED
-========================================================= */
+/* PRODUCTS — PRICES PRESERVED */
 
 const PRODUCTS = {
     freefire: {
@@ -175,9 +171,7 @@ const PRODUCTS = {
     }
 };
 
-/* =========================================================
-   HELPERS
-========================================================= */
+/* HELPERS */
 
 function getJSON(key, fallback) {
     try {
@@ -230,9 +224,7 @@ function showToast(message) {
     setTimeout(() => toast.remove(), 4000);
 }
 
-/* =========================================================
-   RENDER API HELPER
-========================================================= */
+/* RENDER API HELPER */
 
 async function sebyApiPost(endpoint, payload) {
     let response;
@@ -274,9 +266,7 @@ async function sebyApiPost(endpoint, payload) {
     return result;
 }
 
-/* =========================================================
-   TRANSACTION VALIDATION — 10 TO 20 DIGITS
-========================================================= */
+/* TRANSACTION VALIDATION — 10 TO 20 DIGITS */
 
 function validTransactionId(id) {
     const value = String(id || "").trim();
@@ -328,9 +318,7 @@ function validWhatsApp(number) {
     return digits.length === 8;
 }
 
-/* =========================================================
-   PHONE FORMAT
-========================================================= */
+/* PHONE FORMAT */
 
 function formatPhoneInput(input) {
     let digits = input.value.replace(/\D/g, "");
@@ -346,9 +334,7 @@ function formatPhoneInput(input) {
     input.value = result;
 }
 
-/* =========================================================
-   AUTH GATE
-========================================================= */
+/* AUTH GATE */
 
 function showApp() {
     const gate = document.getElementById("sebyAuthGate");
@@ -400,9 +386,7 @@ function switchGateAuth(type) {
     }
 }
 
-/* =========================================================
-   PASSWORD VISIBILITY
-========================================================= */
+/* PASSWORD VISIBILITY */
 
 function toggleGatePassword(id, button) {
     const input = document.getElementById(id);
@@ -431,9 +415,7 @@ function togglePasswordVisibility(id, element) {
     }
 }
 
-/* =========================================================
-   REGISTER
-========================================================= */
+/* REGISTER */
 
 function registerUser(data) {
     const users = getJSON(STORAGE_KEYS.USERS, []);
@@ -493,9 +475,7 @@ function registerUser(data) {
     return true;
 }
 
-/* =========================================================
-   LOGIN & PROFILE STORAGE
-========================================================= */
+/* LOGIN & PROFILE STORAGE */
 
 function loginUser(email, password) {
     const users = getJSON(STORAGE_KEYS.USERS, []);
@@ -559,8 +539,13 @@ function showPage(pageId) {
         fetchCustomerOrders();
     }
 
-    if (pageId === "wallet-page") renderWallet();
-    if (pageId === "profile-page") loadProfile();
+    if (pageId === "wallet-page") {
+        renderWallet();
+    }
+
+    if (pageId === "profile-page") {
+        loadProfile();
+    }
 
     closeSidebar();
 }
@@ -581,271 +566,373 @@ function filterProducts(category) {
 
     document.querySelectorAll(".product-card").forEach(card => {
         const cardCategory = card.dataset.category;
+
         card.style.display =
-            category === "all" || cardCategory === category ? "" : "none";
+            category === "all" || cardCategory === category
+                ? ""
+                : "none";
     });
 }
 
 /* =========================================================
-   PRODUCT MODAL & FIELDS
+   PRODUCT FORM FIELDS
 ========================================================= */
 
 function createProductField(field) {
-    const user = getCurrentUser();
+    const user = getCurrentUser() || {};
 
     if (field === "region") {
         return `
-            <div class="form-group">
-                <label>Region</label>
-                <select id="productRegion">
-                    <option value="">Select Region</option>
-                    <option value="Amérique du Nord">Amérique du Nord</option>
-                    <option value="États-Unis">États-Unis</option>
-                    <option value="Europe">Europe</option>
-                </select>
-            </div>`;
+            <label for="productRegion">Région du compte</label>
+            <select id="productRegion" required>
+                <option value="">Choisir une région</option>
+                <option value="North America">North America</option>
+                <option value="United States">United States</option>
+                <option value="Europe">Europe</option>
+            </select>
+        `;
     }
 
     if (field === "gameId") {
         return `
-            <div class="form-group">
-                <label>Game ID</label>
-                <input type="text" id="productGameId" inputmode="numeric"
-                    autocomplete="off" placeholder="Enter ID"
-                    oninput="this.value=this.value.replace(/\\D/g,'')">
-            </div>`;
+            <label for="productGameId">Game ID / Player ID</label>
+            <input
+                id="productGameId"
+                type="text"
+                inputmode="numeric"
+                placeholder="Entre ton Game ID"
+                required
+            >
+        `;
     }
 
     if (field === "konamiId") {
         return `
-            <div class="form-group">
-                <label>Konami ID</label>
-                <input type="text" id="productKonamiId"
-                    autocomplete="off" placeholder="Enter Konami ID">
-            </div>`;
+            <label for="productKonamiId">Konami ID</label>
+            <input
+                id="productKonamiId"
+                type="text"
+                placeholder="Entre ton Konami ID"
+                required
+            >
+        `;
     }
 
     if (field === "email") {
         return `
-            <div class="form-group">
-                <label>E-mail</label>
-                <input type="email" id="productEmail" autocomplete="email"
-                    value="${escapeHTML(user?.email || "")}"
-                    placeholder="Enter your e-mail">
-            </div>`;
+            <label for="productAccountEmail">E-mail du compte</label>
+            <input
+                id="productAccountEmail"
+                type="email"
+                value="${escapeHTML(user.email || "")}"
+                placeholder="E-mail associé au compte"
+                required
+            >
+        `;
     }
 
     if (field === "whatsapp") {
         return `
-            <div class="form-group">
-                <label>WhatsApp Number</label>
-                <input type="text" id="productWhatsapp" inputmode="tel"
-                    value="${escapeHTML(user?.whatsapp || "+509 ")}"
-                    oninput="formatPhoneInput(this)"
-                    placeholder="+509 XX XX XXXX">
-            </div>`;
+            <label for="productWhatsApp">Numéro WhatsApp</label>
+            <input
+                id="productWhatsApp"
+                type="tel"
+                value="${escapeHTML(user.whatsapp || "")}"
+                placeholder="+509 XX XX XXXX"
+                oninput="formatPhoneInput(this)"
+                required
+            >
+        `;
     }
 
     if (field === "transaction") {
         return `
-            <div class="form-group">
-                <label>Transaction ID</label>
-                <input type="text" id="productTxnId" inputmode="numeric"
-                    autocomplete="off" maxlength="20"
-                    placeholder="Enter NatCash transaction ID"
-                    oninput="this.value=this.value.replace(/\\D/g,'').slice(0,20)">
-                <small class="hint-text">
-                    Voye peman an nan NatCash ${NATCASH_NUMBER}.
-                    Kòd la dwe gen ant 10 ak 20 chif.
-                    Si SMS konfimasyon an poko rive, tann,
-                    verifye mesaj ou yo epi eseye ankò.
-                </small>
-            </div>`;
+            <label for="productTxnId">ID de transaction NatCash</label>
+            <input
+                id="productTxnId"
+                type="text"
+                inputmode="numeric"
+                maxlength="20"
+                placeholder="Entre l'ID de transaction"
+                oninput="this.value=this.value.replace(/\\D/g,'').slice(0,20)"
+                required
+            >
+            <small>
+                Envoie ton paiement au ${NATCASH_NUMBER}.
+                L'ID doit contenir entre 10 et 20 chiffres.
+                Le paiement doit être vérifié avant validation.
+            </small>
+        `;
     }
 
     return "";
 }
 
+/* =========================================================
+   PRODUCT MODAL
+========================================================= */
+
 function openProductModal(productId) {
     const product = PRODUCTS[productId];
-    if (!product) return;
+
+    if (!product) {
+        showToast("Produit introuvable.", "error");
+        return;
+    }
 
     selectedProduct = product;
-    selectedOption = null;
+    selectedOption = product.options?.[0] || null;
     selectedQuantity = 1;
 
-    const modal = document.getElementById("productModal");
-    const body = document.getElementById("modalBody");
-    if (!modal || !body) return;
+    const modalBody = document.getElementById("modalBody");
 
-    body.innerHTML = `
-        <h2 class="product-modal-title">${escapeHTML(product.name)}</h2>
-        <p class="product-modal-description">${escapeHTML(product.description)}</p>
+    if (!modalBody) {
+        showToast("La fenêtre du produit est introuvable.", "error");
+        return;
+    }
 
-        <div class="product-options">
-            ${product.options.map(option => `
-                <div class="product-option"
-                    data-option-id="${escapeHTML(option.id)}"
-                    onclick="selectProductOption('${escapeHTML(option.id)}')">
-                    <span>${escapeHTML(option.label)}</span>
-                    <strong>${formatGdes(option.price)}</strong>
-                </div>
-            `).join("")}
-        </div>
+    const optionsHTML = (product.options || []).map((option, index) => `
+        <button
+            type="button"
+            class="product-option ${index === 0 ? "active" : ""}"
+            data-option-index="${index}"
+            onclick="selectProductOption(${index})"
+        >
+            <span>${escapeHTML(option.label)}</span>
+            <strong>${formatGdes(option.price)} Gdes</strong>
+        </button>
+    `).join("");
 
-        <div class="order-fields">
-            ${product.fields.map(createProductField).join("")}
+    const fieldsHTML = (product.fields || [])
+        .map(field => createProductField(field))
+        .join("");
 
-            <div class="form-group">
-                <label>Quantity</label>
-                <input type="number" id="productQuantity" min="1" max="100"
-                    value="1" onchange="updateProductQuantity()">
+    modalBody.innerHTML = `
+        <div class="product-modal-content">
+            <h2>${escapeHTML(product.name)}</h2>
+            <p>${escapeHTML(product.description || "")}</p>
+
+            <div class="product-options">
+                ${optionsHTML}
             </div>
 
-            <div id="productTotal" style="padding:13px;border-radius:10px;
-                background:#f0f9ff;color:#0284c7;font-weight:900;margin-bottom:12px">
-                Select a package
+            <div class="product-required-fields">
+                ${fieldsHTML}
+            </div>
+
+            <label for="productQuantity">Quantité</label>
+            <input
+                id="productQuantity"
+                type="number"
+                min="1"
+                max="100"
+                value="1"
+                oninput="updateProductQuantity(this.value)"
+            >
+
+            <div class="product-total">
+                Total :
+                <strong id="productTotal">0 Gdes</strong>
+            </div>
+
+            <div class="product-modal-actions">
+                <button
+                    type="button"
+                    onclick="confirmProductOrder()"
+                    id="confirmProductOrderBtn"
+                >
+                    Confirmer la commande
+                </button>
+
+                <button
+                    type="button"
+                    onclick="addSelectedToCart()"
+                >
+                    Ajouter au panier
+                </button>
             </div>
         </div>
+    `;
 
-        <div class="modal-actions">
-            <button class="btn-primary" onclick="confirmProductOrder()">Commander</button>
-            <button class="btn-whatsapp" onclick="addSelectedToCart()">
-                <i class="fa-solid fa-cart-plus"></i> Add to Cart
-            </button>
-        </div>`;
+    updateProductTotal();
 
-    modal.classList.add("active");
+    document.getElementById("productModal")?.classList.add("active");
+    document.getElementById("productModal")?.classList.remove("hidden");
 }
 
-function selectProductOption(optionId) {
-    if (!selectedProduct) return;
+function selectProductOption(index) {
+    if (!selectedProduct || !selectedProduct.options?.[index]) {
+        return;
+    }
 
-    selectedOption = selectedProduct.options.find(option => option.id === optionId);
+    selectedOption = selectedProduct.options[index];
 
-    document.querySelectorAll(".product-option").forEach(option => {
-        option.classList.toggle("selected", option.dataset.optionId === optionId);
+    document.querySelectorAll(".product-option").forEach((button, i) => {
+        button.classList.toggle("active", i === index);
     });
 
     updateProductTotal();
 }
 
-function updateProductQuantity() {
-    const input = document.getElementById("productQuantity");
-    if (!input) return;
+function updateProductQuantity(value) {
+    const quantityInput = document.getElementById("productQuantity");
+    let quantity = Number.parseInt(value, 10);
 
-    const quantity = parseInt(input.value, 10);
-    selectedQuantity = Number.isFinite(quantity) && quantity > 0
-        ? Math.min(quantity, 100)
-        : 1;
+    if (!Number.isFinite(quantity) || quantity < 1) {
+        quantity = 1;
+    }
 
-    input.value = selectedQuantity;
+    if (quantity > 100) {
+        quantity = 100;
+    }
+
+    selectedQuantity = quantity;
+
+    if (quantityInput && String(quantityInput.value) !== String(quantity)) {
+        quantityInput.value = String(quantity);
+    }
+
     updateProductTotal();
 }
 
 function updateProductTotal() {
-    const element = document.getElementById("productTotal");
-    if (!element) return;
+    const totalElement = document.getElementById("productTotal");
 
-    element.textContent = selectedOption
-        ? "Total: " + formatGdes(selectedOption.price * selectedQuantity)
-        : "Select a package";
+    if (!totalElement || !selectedOption) {
+        return;
+    }
+
+    const quantityInput = document.getElementById("productQuantity");
+    const quantity = Math.max(
+        1,
+        Math.min(100, Number.parseInt(quantityInput?.value || "1", 10) || 1)
+    );
+
+    selectedQuantity = quantity;
+    totalElement.textContent =
+        `${formatGdes(selectedOption.price * quantity)} Gdes`;
 }
 
 function closeProductModal() {
     document.getElementById("productModal")?.classList.remove("active");
-    selectedProduct = null;
-    selectedOption = null;
-    selectedQuantity = 1;
+    document.getElementById("productModal")?.classList.add("hidden");
 }
 
 /* =========================================================
-   ORDERS — SEND TO RENDER API
+   CONFIRM PRODUCT ORDER — API
 ========================================================= */
 
 async function confirmProductOrder() {
-    if (orderSubmitting) return;
+    if (orderSubmitting) {
+        return;
+    }
 
     if (!selectedProduct || !selectedOption) {
-        showToast("Please select a package.");
+        showToast("Chwazi yon pwodwi ak yon opsyon anvan.", "error");
         return;
     }
 
     const user = getCurrentUser();
 
     if (!user) {
-        showToast("Please sign in first.");
+        showToast("Konekte sou kont ou anvan ou pase kòmand.", "error");
+        showAuthGate?.();
         return;
     }
 
     const value = id =>
-        String(document.getElementById(id)?.value || "").trim();
+        (document.getElementById(id)?.value || "").trim();
 
-    const whatsapp = value("productWhatsapp");
+    const whatsapp = value("productWhatsApp");
     const txn = value("productTxnId");
-    const email = value("productEmail").toLowerCase();
+    const email = value("productAccountEmail").toLowerCase();
     const region = value("productRegion");
     const gameId = value("productGameId");
     const konamiId = value("productKonamiId");
-
-    const quantityValue = parseInt(value("productQuantity") || "1", 10);
-    const quantity = Number.isFinite(quantityValue) && quantityValue > 0
-        ? Math.min(quantityValue, 100)
-        : 1;
+    const quantity = Math.max(
+        1,
+        Math.min(
+            100,
+            Number.parseInt(
+                document.getElementById("productQuantity")?.value || "1",
+                10
+            ) || 1
+        )
+    );
 
     if (!validWhatsApp(whatsapp)) {
-        showToast("Enter a valid WhatsApp number.");
+        showToast("Antre yon nimewo WhatsApp ki valab.", "error");
         return;
     }
 
-    if (selectedProduct.fields.includes("region") && !region) {
-        showToast("Select a region.");
+    const fields = selectedProduct.fields || [];
+
+    if (fields.includes("region") && !region) {
+        showToast("Chwazi rejyon kont lan.", "error");
         return;
     }
 
-    if (selectedProduct.fields.includes("gameId") &&
-        (!gameId || !/^\d+$/.test(gameId))) {
-        showToast("Enter a valid numeric ID.");
+    if (fields.includes("gameId") && !/^\d+$/.test(gameId)) {
+        showToast("Antre yon Game ID ki valab.", "error");
         return;
     }
 
-    if (selectedProduct.fields.includes("konamiId") && !konamiId) {
-        showToast("Enter your Konami ID.");
+    if (fields.includes("konamiId") && !konamiId) {
+        showToast("Antre Konami ID ou.", "error");
         return;
     }
 
-    if (selectedProduct.fields.includes("email") && !validEmail(email)) {
-        showToast("Enter a valid e-mail.");
+    if (fields.includes("email") && !validEmail(email)) {
+        showToast("Antre yon e-mail kont ki valab.", "error");
         return;
     }
 
-    if (!validateTransactionOrShowMessage(txn)) {
-        const txnInput = document.getElementById("productTxnId");
-        if (txnInput && !/^\d{10,20}$/.test(txn)) txnInput.focus();
-        return;
+    if (fields.includes("transaction")) {
+        if (!/^\d{10,20}$/.test(txn)) {
+            showToast("ID tranzaksyon an dwe gen 10 a 20 chif.", "error");
+            return;
+        }
+
+        if (isTransactionUsed(txn)) {
+            showToast("ID tranzaksyon sa a deja anrejistre.", "error");
+            return;
+        }
     }
 
     const total = selectedOption.price * quantity;
     const customerName = [
-        user.firstName || "",
-        user.lastName || ""
-    ].join(" ").trim() || user.email || "Customer";
+        user.firstName || user.firstname || "",
+        user.lastName || user.lastname || ""
+    ].filter(Boolean).join(" ") || user.name || user.email || "Client";
 
     const descriptionParts = [
         "Option: " + selectedOption.label,
-        "Transaction ID: " + txn,
+        "Transaction ID: " + (txn || "Non fourni"),
         "Customer ID: " + (user.id || ""),
         "WhatsApp: " + whatsapp
     ];
 
-    if (region) descriptionParts.push("Region: " + region);
-    if (gameId) descriptionParts.push("Game ID: " + gameId);
-    if (konamiId) descriptionParts.push("Konami ID: " + konamiId);
-    if (email) descriptionParts.push("Product account email: " + email);
+    if (region) {
+        descriptionParts.push("Region: " + region);
+    }
 
-    const button = document.querySelector(
-        "#productModal .modal-actions .btn-primary"
-    );
+    if (gameId) {
+        descriptionParts.push("Game ID: " + gameId);
+    }
+
+    if (konamiId) {
+        descriptionParts.push("Konami ID: " + konamiId);
+    }
+
+    if (email) {
+        descriptionParts.push("Product account email: " + email);
+    }
+
+    // CORRECTION : description doit être définie avant l'envoi à l'API.
+    const description = descriptionParts.join(" | ");
+
+    const button = document.getElementById("confirmProductOrderBtn");
+    const originalButtonText = button?.textContent || "Confirmer la commande";
 
     orderSubmitting = true;
 
@@ -856,7 +943,7 @@ async function confirmProductOrder() {
 
     try {
         const result = await sebyApiPost("/api/orders", {
-            productName: selectedProduct.name + " — " + selectedOption.label,
+            productName: `${selectedProduct.name} — ${selectedOption.label}`,
             customerName,
             customerPhone: whatsapp,
             customerEmail: user.email || email,
@@ -865,85 +952,118 @@ async function confirmProductOrder() {
             description
         });
 
-        if (result.ok !== true || !result.order) {
+        if (!result || result.ok !== true || !result.order) {
             throw new Error(
-                result.error || "Sèvè a pa konfime anrejistreman kòmand lan."
+                result?.message || "Le serveur n'a pas confirmé la commande."
             );
         }
 
         const serverOrder = result.order;
-        const orders = getJSON(STORAGE_KEYS.ORDERS, []);
 
         const order = {
             id: generateId(),
             remoteOrderId: String(serverOrder.id || serverOrder._id || ""),
-            userId: user.id,
-            customer: {
-                firstName: user.firstName || "",
-                lastName: user.lastName || "",
-                email: user.email || "",
-                whatsapp
-            },
-            productId: selectedProduct.id,
+            userId: String(user.id || user.email || user.whatsapp || ""),
+            customerName,
+            customerPhone: whatsapp,
+            customerEmail: user.email || email,
+            productId: selectedProduct.id || "",
             productName: selectedProduct.name,
-            optionId: selectedOption.id,
             optionLabel: selectedOption.label,
+            productOption: selectedOption.label,
             quantity,
             price: selectedOption.price,
             total,
+            amount: total,
             transactionId: txn,
             region,
             gameId,
             konamiId,
             accountEmail: email,
+            description,
             status: serverOrder.status || "En attente",
-            createdAt: serverOrder.createdAt || new Date().toISOString()
+            createdAt: serverOrder.createdAt || serverOrder.created_at || new Date().toISOString()
         };
 
-        orders.push(order);
+        const orders = getJSON(STORAGE_KEYS.ORDERS, []);
+        orders.unshift(order);
         setJSON(STORAGE_KEYS.ORDERS, orders);
-        markTransactionUsed(txn);
+
+        if (txn) {
+            markTransactionUsed(txn);
+        }
 
         closeProductModal();
         renderOrders();
         fetchCustomerOrders();
 
-        showToast("Kòmand lan voye. Li an atant validasyon Admin lan.");
+        showToast(
+            "Kòmand lan voye. Li rete tann verifikasyon administratè a.",
+            "success"
+        );
+
         openWhatsAppOrder(order);
     } catch (error) {
-        console.error("SEBY order submission failed:", error);
-        showToast(error.message || "Kòmand lan pa pase. Eseye ankò.");
+        console.error("SEBY order error:", error);
+
+        showToast(
+            error?.message || "Nou pa t kapab voye kòmand lan. Eseye ankò.",
+            "error"
+        );
     } finally {
         orderSubmitting = false;
 
         if (button) {
             button.disabled = false;
-            button.textContent = "Commander";
+            button.textContent = originalButtonText;
         }
     }
 }
 
+/* =========================================================
+   WHATSAPP ORDER MESSAGE
+========================================================= */
+
 function openWhatsAppOrder(order) {
-    let message =
-        `Bonjour, mwen vle pase yon kòmand sou sit la.\n\n` +
-        `Produit: ${order.productName}\n` +
-        `Offre: ${order.optionLabel}\n` +
-        `Quantité: ${order.quantity}\n` +
-        `Prix total: ${order.total} Gdes\n` +
-        `ID Transaction: ${order.transactionId}\n` +
-        `WhatsApp: ${order.customer.whatsapp}\n`;
+    if (!order) {
+        return;
+    }
 
-    if (order.region) message += `Region: ${order.region}\n`;
-    if (order.gameId) message += `ID: ${order.gameId}\n`;
-    if (order.konamiId) message += `Konami ID: ${order.konamiId}\n`;
-    if (order.accountEmail) message += `E-mail: ${order.accountEmail}\n`;
+    const lines = [
+        "Bonjour SEBY UNIVERSE !",
+        "",
+        "Nouvelle commande",
+        "Produit : " + (order.productName || ""),
+        "Option : " + (order.optionLabel || order.productOption || ""),
+        "Quantité : " + (order.quantity || 1),
+        "Total : " + formatGdes(order.total || order.amount || 0) + " Gdes",
+        "Transaction ID : " + (order.transactionId || "Non fourni"),
+        "WhatsApp client : " + (order.customerPhone || ""),
+        "Statut : En attente de vérification"
+    ];
 
-    message += "\nStatut: En attente de validation.";
+    if (order.region) {
+        lines.push("Région : " + order.region);
+    }
 
-    const url = "https://wa.me/" + WHATSAPP_NUMBER +
-        "?text=" + encodeURIComponent(message);
+    if (order.gameId) {
+        lines.push("Game ID : " + order.gameId);
+    }
 
-    window.open(url, "_blank", "noopener");
+    if (order.konamiId) {
+        lines.push("Konami ID : " + order.konamiId);
+    }
+
+    if (order.accountEmail) {
+        lines.push("E-mail du compte : " + order.accountEmail);
+    }
+
+    lines.push("", "Merci !");
+
+    const url =
+        `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+
+    window.open(url, "_blank", "noopener,noreferrer");
 }
 
 /* =========================================================
@@ -951,87 +1071,122 @@ function openWhatsAppOrder(order) {
 ========================================================= */
 
 function getCart() {
-    return getJSON(STORAGE_KEYS.CART, []);
+    const cart = getJSON(STORAGE_KEYS.CART, []);
+    return Array.isArray(cart) ? cart : [];
 }
 
 function updateCartBadge() {
-    const badge = document.getElementById("cartBadge");
-    if (!badge) return;
+    const cart = getCart();
+    const count = cart.reduce(
+        (sum, item) => sum + (Number(item.quantity) || 1),
+        0
+    );
 
-    badge.textContent = getCart().length;
-    badge.style.display = getCart().length ? "" : "none";
+    ["cartBadge", "cart-count"].forEach(id => {
+        const badge = document.getElementById(id);
+        if (badge) {
+            badge.textContent = String(count);
+            badge.style.display = count > 0 ? "" : "none";
+        }
+    });
 }
 
 function addSelectedToCart() {
     if (!selectedProduct || !selectedOption) {
-        showToast("Please select a package.");
+        showToast("Chwazi yon pwodwi anvan.", "error");
         return;
     }
 
     const cart = getCart();
+    const key = `${selectedProduct.id || selectedProduct.name}|${selectedOption.label}`;
 
-    cart.push({
-        id: generateId(),
-        productId: selectedProduct.id,
-        productName: selectedProduct.name,
-        optionId: selectedOption.id,
-        optionLabel: selectedOption.label,
-        price: selectedOption.price,
-        quantity: selectedQuantity
-    });
+    const existing = cart.find(item => item.key === key);
+
+    if (existing) {
+        existing.quantity = Math.min(
+            100,
+            (Number(existing.quantity) || 1) + (Number(selectedQuantity) || 1)
+        );
+    } else {
+        cart.push({
+            key,
+            productId: selectedProduct.id || "",
+            productName: selectedProduct.name,
+            optionLabel: selectedOption.label,
+            price: Number(selectedOption.price) || 0,
+            quantity: Math.max(1, Number(selectedQuantity) || 1)
+        });
+    }
 
     setJSON(STORAGE_KEYS.CART, cart);
     updateCartBadge();
-    showToast("Added to cart.");
+    closeProductModal();
+    showToast("Pwodwi a ajoute nan panyen an.", "success");
 }
 
 function openCartModal() {
-    const modal = document.getElementById("cartModal");
-    const body = document.getElementById("cartModalBody");
-    if (!modal || !body) return;
-
     const cart = getCart();
+    const modal = document.getElementById("cartModal");
+    const body = document.getElementById("cartModalBody")
+        || document.getElementById("cartItems")
+        || document.getElementById("cartContent");
 
-    if (!cart.length) {
-        body.innerHTML = '<div class="empty-state">Your cart is empty.</div>';
-        modal.classList.add("active");
+    if (!modal || !body) {
+        showToast("Fenèt panyen an pa jwenn nan HTML la.", "error");
         return;
     }
 
-    let total = 0;
-
-    body.innerHTML = cart.map((item, index) => {
-        const itemTotal = Number(item.price) * Number(item.quantity);
-        total += itemTotal;
-
-        return `
+    if (cart.length === 0) {
+        body.innerHTML = `
+            <div class="empty-state">
+                <p>Panyen ou vid.</p>
+            </div>
+        `;
+    } else {
+        const itemsHTML = cart.map((item, index) => `
             <div class="cart-item">
-                <div class="cart-item-top">
-                    <strong>${escapeHTML(item.productName)}</strong>
-                    <button onclick="removeCartItem(${index})"
-                        style="border:0;background:none;color:#dc2626">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                <div>
+                    <strong>${escapeHTML(item.productName || "Produit")}</strong>
+                    <p>${escapeHTML(item.optionLabel || "")}</p>
+                    <p>Quantité : ${Number(item.quantity) || 1}</p>
+                    <strong>
+                        ${formatGdes((Number(item.price) || 0) *
+                            (Number(item.quantity) || 1))} Gdes
+                    </strong>
                 </div>
-                <p>${escapeHTML(item.optionLabel)}</p>
-                <p>Quantity: ${Number(item.quantity) || 1}</p>
-                <strong>${formatGdes(itemTotal)}</strong>
-            </div>`;
-    }).join("");
+                <button type="button" onclick="removeCartItem(${index})">
+                    Retirer
+                </button>
+            </div>
+        `).join("");
 
-    body.innerHTML += `
-        <div class="cart-total">
-            <span>Total</span><span>${formatGdes(total)}</span>
-        </div>
-        <button class="btn-primary full-btn" style="margin-top:15px"
-            onclick="checkoutCart()">Commander</button>`;
+        const total = cart.reduce(
+            (sum, item) =>
+                sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+            0
+        );
+
+        body.innerHTML = `
+            ${itemsHTML}
+            <div class="cart-total">
+                Total : <strong>${formatGdes(total)} Gdes</strong>
+            </div>
+            <button type="button" onclick="checkoutCart()">
+                Continuer mes achats
+            </button>
+        `;
+    }
 
     modal.classList.add("active");
+    modal.classList.remove("hidden");
 }
 
 function removeCartItem(index) {
     const cart = getCart();
-    if (index < 0 || index >= cart.length) return;
+
+    if (index < 0 || index >= cart.length) {
+        return;
+    }
 
     cart.splice(index, 1);
     setJSON(STORAGE_KEYS.CART, cart);
@@ -1040,84 +1195,104 @@ function removeCartItem(index) {
 }
 
 function checkoutCart() {
-    if (!getCart().length) {
-        showToast("Your cart is empty.");
-        return;
-    }
-
     showToast(
-        "Open a product, select its package, and enter its transaction ID to place an order."
+        "Ouvri yon pwodwi, chwazi opsyon an epi antre ID tranzaksyon an pou pase kòmand.",
+        "info"
     );
 }
 
 function closeCartModal() {
     document.getElementById("cartModal")?.classList.remove("active");
+    document.getElementById("cartModal")?.classList.add("hidden");
 }
 
 /* =========================================================
-   WALLET & NATCASH RECHARGE
+   WALLET / NATCASH RECHARGE
 ========================================================= */
 
 function renderWallet() {
     const user = getCurrentUser();
-    const balanceElement = document.getElementById("userWalletBalance");
 
-    if (!user || !balanceElement) return;
+    if (!user) {
+        return;
+    }
 
     const wallets = getJSON(STORAGE_KEYS.WALLETS, {});
-    const balance = Number(wallets[user.id] || 0);
+    const userKey = String(user.id || user.email || user.whatsapp || "");
+    const wallet = wallets[userKey] || { balance: 0, transactions: [] };
 
-    balanceElement.textContent = balance.toLocaleString("en-US") + " Gdes";
+    const balance = Number(wallet.balance) || 0;
+
+    const balanceElement = document.getElementById("walletBalance");
+    if (balanceElement) {
+        balanceElement.textContent = `${formatGdes(balance)} Gdes`;
+    }
+
+    const transactions = Array.isArray(wallet.transactions)
+        ? wallet.transactions
+        : [];
+
+    const transactionContainer =
+        document.getElementById("walletTransactions");
+
+    if (transactionContainer) {
+        transactionContainer.innerHTML = transactions.length
+            ? transactions.map(transaction => `
+                <div class="transaction-item">
+                    <strong>${escapeHTML(transaction.type || "Transaction")}</strong>
+                    <span>${formatGdes(Number(transaction.amount) || 0)} Gdes</span>
+                    <small>${escapeHTML(transaction.status || "En attente")}</small>
+                </div>
+            `).join("")
+            : `<p class="empty-state">Pa gen tranzaksyon pou kounye a.</p>`;
+    }
 }
 
 async function submitWalletRecharge() {
-    if (rechargeSubmitting) return;
-
     const user = getCurrentUser();
 
     if (!user) {
-        showToast("Please sign in first.");
+        showToast("Konekte anvan ou fè yon depo.", "error");
         return;
     }
 
-    const amountInput = document.getElementById("rechargeAmount");
+    const amountInput = document.getElementById("walletAmount");
     const txnInput = document.getElementById("walletTxnId");
 
-    const amount = Number(amountInput?.value || 0);
-    const txn = String(txnInput?.value || "").trim();
+    const amount = Number(amountInput?.value);
+    const txn = (txnInput?.value || "").trim();
 
-    if (!Number.isFinite(amount) || amount < 150) {
-        showToast("Minimum recharge amount is 150 Gdes.");
+    if (!Number.isInteger(amount) || amount < 150) {
+        showToast("Montan minimòm depo a se 150 Gdes.", "error");
         return;
     }
 
-    if (!Number.isSafeInteger(amount)) {
-        showToast("Enter a valid whole-number amount.");
+    if (!/^\d{10,20}$/.test(txn)) {
+        showToast("ID tranzaksyon an dwe gen 10 a 20 chif.", "error");
         return;
     }
 
-    if (!validateTransactionOrShowMessage(txn)) {
-        if (txnInput && !/^\d{10,20}$/.test(txn)) txnInput.focus();
+    if (isTransactionUsed(txn)) {
+        showToast("ID tranzaksyon sa a deja anrejistre.", "error");
         return;
     }
 
-    const customerName = [
-        user.firstName || "",
-        user.lastName || ""
-    ].join(" ").trim() || user.email || "Customer";
-
-    const submitButton = document.querySelector(
+    const button = document.querySelector(
         '[onclick*="submitWalletRecharge"]'
     );
+    const originalText = button?.textContent || "Soumettre";
 
-    rechargeSubmitting = true;
-
-    if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.textContent = "Envoi...";
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Envoi...";
     }
 
     try {
+        const customerName = [
+            user.firstName || user.firstname || "",
+            user.lastName || user.lastname || ""
+        ].filter(Boolean).join(" ") || user.name || user.email || "Client";
+
         const result = await sebyApiPost("/api/recharges", {
             customerName,
             phone: user.whatsapp || "",
@@ -1125,29 +1300,25 @@ async function submitWalletRecharge() {
             transactionId: txn
         });
 
-        if (result.ok !== true || !result.recharge) {
+        if (!result || result.ok !== true || !result.recharge) {
             throw new Error(
-                result.error || "Sèvè a pa konfime demann depo a."
+                result?.message || "Le serveur n'a pas confirmé le dépôt."
             );
         }
 
-        const serverRecharge = result.recharge;
+        const recharge = result.recharge;
         const recharges = getJSON(STORAGE_KEYS.RECHARGES, []);
 
-        recharges.push({
+        recharges.unshift({
             id: generateId(),
-            remoteRechargeId: serverRecharge.id || serverRecharge._id || "",
-            userId: user.id,
-            customer: {
-                firstName: user.firstName || "",
-                lastName: user.lastName || "",
-                email: user.email || "",
-                whatsapp: user.whatsapp || ""
-            },
+            remoteId: String(recharge.id || recharge._id || ""),
+            userId: String(user.id || user.email || user.whatsapp || ""),
+            customerName,
+            phone: user.whatsapp || "",
             amount,
             transactionId: txn,
-            status: serverRecharge.status || "En attente",
-            createdAt: serverRecharge.createdAt || new Date().toISOString()
+            status: recharge.status || "En attente",
+            createdAt: recharge.createdAt || new Date().toISOString()
         });
 
         setJSON(STORAGE_KEYS.RECHARGES, recharges);
@@ -1156,22 +1327,28 @@ async function submitWalletRecharge() {
         if (amountInput) amountInput.value = "";
         if (txnInput) txnInput.value = "";
 
-        showToast("Demann depo a voye. Li an atant validasyon Admin lan.");
-    } catch (error) {
-        console.error("SEBY recharge submission failed:", error);
-        showToast(error.message || "Depo a pa pase. Eseye ankò.");
-    } finally {
-        rechargeSubmitting = false;
+        showToast(
+            "Demann depo a voye. Li rete tann administratè a verifye peman an.",
+            "success"
+        );
 
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.textContent = "Confirmer le dépôt";
+        renderWallet();
+    } catch (error) {
+        console.error("SEBY wallet recharge error:", error);
+        showToast(
+            error?.message || "Nou pa t kapab voye demann depo a.",
+            "error"
+        );
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalText;
         }
     }
 }
 
 /* =========================================================
-   ORDERS DISPLAY — LIVE RENDER API SYNC
+   ORDER STATUS HELPERS
 ========================================================= */
 
 function normalizeOrderStatus(status) {
@@ -1179,543 +1356,545 @@ function normalizeOrderStatus(status) {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
-        .replace(/[_-]+/g, " ")
         .trim();
 }
 
 function statusLabel(status) {
-    const value = normalizeOrderStatus(status);
+    const normalized = normalizeOrderStatus(status);
 
     if (
-        value.includes("refus") ||
-        value.includes("reject") ||
-        value.includes("cancel") ||
-        value.includes("failed")
+        normalized.includes("refus") ||
+        normalized.includes("reject") ||
+        normalized.includes("cancel")
     ) {
         return "Refusée";
     }
 
     if (
-        value.includes("termine") ||
-        value.includes("complete") ||
-        value.includes("livre")
+        normalized.includes("termine") ||
+        normalized.includes("complete") ||
+        normalized.includes("delivered")
     ) {
         return "Terminé";
     }
 
     if (
-        value.includes("valide") ||
-        value.includes("approved") ||
-        value.includes("success")
+        normalized.includes("valid") ||
+        normalized.includes("approved") ||
+        normalized.includes("paid")
     ) {
         return "Validée";
     }
 
     if (
-        value.includes("attente") ||
-        value.includes("pending")
+        normalized.includes("cours") ||
+        normalized.includes("process")
     ) {
-        return "En attente";
-    }
-
-    if (value.includes("cours")) {
         return "En cours";
     }
 
-    return status || "En attente";
+    return "En attente";
 }
 
-/*
- * Rekipere estati yo nan baz done Render la.
- * API a konpare imèl ak/oswa nimewo telefòn kliyan an.
- */
+/* =========================================================
+   CUSTOMER ORDERS — API SYNC
+========================================================= */
+
+let fetchingCustomerOrders = false;
+
 async function fetchCustomerOrders() {
-    if (orderRequestRunning) return;
+    if (fetchingCustomerOrders) {
+        return;
+    }
 
     const user = getCurrentUser();
 
-    if (!user || (!user.email && !user.whatsapp)) return;
+    if (!user || (!user.email && !user.whatsapp)) {
+        return;
+    }
 
-    orderRequestRunning = true;
+    fetchingCustomerOrders = true;
 
     try {
         const params = new URLSearchParams();
 
         if (user.email) {
-            params.set("email", user.email.trim().toLowerCase());
+            params.set("email", user.email);
         }
 
         if (user.whatsapp) {
-            params.set("phone", user.whatsapp.trim());
+            params.set("phone", user.whatsapp);
         }
 
         const response = await fetch(
-            SEBY_API_BASE + "/api/customer-orders?" + params.toString(),
+            `${SEBY_API_BASE}/api/customer-orders?${params.toString()}`,
             {
                 method: "GET",
-                headers: { "Accept": "application/json" },
-                cache: "no-store"
+                headers: { Accept: "application/json" }
             }
         );
 
+        const contentType = response.headers.get("content-type") || "";
+
+        if (!contentType.includes("application/json")) {
+            throw new Error("Le serveur n'a pas renvoyé de JSON.");
+        }
+
+        const data = await response.json();
+
         if (!response.ok) {
-            throw new Error("Customer orders API: " + response.status);
+            throw new Error(data?.message || "Erreur de chargement des commandes.");
         }
 
-        const result = await response.json();
-
-        if (!Array.isArray(result)) {
-            throw new Error("Repons kòmand sèvè a pa valab.");
-        }
+        const remoteOrders = Array.isArray(data)
+            ? data
+            : Array.isArray(data.orders)
+                ? data.orders
+                : Array.isArray(data.data)
+                    ? data.data
+                    : [];
 
         const currentUser = getCurrentUser();
 
-        if (!currentUser || currentUser.id !== user.id) return;
+        if (
+            !currentUser ||
+            String(currentUser.id || currentUser.email || currentUser.whatsapp) !==
+            String(user.id || user.email || user.whatsapp)
+        ) {
+            return;
+        }
 
         const orders = getJSON(STORAGE_KEYS.ORDERS, []);
+        const userId = String(user.id || user.email || user.whatsapp || "");
 
-        result.forEach(remote => {
-            if (!remote || !remote.id) return;
+        remoteOrders.forEach(remote => {
+            const remoteId = String(remote.id || remote._id || "");
 
-            const remoteId = String(remote.id);
+            if (!remoteId) {
+                return;
+            }
 
-            let existing = orders.find(order =>
+            const existing = orders.find(order =>
                 String(order.remoteOrderId || "") === remoteId
             );
 
-            if (!existing) {
-                /*
-                 * Kòmand lan sou sèvè a men li pa nan localStorage.
-                 * Ajoute li pou li ka parèt nan My Orders.
-                 */
-                existing = {
-                    id: "remote-" + remoteId,
-                    remoteOrderId: remoteId,
-                    userId: currentUser.id,
-                    productName: remote.productName || "Commande",
-                    optionLabel: "",
-                    quantity: Number(remote.quantity) || 1,
-                    price: Number(remote.amount) || 0,
-                    total: Number(remote.amount) || 0,
-                    transactionId: "",
-                    status: remote.status || "En attente",
-                    createdAt: remote.createdAt || "",
-                    updatedAt: remote.updatedAt || null
-                };
-
-                orders.push(existing);
-            } else {
-                /*
-                 * Estati ki sou Render la ranplase ansyen estati lokal la.
-                 */
+            if (existing) {
                 existing.status = remote.status || existing.status;
-                existing.updatedAt =
-                    remote.updatedAt || existing.updatedAt || null;
+                existing.updatedAt = remote.updatedAt || new Date().toISOString();
 
-                if (remote.createdAt) {
-                    existing.createdAt = remote.createdAt;
+                if (remote.productName || remote.product) {
+                    existing.remoteProductName =
+                        remote.productName || remote.product;
                 }
 
-                if (remote.productName) {
-                    existing.remoteProductName = remote.productName;
-                }
-
-                if (remote.amount !== undefined && remote.amount !== null) {
+                if (remote.amount != null) {
                     existing.remoteAmount = Number(remote.amount);
                 }
+
+                return;
             }
+
+            orders.unshift({
+                id: generateId(),
+                remoteOrderId: remoteId,
+                userId,
+                customerName: remote.customerName || user.name || "",
+                customerEmail: remote.customerEmail || user.email || "",
+                customerPhone: remote.customerPhone || user.whatsapp || "",
+                productName: remote.productName || remote.product || "Commande",
+                amount: Number(remote.amount) || 0,
+                remoteAmount: Number(remote.amount) || 0,
+                quantity: Number(remote.quantity) || 1,
+                status: remote.status || "En attente",
+                createdAt: remote.createdAt || remote.created_at ||
+                    new Date().toISOString()
+            });
         });
 
         setJSON(STORAGE_KEYS.ORDERS, orders);
-
         renderOrders({ skipRemote: true });
-
     } catch (error) {
-        console.warn(
-            "My Orders pa t kapab rafrechi:",
-            error.message
-        );
+        console.warn("SEBY customer orders sync:", error);
     } finally {
-        orderRequestRunning = false;
+        fetchingCustomerOrders = false;
     }
 }
+
+let orderPollingTimer = null;
 
 function startOrderPolling() {
     stopOrderPolling();
 
-    if (!getCurrentUser()) return;
+    if (!getCurrentUser()) {
+        return;
+    }
 
     fetchCustomerOrders();
 
-    orderRefreshTimer = setInterval(() => {
-        if (getCurrentUser()) {
-            fetchCustomerOrders();
-        } else {
+    orderPollingTimer = setInterval(() => {
+        if (!getCurrentUser()) {
             stopOrderPolling();
+            return;
         }
+
+        fetchCustomerOrders();
     }, 15000);
 }
 
 function stopOrderPolling() {
-    if (orderRefreshTimer) {
-        clearInterval(orderRefreshTimer);
-        orderRefreshTimer = null;
+    if (orderPollingTimer) {
+        clearInterval(orderPollingTimer);
+        orderPollingTimer = null;
     }
 }
 
 function renderOrders(options = {}) {
-    const list = document.getElementById("ordersList");
+    const container = document.getElementById("ordersList");
+
+    if (!container) {
+        return;
+    }
+
     const user = getCurrentUser();
 
-    if (!list || !user) return;
+    if (!user) {
+        container.innerHTML = `<p class="empty-state">Konekte pou wè kòmand ou yo.</p>`;
+        return;
+    }
+
+    const userId = String(user.id || user.email || user.whatsapp || "");
+    const orders = getJSON(STORAGE_KEYS.ORDERS, []);
+
+    const customerOrders = orders.filter(order =>
+        String(order.userId || "") === userId ||
+        (
+            !order.userId &&
+            (
+                (user.email && order.customerEmail === user.email) ||
+                (user.whatsapp && order.customerPhone === user.whatsapp)
+            )
+        )
+    );
 
     if (!options.skipRemote) {
         fetchCustomerOrders();
     }
 
-    const orders = getJSON(STORAGE_KEYS.ORDERS, []);
-
-    const userOrders = orders.filter(order =>
-        order.userId === user.id
-    );
-
-    if (!userOrders.length) {
-        list.innerHTML = `
+    if (customerOrders.length === 0) {
+        container.innerHTML = `
             <div class="empty-state">
-                <i class="fa-solid fa-bag-shopping"></i>
-                <p>No orders yet.</p>
-            </div>`;
+                <p>Ou poko gen kòmand.</p>
+            </div>
+        `;
         return;
     }
 
-    list.innerHTML = userOrders.slice().reverse().map(order => {
+    container.innerHTML = customerOrders.map(order => {
+        const productName =
+            order.remoteProductName ||
+            order.productName ||
+            "Commande";
+
+        const amount = order.remoteAmount != null
+            ? Number(order.remoteAmount)
+            : Number(order.total ?? order.amount) || 0;
+
         const status = statusLabel(order.status);
+        const statusClass = normalizeOrderStatus(status)
+            .replace(/\s+/g, "-");
 
-        const statusClass =
-            status === "Validée" ? "validated" :
-            status === "Terminé" ? "completed" :
-            status === "Refusée" ? "rejected" :
-            status === "En attente" ? "pending" :
-            "in-progress";
-
-        const displayedTotal =
-            order.remoteAmount !== undefined
-                ? order.remoteAmount
-                : order.total;
+        const date = order.createdAt
+            ? new Date(order.createdAt).toLocaleString("fr-FR")
+            : "Date inconnue";
 
         return `
-            <div class="order-card">
-                <h3>${escapeHTML(order.remoteProductName || order.productName || "Commande")}</h3>
+            <article class="order-card">
+                <div class="order-card-header">
+                    <strong>${escapeHTML(productName)}</strong>
+                    <span class="order-status ${escapeHTML(statusClass)}">
+                        ${escapeHTML(status)}
+                    </span>
+                </div>
 
-                ${
-                    order.optionLabel
-                        ? `<p>Offer: ${escapeHTML(order.optionLabel)}</p>`
-                        : ""
-                }
-
-                <p>Quantity: ${Number(order.quantity) || 1}</p>
-
-                <p>
-                    Total:
-                    <strong>${formatGdes(displayedTotal)}</strong>
-                </p>
-
-                ${
-                    order.transactionId
-                        ? `<p>Transaction ID: ${escapeHTML(order.transactionId)}</p>`
-                        : ""
-                }
-
-                <p>Date: ${escapeHTML(
-                    order.createdAt
-                        ? new Date(order.createdAt).toLocaleString()
-                        : ""
-                )}</p>
-
-                <span class="status ${statusClass}">
-                    ${escapeHTML(status)}
-                </span>
-            </div>`;
+                <p>Quantité : ${Number(order.quantity) || 1}</p>
+                <p>Total : ${formatGdes(amount)} Gdes</p>
+                ${order.transactionId
+                    ? `<p>ID transaction : ${escapeHTML(order.transactionId)}</p>`
+                    : ""}
+                <small>${escapeHTML(date)}</small>
+            </article>
+        `;
     }).join("");
 }
 
 /* =========================================================
-   PROFILE
+   CUSTOMER PROFILE
 ========================================================= */
 
 function loadProfile() {
     const user = getCurrentUser();
-    const content = document.getElementById("profileContent");
+    const container = document.getElementById("profileContent");
 
-    if (!user || !content) return;
+    if (!container) {
+        return;
+    }
 
-    content.innerHTML = `
-        <div class="profile-row">
-            <span class="profile-label">First Name</span>
-            <span class="profile-value">${escapeHTML(user.firstName)}</span>
+    if (!user) {
+        container.innerHTML = `<p>Konekte pou wè pwofil ou.</p>`;
+        return;
+    }
+
+    const firstName = user.firstName || user.firstname || "";
+    const lastName = user.lastName || user.lastname || "";
+
+    container.innerHTML = `
+        <div class="profile-details">
+            <p><strong>Prénom :</strong> ${escapeHTML(firstName)}</p>
+            <p><strong>Nom :</strong> ${escapeHTML(lastName)}</p>
+            <p><strong>WhatsApp :</strong> ${escapeHTML(user.whatsapp || "")}</p>
+            <p><strong>E-mail :</strong> ${escapeHTML(user.email || "")}</p>
+            <p><strong>ID client :</strong> ${escapeHTML(String(user.id || ""))}</p>
         </div>
-        <div class="profile-row">
-            <span class="profile-label">Last Name</span>
-            <span class="profile-value">${escapeHTML(user.lastName)}</span>
-        </div>
-        <div class="profile-row">
-            <span class="profile-label">WhatsApp</span>
-            <span class="profile-value">${escapeHTML(user.whatsapp)}</span>
-        </div>
-        <div class="profile-row">
-            <span class="profile-label">Email</span>
-            <span class="profile-value">${escapeHTML(user.email)}</span>
-        </div>
-        <div class="profile-row">
-            <span class="profile-label">Customer ID</span>
-            <span class="profile-value">${escapeHTML(user.id)}</span>
-        </div>`;
+    `;
 }
 
 /* =========================================================
-   CUSTOMER NOTIFICATIONS — RENDER API
+   NOTIFICATIONS — LOCAL + REMOTE
 ========================================================= */
 
+let remoteNotifications = [];
+let fetchingCustomerNotifications = false;
+let notificationPollingTimer = null;
+
 function getLocalNotifications() {
-    return getJSON(STORAGE_KEYS.NOTIFICATIONS, []);
+    const notifications = getJSON(STORAGE_KEYS.NOTIFICATIONS, []);
+    return Array.isArray(notifications) ? notifications : [];
 }
 
 function getNotifications() {
     const local = getLocalNotifications();
-    const remote = Array.isArray(remoteNotifications) ? remoteNotifications : [];
+    const remote = Array.isArray(remoteNotifications)
+        ? remoteNotifications
+        : [];
 
-    const combined = [...remote, ...local];
-    const seen = new Set();
+    const combined = [...remote];
 
-    return combined.filter(item => {
-        const key = String(
-            item.id || item._id || item.title + "|" + item.message
-        );
+    local.forEach(item => {
+        const id = String(item.id || item._id || "");
 
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
+        if (!combined.some(remoteItem =>
+            String(remoteItem.id || remoteItem._id || "") === id
+        )) {
+            combined.push(item);
+        }
     });
+
+    return combined;
 }
 
 function notificationRead(item) {
-    return item.read === true ||
-        item.isRead === true ||
-        item.status === "read" ||
-        item.readAt != null;
+    return Boolean(item.read || item.isRead || item.readAt);
 }
 
 function notificationTitle(item) {
-    return item.title || item.subject || item.heading || "SEBY UNIVERSE";
+    return item.title || item.subject || "Notification SEBY UNIVERSE";
 }
 
 function notificationMessage(item) {
-    return item.message || item.body || item.text || item.content || "";
+    return item.message || item.body || item.description || "";
 }
 
 function notificationDate(item) {
-    const value = item.createdAt || item.created_at || item.date || item.timestamp;
-    if (!value) return "";
+    const dateValue = item.createdAt || item.created_at || item.date;
 
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+    if (!dateValue) {
+        return "";
+    }
+
+    const date = new Date(dateValue);
+
+    return Number.isNaN(date.getTime())
+        ? ""
+        : date.toLocaleString("fr-FR");
 }
 
 function updateNotificationBadge() {
-    const badge = document.getElementById("notifBadge");
-    if (!badge) return;
+    const unread = getNotifications().filter(item => !notificationRead(item)).length;
 
-    const unread = getNotifications().filter(
-        item => !notificationRead(item)
-    ).length;
+    ["notificationBadge", "notifBadge", "notification-count"].forEach(id => {
+        const element = document.getElementById(id);
 
-    badge.textContent = unread > 99 ? "99+" : String(unread);
-    badge.style.display = unread > 0 ? "" : "none";
+        if (element) {
+            element.textContent = String(unread);
+            element.style.display = unread > 0 ? "" : "none";
+        }
+    });
 }
 
 function getNotificationContainer() {
-    const candidates = [
-        "notifModalBody",
-        "notificationList",
-        "customerNotificationsList"
-    ];
+    return document.getElementById("notifModalBody")
+        || document.getElementById("notificationList")
+        || document.getElementById("customerNotificationsList")
+        || document.querySelector("#notifModal .seby-notification-list");
+}
 
-    for (const id of candidates) {
-        const element = document.getElementById(id);
-        if (element) return element;
-    }
-
-    const modal = document.getElementById("notifModal");
-    if (!modal) return null;
-
-    let container = modal.querySelector(".seby-notification-list");
+function renderCustomerNotifications() {
+    let container = getNotificationContainer();
 
     if (!container) {
+        const modal = document.getElementById("notifModal");
+
+        if (!modal) {
+            updateNotificationBadge();
+            return;
+        }
+
         container = document.createElement("div");
         container.className = "seby-notification-list";
         modal.appendChild(container);
     }
 
-    return container;
-}
-
-function renderCustomerNotifications() {
-    const container = getNotificationContainer();
-
-    if (!container) {
-        updateNotificationBadge();
-        return;
-    }
-
     const notifications = getNotifications();
 
-    if (!notifications.length) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fa-regular fa-bell"></i>
-                <p>No notifications yet.</p>
-            </div>`;
-
+    if (notifications.length === 0) {
+        container.innerHTML = `<p class="empty-state">Pa gen notifikasyon pou kounye a.</p>`;
         updateNotificationBadge();
         return;
     }
 
     container.innerHTML = notifications.map(item => {
-        const id = item.id || item._id || "";
-
+        const id = String(item.id || item._id || "");
+        const read = notificationRead(item);
         const isRemote = remoteNotifications.some(remote =>
-            String(remote.id || remote._id) === String(id)
+            String(remote.id || remote._id || "") === id
         );
 
         return `
-            <article class="seby-notification-item ${
-                notificationRead(item) ? "is-read" : "is-unread"
-            }">
-                <div class="seby-notification-heading">
-                    <strong>${escapeHTML(notificationTitle(item))}</strong>
-                    ${notificationRead(item)
-                        ? ""
-                        : '<span class="seby-notification-dot"></span>'}
-                </div>
+            <article class="notification-card ${read ? "read" : "unread"}">
+                <strong>${escapeHTML(notificationTitle(item))}</strong>
                 <p>${escapeHTML(notificationMessage(item))}</p>
-                ${notificationDate(item)
-                    ? `<small>${escapeHTML(notificationDate(item))}</small>`
-                    : ""}
-                ${!notificationRead(item) && id
-                    ? `<button type="button" class="seby-notification-read"
-                        onclick="markCustomerNotificationRead('${escapeHTML(id)}', ${isRemote})">
-                        Mark as read
-                       </button>`
-                    : ""}
-            </article>`;
+                <small>${escapeHTML(notificationDate(item))}</small>
+                ${read ? "" : `
+                    <button
+                        type="button"
+                        onclick="markCustomerNotificationRead('${escapeHTML(id)}', ${isRemote})"
+                    >
+                        Marquer comme lu
+                    </button>
+                `}
+            </article>
+        `;
     }).join("");
 
     updateNotificationBadge();
 }
 
 async function fetchCustomerNotifications() {
+    if (fetchingCustomerNotifications) {
+        return;
+    }
+
     const user = getCurrentUser();
 
-    if (!user || !user.email || notificationRequestRunning) return;
+    if (!user?.email) {
+        renderCustomerNotifications();
+        return;
+    }
 
-    notificationRequestRunning = true;
+    fetchingCustomerNotifications = true;
 
     try {
-        const url = SEBY_API_BASE +
-            "/api/customer-notifications?email=" +
-            encodeURIComponent(user.email);
+        const response = await fetch(
+            `${SEBY_API_BASE}/api/customer-notifications?email=${encodeURIComponent(user.email)}`,
+            { headers: { Accept: "application/json" } }
+        );
 
-        const response = await fetch(url, {
-            method: "GET",
-            headers: { "Accept": "application/json" },
-            cache: "no-store"
-        });
+        const contentType = response.headers.get("content-type") || "";
 
-        if (!response.ok) {
-            throw new Error("Notifications API returned " + response.status);
+        if (!contentType.includes("application/json")) {
+            throw new Error("Réponse de notification non valide.");
         }
 
-        const result = await response.json();
+        const data = await response.json();
 
-        const notifications = Array.isArray(result)
-            ? result
-            : Array.isArray(result.notifications)
-                ? result.notifications
-                : Array.isArray(result.data)
-                    ? result.data
+        if (!response.ok) {
+            throw new Error(data?.message || "Erreur de notification.");
+        }
+
+        const list = Array.isArray(data)
+            ? data
+            : Array.isArray(data.notifications)
+                ? data.notifications
+                : Array.isArray(data.data)
+                    ? data.data
                     : [];
 
-        remoteNotifications = notifications.filter(item => {
-            const targetEmail = String(
-                item.email || item.customerEmail || item.recipientEmail || ""
+        remoteNotifications = list.filter(item => {
+            const target = String(
+                item.email || item.customerEmail || item.targetEmail || ""
             ).toLowerCase();
 
-            const audience = String(
-                item.audience || item.target || ""
-            ).toLowerCase();
+            const audience = String(item.audience || "").toLowerCase();
 
-            return !targetEmail ||
-                targetEmail === user.email.toLowerCase() ||
+            return !target ||
+                target === user.email.toLowerCase() ||
                 audience === "all";
         });
 
         renderCustomerNotifications();
     } catch (error) {
-        console.warn(
-            "SEBY notifications could not be loaded:",
-            error.message
-        );
-
-        updateNotificationBadge();
+        console.warn("SEBY notification sync:", error);
+        renderCustomerNotifications();
     } finally {
-        notificationRequestRunning = false;
+        fetchingCustomerNotifications = false;
     }
 }
 
-async function markCustomerNotificationRead(id, isRemote) {
+async function markCustomerNotificationRead(id, isRemote = false) {
     const user = getCurrentUser();
-    if (!user) return;
+
+    if (!user) {
+        return;
+    }
+
+    const targetId = String(id);
 
     if (isRemote) {
         try {
             const response = await fetch(
-                SEBY_API_BASE + "/api/customer-notifications/" +
-                encodeURIComponent(id),
+                `${SEBY_API_BASE}/api/customer-notifications/${encodeURIComponent(targetId)}`,
                 {
                     method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        email: user.email,
-                        phone: user.whatsapp,
+                        email: user.email || "",
+                        phone: user.whatsapp || "",
                         read: true
                     })
                 }
             );
 
             if (!response.ok) {
-                throw new Error("Could not mark remote notification as read.");
+                throw new Error("La notification n'a pas pu être mise à jour.");
             }
 
             remoteNotifications = remoteNotifications.map(item => {
                 const itemId = String(item.id || item._id || "");
 
-                return itemId === String(id)
+                return itemId === targetId
                     ? { ...item, read: true }
                     : item;
             });
         } catch (error) {
-            console.warn("Remote read status was not saved:", error.message);
-            showToast("Could not update the notification. Try again later.");
+            console.warn("SEBY mark notification read:", error);
+            showToast("Nou pa t kapab make notifikasyon an kòm li.", "error");
             return;
         }
     } else {
         const local = getLocalNotifications().map(item => {
             const itemId = String(item.id || item._id || "");
 
-            return itemId === String(id)
+            return itemId === targetId
                 ? { ...item, read: true }
                 : item;
         });
@@ -1726,40 +1905,49 @@ async function markCustomerNotificationRead(id, isRemote) {
     renderCustomerNotifications();
 }
 
-async function openNotifModal() {
+function openNotifModal() {
     const modal = document.getElementById("notifModal");
-    if (!modal) return;
+
+    if (!modal) {
+        showToast("Fenèt notifikasyon an pa jwenn.", "error");
+        return;
+    }
 
     modal.classList.add("active");
+    modal.classList.remove("hidden");
+
     renderCustomerNotifications();
-    await fetchCustomerNotifications();
-    renderCustomerNotifications();
+    fetchCustomerNotifications();
 }
 
 function closeNotifModal() {
     document.getElementById("notifModal")?.classList.remove("active");
+    document.getElementById("notifModal")?.classList.add("hidden");
 }
 
 function startNotificationPolling() {
     stopNotificationPolling();
 
-    if (getCurrentUser()) {
-        fetchCustomerNotifications();
-
-        notificationRefreshTimer = setInterval(() => {
-            if (getCurrentUser()) {
-                fetchCustomerNotifications();
-            } else {
-                stopNotificationPolling();
-            }
-        }, 45000);
+    if (!getCurrentUser()) {
+        return;
     }
+
+    fetchCustomerNotifications();
+
+    notificationPollingTimer = setInterval(() => {
+        if (!getCurrentUser()) {
+            stopNotificationPolling();
+            return;
+        }
+
+        fetchCustomerNotifications();
+    }, 45000);
 }
 
 function stopNotificationPolling() {
-    if (notificationRefreshTimer) {
-        clearInterval(notificationRefreshTimer);
-        notificationRefreshTimer = null;
+    if (notificationPollingTimer) {
+        clearInterval(notificationPollingTimer);
+        notificationPollingTimer = null;
     }
 }
 
@@ -1768,30 +1956,28 @@ function stopNotificationPolling() {
 ========================================================= */
 
 function switchAuthTab(type) {
+    const isRegister = type === "register";
+
     const loginForm = document.getElementById("loginForm");
     const registerForm = document.getElementById("registerForm");
-    const loginBtn = document.getElementById("tabLoginBtn");
-    const registerBtn = document.getElementById("tabRegisterBtn");
 
-    if (type === "register") {
-        loginForm?.classList.remove("active");
-        registerForm?.classList.add("active");
-        loginBtn?.classList.remove("active");
-        registerBtn?.classList.add("active");
-    } else {
-        registerForm?.classList.remove("active");
-        loginForm?.classList.add("active");
-        registerBtn?.classList.remove("active");
-        loginBtn?.classList.add("active");
+    if (loginForm) {
+        loginForm.style.display = isRegister ? "none" : "";
     }
+
+    if (registerForm) {
+        registerForm.style.display = isRegister ? "" : "none";
+    }
+
+    document.getElementById("loginTab")?.classList.toggle("active", !isRegister);
+    document.getElementById("registerTab")?.classList.toggle("active", isRegister);
 }
 
-/* =========================================================
-   GOOGLE / SOCIAL AUTH PLACEHOLDER
-========================================================= */
-
 function socialAuth(provider) {
-    showToast(provider + " login requires Google Identity configuration.");
+    showToast(
+        `${provider} login requires Google Identity configuration.`,
+        "info"
+    );
 }
 
 /* =========================================================
@@ -1799,48 +1985,63 @@ function socialAuth(provider) {
 ========================================================= */
 
 function openProModal() {
-    document.getElementById("proModal")?.classList.add("active");
+    const modal = document.getElementById("proModal");
+
+    if (modal) {
+        modal.classList.add("active");
+        modal.classList.remove("hidden");
+    } else {
+        showToast("Fonksyon Pro a poko konfigire.", "info");
+    }
 }
 
 function closeProModal() {
     document.getElementById("proModal")?.classList.remove("active");
+    document.getElementById("proModal")?.classList.add("hidden");
 }
 
 /* =========================================================
-   COPY
+   CLIPBOARD
 ========================================================= */
 
-function copyToClipboard(text) {
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(String(text))
-            .then(() => showToast("Copied."))
-            .catch(() => showToast("Copy failed."));
-        return;
-    }
-
-    const textarea = document.createElement("textarea");
-    textarea.value = String(text);
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
+async function copyToClipboard(text) {
+    const value = String(text ?? "");
 
     try {
-        document.execCommand("copy");
-        showToast("Copied.");
-    } catch (_) {
-        showToast("Copy failed.");
-    } finally {
-        textarea.remove();
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(value);
+        } else {
+            const textarea = document.createElement("textarea");
+
+            textarea.value = value;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            const copied = document.execCommand("copy");
+            textarea.remove();
+
+            if (!copied) {
+                throw new Error("Copy failed");
+            }
+        }
+
+        showToast("Kopye avèk siksè.", "success");
+    } catch (error) {
+        console.error("SEBY clipboard error:", error);
+        showToast("Nou pa t kapab kopye tèks la.", "error");
     }
 }
 
 /* =========================================================
-   LOGOUT & ACCOUNT INFORMATION
+   LOGOUT / ACCOUNT INFORMATION
 ========================================================= */
 
 function logout() {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+
     remoteNotifications = [];
 
     stopOrderPolling();
@@ -1850,141 +2051,153 @@ function logout() {
     switchGateAuth("login");
     updateNotificationBadge();
 
-    showToast("You have been signed out.");
+    showToast("Ou dekonekte sou kont ou.", "success");
 }
 
 function openAccountInformation() {
-    if (!getCurrentUser()) return;
-    showPage("profile-page");
+    loadProfile();
+
+    const profilePage = document.getElementById("profile-page");
+
+    if (profilePage) {
+        showPage("profile-page");
+    } else {
+        showToast("Paj pwofil la pa jwenn.", "error");
+    }
 }
 
 /* =========================================================
-   EVENT LISTENERS
+   DOM READY
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", function () {
-    const getValue = id => document.getElementById(id)?.value || "";
+document.addEventListener("DOMContentLoaded", () => {
+    const bindForm = (id, callback) => {
+        const form = document.getElementById(id);
 
-    document.getElementById("gateLoginForm")?.addEventListener(
-        "submit",
-        function (event) {
-            event.preventDefault();
-
-            loginUser(
-                getValue("gateLoginEmail"),
-                getValue("gateLoginPassword")
-            );
-        }
-    );
-
-    document.getElementById("gateRegisterForm")?.addEventListener(
-        "submit",
-        function (event) {
-            event.preventDefault();
-
-            registerUser({
-                firstName: getValue("gateFirstName"),
-                lastName: getValue("gateLastName"),
-                whatsapp: getValue("gateWhatsapp"),
-                email: getValue("gateRegisterEmail"),
-                password: getValue("gateRegisterPassword"),
-                confirmPassword: getValue("gateConfirmPassword")
+        if (form) {
+            form.addEventListener("submit", event => {
+                event.preventDefault();
+                callback(form);
             });
         }
-    );
+    };
 
-    document.getElementById("openMenuBtn")
-        ?.addEventListener("click", openSidebar);
+    bindForm("gateLoginForm", form => {
+        loginUser(
+            form.querySelector('[name="email"]')?.value
+                || document.getElementById("gateLoginEmail")?.value
+                || "",
+            form.querySelector('[name="password"]')?.value
+                || document.getElementById("gateLoginPassword")?.value
+                || ""
+        );
+    });
 
-    document.getElementById("closeMenuBtn")
-        ?.addEventListener("click", closeSidebar);
+    bindForm("gateRegisterForm", form => {
+        registerUser({
+            firstName:
+                form.querySelector('[name="firstName"]')?.value
+                || document.getElementById("gateFirstName")?.value
+                || "",
+            lastName:
+                form.querySelector('[name="lastName"]')?.value
+                || document.getElementById("gateLastName")?.value
+                || "",
+            whatsapp:
+                form.querySelector('[name="whatsapp"]')?.value
+                || document.getElementById("gateWhatsApp")?.value
+                || "",
+            email:
+                form.querySelector('[name="email"]')?.value
+                || document.getElementById("gateRegisterEmail")?.value
+                || "",
+            password:
+                form.querySelector('[name="password"]')?.value
+                || document.getElementById("gateRegisterPassword")?.value
+                || "",
+            confirmPassword:
+                form.querySelector('[name="confirmPassword"]')?.value
+                || document.getElementById("gateConfirmPassword")?.value
+                || ""
+        });
+    });
 
-    document.getElementById("sidebarOverlay")
-        ?.addEventListener("click", closeSidebar);
+    bindForm("loginForm", form => {
+        loginUser(
+            form.querySelector('[name="email"]')?.value
+                || document.getElementById("loginEmail")?.value
+                || "",
+            form.querySelector('[name="password"]')?.value
+                || document.getElementById("loginPassword")?.value
+                || ""
+        );
+    });
+
+    bindForm("registerForm", form => {
+        registerUser({
+            firstName:
+                form.querySelector('[name="firstName"]')?.value
+                || document.getElementById("firstName")?.value
+                || "",
+            lastName:
+                form.querySelector('[name="lastName"]')?.value
+                || document.getElementById("lastName")?.value
+                || "",
+            whatsapp:
+                form.querySelector('[name="whatsapp"]')?.value
+                || document.getElementById("registerWhatsApp")?.value
+                || "",
+            email:
+                form.querySelector('[name="email"]')?.value
+                || document.getElementById("registerEmail")?.value
+                || "",
+            password:
+                form.querySelector('[name="password"]')?.value
+                || document.getElementById("registerPassword")?.value
+                || "",
+            confirmPassword:
+                form.querySelector('[name="confirmPassword"]')?.value
+                || document.getElementById("confirmPassword")?.value
+                || ""
+        });
+    });
+
+    document.getElementById("menuToggle")?.addEventListener("click", openSidebar);
+    document.getElementById("closeSidebar")?.addEventListener("click", closeSidebar);
+    document.getElementById("sidebarOverlay")?.addEventListener("click", closeSidebar);
 
     document.querySelectorAll(".nav-item[data-page]").forEach(item => {
-        item.addEventListener("click", function (event) {
-            event.preventDefault();
-            showPage(this.dataset.page);
+        item.addEventListener("click", () => {
+            showPage(item.dataset.page);
         });
     });
 
-    document.getElementById("paramsToggle")
-        ?.addEventListener("click", function (event) {
-            event.preventDefault();
-            toggleSettings();
-        });
+    document.getElementById("paramsToggle")?.addEventListener("click", toggleSettings);
+    document.getElementById("accountInformationBtn")?.addEventListener("click", openAccountInformation);
+    document.getElementById("logoutBtn")?.addEventListener("click", logout);
+    document.getElementById("goProBtn")?.addEventListener("click", openProModal);
+    document.getElementById("cartBtn")?.addEventListener("click", openCartModal);
+    document.getElementById("notifBtn")?.addEventListener("click", openNotifModal);
+    document.getElementById("profileBtn")?.addEventListener("click", () => showPage("profile-page"));
 
-    document.getElementById("accountInfosBtn")
-        ?.addEventListener("click", function (event) {
-            event.preventDefault();
-            openAccountInformation();
-        });
+    document.querySelectorAll(".cat-btn[data-cat]").forEach(button => {
+        button.addEventListener("click", () => filterProducts(button.dataset.cat));
+    });
 
-    document.getElementById("logoutBtn")
-        ?.addEventListener("click", function (event) {
-            event.preventDefault();
-            logout();
-        });
+    ["walletTxnId", "productTxnId"].forEach(id => {
+        const input = document.getElementById(id);
 
-    document.getElementById("goProBtn")
-        ?.addEventListener("click", function (event) {
-            event.preventDefault();
-            openProModal();
-        });
-
-    document.getElementById("cartBtn")
-        ?.addEventListener("click", openCartModal);
-
-    document.getElementById("notifBtn")
-        ?.addEventListener("click", openNotifModal);
-
-    document.getElementById("profileHeaderBtn")
-        ?.addEventListener("click", function () {
-            showPage("profile-page");
-        });
-
-    document.querySelectorAll(".cat-btn").forEach(button => {
-        button.addEventListener("click", function () {
-            filterProducts(this.dataset.cat);
+        input?.addEventListener("input", () => {
+            input.value = input.value.replace(/\D/g, "").slice(0, 20);
         });
     });
 
-    document.getElementById("loginForm")
-        ?.addEventListener("submit", function (event) {
-            event.preventDefault();
+    const user = getCurrentUser();
 
-            loginUser(
-                getValue("loginEmail"),
-                getValue("loginPassword")
-            );
-        });
-
-    document.getElementById("registerForm")
-        ?.addEventListener("submit", function (event) {
-            event.preventDefault();
-
-            registerUser({
-                firstName: getValue("regFirstName"),
-                lastName: getValue("regLastName"),
-                whatsapp: getValue("regWhatsapp"),
-                email: getValue("regEmail"),
-                password: getValue("regPassword"),
-                confirmPassword: getValue("regConfirmPassword")
-            });
-        });
-
-    document.querySelectorAll("#walletTxnId, #productTxnId")
-        .forEach(input => {
-            input.setAttribute("maxlength", "20");
-
-            input.addEventListener("input", function () {
-                this.value = this.value.replace(/\D/g, "").slice(0, 20);
-            });
-        });
-
-    if (getCurrentUser()) {
+    if (user) {
         showApp();
+        startOrderPolling();
+        startNotificationPolling();
     } else {
         showAuthGate();
     }
@@ -1994,43 +2207,53 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 /* =========================================================
-   GLOBAL FUNCTIONS FOR HTML onclick=""
+   GLOBAL FUNCTIONS USED BY INLINE HTML HANDLERS
 ========================================================= */
 
-window.toggleGatePassword = toggleGatePassword;
-window.switchGateAuth = switchGateAuth;
-window.togglePasswordVisibility = togglePasswordVisibility;
-window.formatPhoneInput = formatPhoneInput;
+Object.assign(window, {
+    toggleGatePassword,
+    switchGateAuth,
+    togglePasswordVisibility,
+    formatPhoneInput,
 
-window.openProductModal = openProductModal;
-window.closeProductModal = closeProductModal;
-window.selectProductOption = selectProductOption;
-window.updateProductQuantity = updateProductQuantity;
-window.confirmProductOrder = confirmProductOrder;
+    openSidebar,
+    closeSidebar,
+    toggleSettings,
+    showPage,
+    filterProducts,
 
-window.addSelectedToCart = addSelectedToCart;
-window.openCartModal = openCartModal;
-window.closeCartModal = closeCartModal;
-window.removeCartItem = removeCartItem;
-window.checkoutCart = checkoutCart;
+    openProductModal,
+    closeProductModal,
+    selectProductOption,
+    updateProductQuantity,
+    updateProductTotal,
+    confirmProductOrder,
 
-window.submitWalletRecharge = submitWalletRecharge;
+    addSelectedToCart,
+    openCartModal,
+    closeCartModal,
+    removeCartItem,
+    checkoutCart,
 
-window.openNotifModal = openNotifModal;
-window.closeNotifModal = closeNotifModal;
-window.fetchCustomerNotifications = fetchCustomerNotifications;
-window.markCustomerNotificationRead = markCustomerNotificationRead;
+    renderWallet,
+    submitWalletRecharge,
 
-window.switchAuthTab = switchAuthTab;
-window.socialAuth = socialAuth;
+    fetchCustomerOrders,
+    renderOrders,
 
-window.openProModal = openProModal;
-window.closeProModal = closeProModal;
+    loadProfile,
+    openAccountInformation,
 
-window.copyToClipboard = copyToClipboard;
-window.showPage = showPage;
-window.logout = logout;
-window.filterProducts = filterProducts;
-window.openAccountInformation = openAccountInformation;
-window.fetchCustomerOrders = fetchCustomerOrders;
-window.renderOrders = renderOrders;
+    openNotifModal,
+    closeNotifModal,
+    fetchCustomerNotifications,
+    markCustomerNotificationRead,
+
+    switchAuthTab,
+    socialAuth,
+
+    openProModal,
+    closeProModal,
+    copyToClipboard,
+    logout
+});
