@@ -46,6 +46,7 @@ function emptyDB() {
     clients: [],
     recharges: [],
     transactions: [],
+    wallets: [],
     notifications: [],
     customerNotifications: []
   };
@@ -92,7 +93,7 @@ function makeId() {
 }
 
 /* =====================================================
-   SECRET ADMIN AK SESYON
+   ADMIN SECRET AK SESYON
 ===================================================== */
 
 function hashSecret(value) {
@@ -239,15 +240,8 @@ function isValidated(status) {
   );
 }
 
-/* =====================================================
-   KÒD TRANZAKSYON
-   10 A 20 CHIF SÈLMAN
-===================================================== */
-
 function validateTransactionId(value) {
-  const id = text(value, 200);
-
-  return /^\d{10,20}$/.test(id);
+  return /^\d{10,20}$/.test(text(value, 200));
 }
 
 function extractTransactionId(description) {
@@ -277,6 +271,112 @@ function transactionAlreadyUsed(transactionId) {
 
   return orderUsesId || rechargeUsesId;
 }
+
+/* =====================================================
+   WALLET KLIYAN
+===================================================== */
+
+/*
+  Chak bous konsève sou sèvè a.
+  Nou idantifye kliyan an ak imèl li oswa telefòn li.
+*/
+
+function findCustomerWallet(email, phone, userId) {
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedPhone = text(phone, 80);
+  const normalizedUserId = text(userId, 200);
+
+  let wallet = null;
+
+  if (normalizedEmail) {
+    wallet = db.wallets.find(
+      w => normalizeEmail(w.email) === normalizedEmail
+    );
+  }
+
+  if (!wallet && normalizedPhone) {
+    wallet = db.wallets.find(
+      w => text(w.phone, 80) === normalizedPhone
+    );
+  }
+
+  if (!wallet && normalizedUserId) {
+    wallet = db.wallets.find(
+      w => w.userId === normalizedUserId
+    );
+  }
+
+  if (!wallet) {
+    wallet = {
+      id: makeId(),
+      userId: normalizedUserId,
+      email: normalizedEmail,
+      phone: normalizedPhone,
+      balance: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    db.wallets.unshift(wallet);
+  } else {
+    if (!wallet.email && normalizedEmail) {
+      wallet.email = normalizedEmail;
+    }
+
+    if (!wallet.phone && normalizedPhone) {
+      wallet.phone = normalizedPhone;
+    }
+
+    if (!wallet.userId && normalizedUserId) {
+      wallet.userId = normalizedUserId;
+    }
+
+    if (!Number.isFinite(Number(wallet.balance))) {
+      wallet.balance = 0;
+    }
+  }
+
+  return wallet;
+}
+
+/*
+  GET /api/customer-wallet?email=...&phone=...
+
+  Nòt: pou pwodiksyon reyèl, route sa a dwe mare ak
+  yon sesyon kliyan verifye, pa sèlman enfòmasyon piblik.
+*/
+
+app.get("/api/customer-wallet", (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const email = normalizeEmail(req.query.email);
+  const phone = text(req.query.phone, 80);
+  const userId = text(req.query.userId, 200);
+
+  if (!email && !phone && !userId) {
+    return res.status(400).json({
+      error: "Imèl oswa telefòn kliyan an obligatwa."
+    });
+  }
+
+  const wallet = findCustomerWallet(
+    email,
+    phone,
+    userId
+  );
+
+  saveDB();
+
+  res.json({
+    ok: true,
+    wallet: {
+      email: wallet.email || "",
+      phone: wallet.phone || "",
+      balance: Number(wallet.balance) || 0,
+      updatedAt: wallet.updatedAt || null
+    }
+  });
+});
 
 /* =====================================================
    LIMITE TANTATIV KONEKSYON ADMIN
@@ -550,16 +650,13 @@ app.post("/api/orders", (req, res) => {
 
   if (transactionId && !validateTransactionId(transactionId)) {
     return res.status(400).json({
-      error: "Kòd tranzaksyon invalid. Li dwe gen ant 10 ak 20 chif. Verifye SMS NatCash la ankò."
+      error: "Kòd tranzaksyon invalid. Li dwe gen ant 10 ak 20 chif."
     });
   }
 
-  if (
-    transactionId &&
-    transactionAlreadyUsed(transactionId)
-  ) {
+  if (transactionId && transactionAlreadyUsed(transactionId)) {
     return res.status(409).json({
-      error: "Kòd tranzaksyon sa a deja itilize. Verifye SMS NatCash la ankò."
+      error: "Kòd tranzaksyon sa a deja itilize."
     });
   }
 
@@ -567,6 +664,7 @@ app.post("/api/orders", (req, res) => {
 
   const order = {
     id: makeId(),
+    userId: text(b.userId, 200),
     productName,
     customerName,
     customerPhone,
@@ -597,6 +695,7 @@ app.post("/api/orders", (req, res) => {
   if (!foundClient) {
     db.clients.unshift({
       id: makeId(),
+      userId: order.userId,
       name: customerName,
       phone: customerPhone,
       email: customerEmail,
@@ -623,15 +722,6 @@ app.post("/api/orders", (req, res) => {
 /* =====================================================
    KLIYAN KA GADE ESTATI KÒMAND YO
 ===================================================== */
-
-/*
-  GET /api/customer-orders?email=...
-  GET /api/customer-orders?phone=...
-
-  Enpòtan:
-  Pou sekirite, pi bon solisyon alontèm se
-  sèvi ak yon vrè sesyon kliyan.
-*/
 
 app.get("/api/customer-orders", (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -694,6 +784,11 @@ app.post("/api/recharges", (req, res) => {
     80
   );
 
+  const email = normalizeEmail(
+    b.email || b.customerEmail
+  );
+
+  const userId = text(b.userId, 200);
   const amount = Number(b.amount);
 
   const transactionId = text(
@@ -701,15 +796,21 @@ app.post("/api/recharges", (req, res) => {
     200
   );
 
+  if (!email && !phone) {
+    return res.status(400).json({
+      error: "Imèl oswa WhatsApp kliyan an obligatwa pou asosye bous la."
+    });
+  }
+
   if (!validateTransactionId(transactionId)) {
     return res.status(400).json({
-      error: "Kòd tranzaksyon invalid. Li dwe gen ant 10 ak 20 chif. Verifye SMS NatCash la ankò."
+      error: "Kòd tranzaksyon an dwe gen ant 10 ak 20 chif."
     });
   }
 
   if (transactionAlreadyUsed(transactionId)) {
     return res.status(409).json({
-      error: "Kòd tranzaksyon sa a deja itilize. Verifye SMS NatCash la ankò."
+      error: "Kòd tranzaksyon sa a deja itilize."
     });
   }
 
@@ -719,30 +820,29 @@ app.post("/api/recharges", (req, res) => {
     });
   }
 
-  if (!phone && !customerName) {
-    return res.status(400).json({
-      error: "Ajoutez votre nom ou numéro WhatsApp."
-    });
-  }
-
   const createdAt = new Date().toISOString();
 
   const recharge = {
     id: makeId(),
+    userId,
+    email,
     customerName,
     phone,
     amount,
     transactionId,
     status: "En attente",
+    creditedAt: null,
     createdAt
   };
 
   db.recharges.unshift(recharge);
 
+  findCustomerWallet(email, phone, userId);
+
   db.notifications.unshift({
     id: makeId(),
     title: "Nouvelle demande de recharge",
-    message: `${amount} Gdes — ${customerName || phone}`,
+    message: `${amount} Gdes — ${customerName || phone || email}`,
     read: false,
     createdAt
   });
@@ -756,7 +856,7 @@ app.post("/api/recharges", (req, res) => {
 });
 
 /* =====================================================
-   KLIYAN AK NOTIFIKASYON YO
+   ANYÈ KLIYAN YO
 ===================================================== */
 
 function buildCustomerDirectory() {
@@ -806,6 +906,15 @@ function buildCustomerDirectory() {
       phone: client.phone,
       name: client.name,
       createdAt: client.createdAt
+    });
+  }
+
+  for (const recharge of db.recharges) {
+    addCustomer({
+      email: recharge.email,
+      phone: recharge.phone,
+      name: recharge.customerName,
+      createdAt: recharge.createdAt
     });
   }
 
@@ -974,7 +1083,7 @@ app.get("/api/customer-notifications", (req, res) => {
 
   if (!email && !phone) {
     return res.status(400).json({
-      error: "Bay imèl kliyan an oswa nimewo telefòn li."
+      error: "Bay imèl oswa telefòn kliyan an."
     });
   }
 
@@ -1040,6 +1149,7 @@ for (const key of [
   "clients",
   "recharges",
   "transactions",
+  "wallets",
   "notifications",
   "customer-notifications"
 ]) {
@@ -1193,34 +1303,176 @@ app.patch("/api/orders/:id", requireAdmin, (req, res) => {
   res.json(item);
 });
 
-app.patch("/api/recharges/:id", requireAdmin, (req, res) => {
-  const item = db.recharges.find(
-    r => String(r.id) === req.params.id
-  );
+/* =====================================================
+   VALIDE / REFIZE RECHAJ
+===================================================== */
 
-  if (!item) {
-    return res.status(404).json({
-      error: "Recharge introuvable."
-    });
-  }
+app.patch(
+  "/api/recharges/:id",
+  requireAdmin,
+  (req, res) => {
+    const item = db.recharges.find(
+      r => String(r.id) === req.params.id
+    );
 
-  if (req.body && req.body.status !== undefined) {
-    const status = text(req.body.status, 80);
+    if (!item) {
+      return res.status(404).json({
+        error: "Recharge introuvable."
+      });
+    }
 
-    if (!status) {
+    const requestedStatus = text(
+      req.body && req.body.status,
+      80
+    );
+
+    if (!requestedStatus) {
       return res.status(400).json({
         error: "Estati rechaj la pa valab."
       });
     }
 
-    item.status = status;
+    const nextIsValidated = isValidated(requestedStatus);
+    const currentIsValidated = isValidated(item.status);
+
+    const nextIsRejected = normalizeStatus(requestedStatus)
+      .includes("refuse") ||
+      normalizeStatus(requestedStatus).includes("reject");
+
+    /*
+      Si yon rechaj deja kredite, pa kite yon lòt
+      estati efase tras kredi a oswa pèmèt doub kredi.
+    */
+
+    if (item.creditedAt && !nextIsValidated) {
+      return res.status(409).json({
+        error: "Rechaj sa a deja kredite. Estati li pa ka chanje isit la."
+      });
+    }
+
+    if (nextIsRejected && item.creditedAt) {
+      return res.status(409).json({
+        error: "Rechaj sa a deja kredite."
+      });
+    }
+
+    if (nextIsValidated && !item.creditedAt) {
+      const wallet = findCustomerWallet(
+        item.email,
+        item.phone,
+        item.userId
+      );
+
+      const amount = Number(item.amount);
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return res.status(400).json({
+          error: "Montan rechaj la pa valab."
+        });
+      }
+
+      /*
+        Mete creditedAt nan menm operasyon an.
+        Yon dezyèm klik admin pa ajoute menm lajan an ankò.
+      */
+
+      wallet.balance =
+        (Number(wallet.balance) || 0) + amount;
+
+      wallet.updatedAt = new Date().toISOString();
+
+      item.creditedAt = wallet.updatedAt;
+      item.creditedAmount = amount;
+      item.walletId = wallet.id;
+      item.status = requestedStatus;
+      item.updatedAt = wallet.updatedAt;
+
+      db.transactions.unshift({
+        id: makeId(),
+        type: "recharge",
+        rechargeId: item.id,
+        walletId: wallet.id,
+        email: wallet.email || item.email || "",
+        phone: wallet.phone || item.phone || "",
+        amount,
+        status: "Validée",
+        description: `Kredi bous pou rechaj ${item.transactionId}`,
+        createdAt: wallet.updatedAt
+      });
+
+      db.customerNotifications.unshift({
+        id: makeId(),
+        customerEmail: item.email || "",
+        customerPhone: item.phone || "",
+        customerName: item.customerName || "",
+        title: "Bous ou kredite",
+        message: `${amount} Gdes ajoute nan bous SEBY UNIVERSE ou.`,
+        read: false,
+        createdAt: wallet.updatedAt
+      });
+
+      db.notifications.unshift({
+        id: makeId(),
+        title: "Rechaj valide",
+        message: `${amount} Gdes kredite pou ${item.customerName || item.phone || item.email}`,
+        read: false,
+        createdAt: wallet.updatedAt
+      });
+
+      saveDB();
+
+      return res.json({
+        ok: true,
+        message: "Rechaj valide. Bous kliyan an kredite yon sèl fwa.",
+        recharge: item,
+        wallet: {
+          balance: Number(wallet.balance) || 0,
+          email: wallet.email || "",
+          phone: wallet.phone || ""
+        }
+      });
+    }
+
+    /*
+      Si li te deja valide san creditedAt, seksyon ki anlè a
+      kredite li kounye a. Si li deja kredite, pa rekredite li.
+    */
+
+    item.status = requestedStatus;
+    item.updatedAt = new Date().toISOString();
+
+    if (nextIsRejected) {
+      db.notifications.unshift({
+        id: makeId(),
+        title: "Rechaj refize",
+        message: `${item.amount} Gdes — ${item.customerName || item.phone || item.email}`,
+        read: false,
+        createdAt: item.updatedAt
+      });
+
+      db.customerNotifications.unshift({
+        id: makeId(),
+        customerEmail: item.email || "",
+        customerPhone: item.phone || "",
+        customerName: item.customerName || "",
+        title: "Rechaj refize",
+        message: "Rechaj ou a pa valide. Tanpri verifye enfòmasyon tranzaksyon an.",
+        read: false,
+        createdAt: item.updatedAt
+      });
+    }
+
+    saveDB();
+
+    res.json({
+      ok: true,
+      message: nextIsRejected
+        ? "Rechaj refize. Pa gen lajan ki ajoute nan bous la."
+        : "Estati rechaj la mete ajou.",
+      recharge: item
+    });
   }
-
-  item.updatedAt = new Date().toISOString();
-
-  saveDB();
-  res.json(item);
-});
+);
 
 /* =====================================================
    ADMIN NOTIFICATIONS
