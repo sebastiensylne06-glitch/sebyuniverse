@@ -345,6 +345,7 @@ function t(key) {
     return SCRIPT_TRANSLATIONS[getCurrentLanguage()][key] ||
         SCRIPT_TRANSLATIONS.ht[key] || key;
 }
+
 /* =====================================================
    AUTH GATE
 ===================================================== */
@@ -418,7 +419,7 @@ async function handleGateRegister(event) {
     isSubmitting = true;
 
     try {
-        const result = await apiRequest("/api/customer/register", {
+        const result = await apiRequest("/api/register", {
             method: "POST",
             body: JSON.stringify({
                 firstName,
@@ -432,6 +433,12 @@ async function handleGateRegister(event) {
 
         authToken = result.token;
         currentUser = result.customer;
+
+        if (!authToken || !currentUser) {
+            throw new Error(
+                "Sèvè a pa retounen token oswa enfòmasyon kont lan. Verifye server.js."
+            );
+        }
 
         localStorage.setItem(STORAGE.TOKEN, authToken);
         saveJSON(STORAGE.USER, currentUser);
@@ -469,13 +476,19 @@ async function handleGateLogin(event) {
     isSubmitting = true;
 
     try {
-        const result = await apiRequest("/api/customer/login", {
+        const result = await apiRequest("/api/login", {
             method: "POST",
             body: JSON.stringify({ email, password })
         });
 
         authToken = result.token;
         currentUser = result.customer;
+
+        if (!authToken || !currentUser) {
+            throw new Error(
+                "Sèvè a pa retounen token oswa enfòmasyon kont lan. Verifye server.js."
+            );
+        }
 
         localStorage.setItem(STORAGE.TOKEN, authToken);
         saveJSON(STORAGE.USER, currentUser);
@@ -588,7 +601,7 @@ async function refreshCustomerData() {
     if (!authToken) return;
 
     const results = await Promise.allSettled([
-        apiRequest("/api/customer/me"),
+        apiRequest("/api/me"),
         apiRequest("/api/customer-wallet"),
         apiRequest("/api/customer-orders"),
         apiRequest("/api/customer-recharges"),
@@ -636,7 +649,7 @@ async function refreshCustomerData() {
 async function logoutUser() {
     try {
         if (authToken) {
-            await apiRequest("/api/customer/logout", {
+            await apiRequest("/api/logout", {
                 method: "POST",
                 body: JSON.stringify({})
             });
@@ -661,7 +674,6 @@ async function logoutUser() {
     showSebyAuthGate();
     switchGateAuth("login");
 }
-
 /* =====================================================
    UI REFRESH
 ===================================================== */
@@ -770,6 +782,7 @@ function clearCart() {
     cartItem = null;
     saveCart();
 }
+
 /* =====================================================
    PRODUCT MODAL
 ===================================================== */
@@ -1186,7 +1199,6 @@ function openNotifications() {
 
 /* =====================================================
    GOOGLE BUTTON
-   Google identity alone is NOT a SEBY backend session.
 ===================================================== */
 
 function socialAuth(provider) {
@@ -1284,8 +1296,14 @@ async function initializeAuthGate() {
     }
 
     try {
-        const result = await apiRequest("/api/customer/me");
+        const result = await apiRequest("/api/me");
+
         currentUser = result.customer;
+
+        if (!currentUser) {
+            throw new Error("Enfòmasyon kont lan pa disponib.");
+        }
+
         saveJSON(STORAGE.USER, currentUser);
 
         hideSebyAuthGate();
