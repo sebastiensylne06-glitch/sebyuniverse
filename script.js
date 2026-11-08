@@ -1833,3 +1833,27 @@ document.addEventListener("click", function (event) {
     sebyEffect.classList.remove("active");
   }, 1100);
 });
+/* ===== SEBY LOADER AUTO CLOSE ===== */
+(function () {
+  function closeSebyLoader() {
+    const loader = document.getElementById("sebyLoader");
+
+    if (loader) {
+      loader.classList.add("loader-hidden");
+
+      setTimeout(() => {
+        loader.style.display = "none";
+      }, 600);
+    }
+  }
+
+  if (document.readyState === "complete") {
+    setTimeout(closeSebyLoader, 800);
+  } else {
+    window.addEventListener("load", () => {
+      setTimeout(closeSebyLoader, 800);
+    }, { once: true });
+  }
+
+  setTimeout(closeSebyLoader, 5000);
+})();
