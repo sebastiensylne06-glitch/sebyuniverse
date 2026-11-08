@@ -1488,3 +1488,73 @@ button:active, [role="button"]:active, .clickable:active {
   transform: scale(.96);
   filter: brightness(1.15);
 }
+/* ===== SEBY LOADER ===== */
+#sebyLoader {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: #fff !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .5s ease, visibility .5s ease;
+}
+
+#sebyLoader.loader-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loader-ring {
+  width: 180px;
+  height: 180px;
+  position: relative;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 5px solid transparent;
+  border-top-color: #ed0000;
+  border-right-color: #ed0000;
+  border-radius: 50%;
+  animation: sebyLoaderSpin 1s linear infinite;
+  box-shadow: 0 0 15px #ff000055;
+}
+
+.loader-ring img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  border-radius: 50%;
+  background: white;
+  padding: 12px;
+}
+
+#sebyLoader h2 {
+  color: #e60000;
+  margin-top: 22px;
+  letter-spacing: 3px;
+}
+
+#sebyLoader p {
+  color: #222;
+  letter-spacing: 5px;
+}
+
+@keyframes sebyLoaderSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== CLICK BLUR ===== */
+#seby-click-effect {
+  pointer-events: none;
+  z-index: 99999;
+}
