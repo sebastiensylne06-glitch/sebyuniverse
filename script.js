@@ -1814,3 +1814,22 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeAuthGate();
 
 });
+const sebyEffect = document.getElementById("seby-click-effect");
+
+document.addEventListener("click", function (event) {
+  const target = event.target.closest(
+    "button, [role='button'], .clickable"
+  );
+
+  if (!target || !sebyEffect) return;
+
+  if (target.dataset.noSebyEffect === "true") return;
+
+  sebyEffect.classList.add("active");
+
+  clearTimeout(window.sebyEffectTimer);
+
+  window.sebyEffectTimer = setTimeout(() => {
+    sebyEffect.classList.remove("active");
+  }, 1100);
+});
