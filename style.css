@@ -1395,3 +1395,96 @@ a:active,
     transition-duration: .01ms !important;
   }
 }
+#seby-click-effect {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.35);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(35px);
+  transition: .35s ease;
+}
+
+#seby-click-effect.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.seby-effect-card {
+  text-align: center;
+  animation: sebyPop .5s ease;
+}
+
+.seby-logo-ring {
+  width: 145px;
+  height: 145px;
+  padding: 5px;
+  border-radius: 50%;
+  position: relative;
+  margin: auto;
+}
+
+.seby-logo-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  border-top-color: #ff0000;
+  border-right-color: #ff0000;
+  animation: sebySpin 1.2s linear infinite;
+  box-shadow: 0 0 18px rgba(255,0,0,.65);
+}
+
+.seby-logo-ring img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: white;
+}
+
+.seby-effect-card h2 {
+  color: #e60000;
+  font-size: 21px;
+  letter-spacing: 2px;
+  margin-top: 22px;
+}
+
+.seby-effect-card p {
+  color: #222;
+  letter-spacing: 5px;
+  font-size: 11px;
+}
+
+@keyframes sebySpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes sebyPop {
+  from {
+    transform: scale(.65);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+button, [role="button"], .clickable {
+  transition: transform .2s ease, filter .2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active, [role="button"]:active, .clickable:active {
+  transform: scale(.96);
+  filter: brightness(1.15);
+}
