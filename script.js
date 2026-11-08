@@ -1,1859 +1,772 @@
+
 "use strict";
 
-/* =====================================================
-   SEBY UNIVERSE — CUSTOMER APPLICATION
-   Corrected complete script.js
-===================================================== */
+/* =========================================
+   SEBY UNIVERSE — MAIN SCRIPT
+========================================= */
 
-/* ================= CONFIGURATION ================= */
+const API_BASE = "https://sebyuniverse.onrender.com";
 
-const SEBY_API_BASE = "https://sebyuniverse.onrender.com";
-const WHATSAPP_NUMBER = "50937155313";
-const WHATSAPP_DISPLAY = "+509 37 15 53 13";
-const NATCASH_NUMBER = "+509 40 09 8873";
+/* Mete vrè Google Client ID ou isit la */
+const GOOGLE_CLIENT_ID = "METE_GOOGLE_CLIENT_ID_ISIT_LA";
+
+const $ = (id) => document.getElementById(id);
 
 const STORAGE = {
-    TOKEN: "seby_customer_token",
-    USER: "seby_user",
-    CART: "seby_cart",
-    LANGUAGE: "sebyLanguage"
+  user: "seby_universe_user",
+  orders: "seby_universe_orders"
 };
 
-let currentUser = readJSON(STORAGE.USER, null);
-let authToken = localStorage.getItem(STORAGE.TOKEN) || "";
-let cartItem = readJSON(STORAGE.CART, null);
-let currentSelectedProduct = null;
-let currentSelectedPack = null;
-let userWallet = 0;
-let myOrders = [];
-let myRecharges = [];
-let myTransactions = [];
-let myNotifications = [];
-let isSubmitting = false;
-let authInitialized = false;
+let currentUser = null;
+let selectedProduct = null;
+let selectedCategory = null;
 
-/* ================= PRODUCTS AND PRICES ================= */
+/* =========================================
+   CATALOGUE + PRICES
+========================================= */
 
-const PRODUCTS_DATA = {
-    freefire: {
-        title: "Free Fire 💎",
-        fields: ["id", "region", "transaction", "whatsapp"],
-        packs: [
-            { name: "100 + 10 Diamonds", price: 168 },
-            { name: "310 + 31 Diamonds", price: 480 },
-            { name: "520 + 52 Diamonds", price: 800 },
-            { name: "1,060 + 106 Diamonds", price: 1650 },
-            { name: "2,180 + 218 Diamonds", price: 3200 },
-            { name: "5,600 + 560 Diamonds", price: 8000 }
-        ]
-    },
+const catalog = {
+  freefire: {
+    title: "FREE FIRE",
+    fields: [
+      { name: "playerId", label: "ID du joueur", type: "text", required: true }
+    ],
+    offers: [
+      ["100 + 10 Diamants", 168],
+      ["310 + 31 Diamants", 480],
+      ["520 + 52 Diamants", 800],
+      ["1 060 + 106 Diamants", 1650],
+      ["2 180 + 218 Diamants", 3200],
+      ["5 600 + 560 Diamants", 8000]
+    ]
+  },
 
-    tiktok: {
-        title: "TikTok Coins 🪙",
-        fields: ["email", "transaction", "whatsapp"],
-        packs: [
-            { name: "30 Coins", price: 125 },
-            { name: "70 Coins", price: 275 },
-            { name: "350 Coins", price: 1260 },
-            { name: "700 Coins", price: 2560 },
-            { name: "1,400 Coins", price: 5125 },
-            { name: "3,500 Coins", price: 14250 },
-            { name: "7,000 Coins", price: 24300 },
-            { name: "17,500 Coins", price: 55550 }
-        ]
-    },
+  efootball: {
+    title: "E FOOTBALL",
+    fields: [
+      { name: "konamiId", label: "Konami ID", type: "text", required: true },
+      { name: "email", label: "E-mail", type: "email", required: true }
+    ],
+    offers: [
+      ["130 Coins", 250],
+      ["300 Coins", 600],
+      ["550 Coins", 950],
+      ["1 040 Coins", 1700],
+      ["2 130 Coins", 3200],
+      ["12 800 Coins", 16480]
+    ]
+  },
 
-    netflix: {
-        title: "Netflix Premium 🎬",
-        fields: ["email", "transaction", "whatsapp"],
-        packs: [
-            { name: "1 Month Premium Subscription", price: 500 },
-            { name: "2 Months Premium Subscription", price: 1000 },
-            { name: "3 Months Premium Subscription", price: 1450 }
-        ]
-    },
+  dls: {
+    title: "DLS",
+    fields: [
+      { name: "email", label: "E-mail du compte", type: "email", required: true },
+      { name: "password", label: "Mot de passe du compte", type: "password", required: true }
+    ],
+    offers: [
+      ["90 Diamants", 500],
+      ["400 Diamants", 1750],
+      ["910 Diamants", 3500],
+      ["2 700 Diamants", 8950],
+      ["6 000 Diamants", 21000],
+      ["900 Coins", 500],
+      ["1 950 Coins", 1000],
+      ["3 450 Coins", 1600],
+      ["6 700 Coins", 2500],
+      ["14 000 Coins", 4500],
+      ["40 500 Coins", 10000]
+    ]
+  },
 
-    efootball: {
-        title: "eFootball Coins ⚽",
-        fields: ["konami_id", "email", "transaction", "whatsapp"],
-        packs: [
-            { name: "130 Coins", price: 250 },
-            { name: "300 Coins", price: 600 },
-            { name: "550 Coins", price: 950 },
-            { name: "1,040 Coins", price: 1700 },
-            { name: "2,130 Coins", price: 3200 },
-            { name: "12,800 Coins", price: 16480 }
-        ]
-    },
+  flexcity: {
+    title: "FLEX CITY",
+    fields: [
+      { name: "playerId", label: "ID du joueur", type: "text", required: true }
+    ],
+    offers: [
+      ["2 100 Gold", 660],
+      ["6 250 Gold", 1900],
+      ["17 000 Gold", 4950],
+      ["40 000 Gold", 10700],
+      ["77 500 Gold", 18900],
+      ["360 Diamants", 700],
+      ["725 Diamants", 1400],
+      ["1 980 Diamants", 3400],
+      ["8 470 Diamants", 6750],
+      ["17 820 Diamants", 13250],
+      ["27 500 Diamants", 31900],
+      ["49 500 Diamants", 47850],
+      ["70 400 Diamants", 63950]
+    ]
+  },
 
-    dls_gems: {
-        title: "DLS Gems 💎",
-        fields: ["email", "password", "transaction", "whatsapp"],
-        packs: [
-            { name: "90 GEMS", price: 500 },
-            { name: "400 GEMS", price: 1750 },
-            { name: "910 GEMS", price: 3500 },
-            { name: "2,700 GEMS", price: 8950 },
-            { name: "6,000 GEMS", price: 21000 }
-        ]
-    },
+  pubg: {
+    title: "PUBG MOBILE",
+    fields: [
+      { name: "playerId", label: "Character ID PUBG", type: "text", required: true }
+    ],
+    offers: []
+  },
 
-    dls_coins: {
-        title: "DLS Coins 🪙",
-        fields: ["email", "password", "transaction", "whatsapp"],
-        packs: [
-            { name: "900 COINS", price: 500 },
-            { name: "1,950 COINS", price: 1000 },
-            { name: "3,450 COINS", price: 1600 },
-            { name: "6,700 COINS", price: 2500 },
-            { name: "14,000 COINS", price: 4500 },
-            { name: "40,500 COINS", price: 10000 }
-        ]
-    },
+  tiktok: {
+    title: "TIKTOK",
+    fields: [
+      { name: "email", label: "E-mail du compte", type: "email", required: true }
+    ],
+    offers: [
+      ["30 Pièces", 125],
+      ["70 Pièces", 275],
+      ["350 Pièces", 1260],
+      ["700 Pièces", 2560],
+      ["1 400 Pièces", 5125],
+      ["3 500 Pièces", 14250],
+      ["7 000 Pièces", 24300],
+      ["17 500 Pièces", 55550]
+    ]
+  },
 
-    flex_gold: {
-        title: "Flex City Gold 🟡",
-        fields: ["id", "transaction", "whatsapp"],
-        packs: [
-            { name: "2,100 Gold", price: 660 },
-            { name: "6,250 Gold", price: 1900 },
-            { name: "17,000 Gold", price: 4950 },
-            { name: "40,000 Gold", price: 10700 },
-            { name: "77,500 Gold", price: 18900 }
-        ]
-    },
-
-    flex_diamonds: {
-        title: "Flex City Diamonds 🔷",
-        fields: ["id", "transaction", "whatsapp"],
-        packs: [
-            { name: "360 Diamonds", price: 700 },
-            { name: "725 Diamonds", price: 1400 },
-            { name: "1,980 Diamonds", price: 3400 },
-            { name: "8,470 Diamonds", price: 6750 },
-            { name: "17,820 Diamonds", price: 13250 },
-            { name: "27,500 Diamonds", price: 31900 },
-            { name: "49,500 Diamonds", price: 47850 },
-            { name: "70,400 Diamonds", price: 63950 }
-        ]
-    }
+  netflix: {
+    title: "NETFLIX",
+    fields: [
+      { name: "email", label: "E-mail du compte", type: "email", required: true }
+    ],
+    offers: [
+      ["1 Mois", 500],
+      ["2 Mois", 1000],
+      ["3 Mois", 1450]
+    ]
+  }
 };
 
-/* ================= HELPERS ================= */
+/* =========================================
+   TOAST
+========================================= */
 
-function readJSON(key, fallback) {
-    try {
-        const value = localStorage.getItem(key);
-        return value ? JSON.parse(value) : fallback;
-    } catch (_) {
-        return fallback;
-    }
+function toast(message, type = "") {
+  const box = $("sebyToast");
+  if (!box) return;
+
+  box.textContent = message;
+  box.className = "seby-toast " + type;
+  box.hidden = false;
+
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => {
+    box.hidden = true;
+  }, 3500);
 }
 
-function saveJSON(key, value) {
-    try {
-        localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-        console.warn("Local storage save failed:", error);
-    }
+/* =========================================
+   LOADER
+========================================= */
+
+function hideLoader() {
+  const loader = $("sebyLoader");
+  if (!loader) return;
+
+  loader.classList.add("hide");
+  setTimeout(() => {
+    loader.style.display = "none";
+  }, 600);
 }
 
-function byId(id) {
-    return document.getElementById(id);
+/* =========================================
+   GOOGLE AUTHENTICATION
+========================================= */
+
+function saveUser(user) {
+  currentUser = user;
+  localStorage.setItem(STORAGE.user, JSON.stringify(user));
+  showApplication();
 }
 
-function safeText(value) {
-    return String(value ?? "").replace(/[&<>"']/g, char => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-    }[char]));
+function showApplication() {
+  $("sebyAuthGate").style.display = "none";
+  $("sebyApp").classList.add("visible");
+
+  if (currentUser) {
+    const name = currentUser.name || "Utilisateur";
+    $("profileName").textContent = name;
+    $("profileFullName").textContent = name;
+    $("profileEmail").textContent = currentUser.email || "—";
+    $("profileWhatsapp").textContent = currentUser.whatsapp || "Non renseigné";
+  }
+
+  loadOrders();
 }
 
-function money(value) {
-    return `${(Number(value) || 0).toLocaleString("en-US")} Gdes`;
+function decodeGoogleCredential(token) {
+  try {
+    const payload = token.split(".")[1];
+    const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(decodeURIComponent(
+      Array.from(decoded)
+        .map(char => "%" + char.charCodeAt(0).toString(16).padStart(2, "0"))
+        .join("")
+    ));
+  } catch {
+    return null;
+  }
 }
 
-function isValidEmail(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(
-        String(value || "").trim()
-    );
+function handleGoogleLogin(response) {
+  const data = decodeGoogleCredential(response.credential);
+
+  if (!data || !data.email) {
+    toast("Impossible de lire votre compte Google.", "error");
+    return;
+  }
+
+  saveUser({
+    name: data.name || data.given_name || "Utilisateur",
+    email: data.email,
+    picture: data.picture || "",
+    googleId: data.sub
+  });
 }
 
-function isValidPhone(value) {
-    return /^\+509 \d{2} \d{2} \d{4}$/.test(
-        String(value || "").trim()
-    );
+function initializeGoogle() {
+  if (GOOGLE_CLIENT_ID === "METE_GOOGLE_CLIENT_ID_ISIT_LA") {
+    toast("Ajoutez votre Google Client ID dans script.js.", "error");
+    return;
+  }
+
+  if (!window.google || !google.accounts) {
+    toast("Google Login pa disponib. Verifye koneksyon entènèt la.", "error");
+    return;
+  }
+
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleLogin
+  });
+
+  google.accounts.id.renderButton($("googleLoginButton"), {
+    theme: "outline",
+    size: "large",
+    shape: "pill",
+    text: "continue_with",
+    width: 270
+  });
 }
 
-function formatPhoneInput(input) {
-    if (!input) return;
+/* =========================================
+   LOGOUT
+========================================= */
 
-    let digits = String(input.value || "").replace(/\D/g, "");
+function logout() {
+  localStorage.removeItem(STORAGE.user);
+  currentUser = null;
+  $("sebyApp").classList.remove("visible");
+  $("sebyAuthGate").style.display = "flex";
+  closeMenu();
 
-    if (digits.startsWith("509")) digits = digits.slice(3);
-    digits = digits.slice(0, 8);
+  if (window.google && google.accounts) {
+    google.accounts.id.disableAutoSelect();
+  }
 
-    let formatted = "+509";
-    if (digits.length) formatted += " " + digits.slice(0, 2);
-    if (digits.length > 2) formatted += " " + digits.slice(2, 4);
-    if (digits.length > 4) formatted += " " + digits.slice(4, 8);
-
-    input.value = formatted;
+  toast("Vous êtes déconnecté.");
 }
 
-function alertMessage(message) {
-    window.alert(String(message || "Yon erè rive."));
+/* =========================================
+   NAVIGATION
+========================================= */
+
+function openMenu() {
+  $("sidebar").classList.add("open");
+  $("sidebarOverlay").classList.add("show");
 }
 
-function getErrorMessage(error) {
-    return error && error.message
-        ? error.message
-        : "Yon erè enkoni rive. Tanpri eseye ankò.";
-}
-
-/* ================= API CONNECTION ================= */
-
-async function apiRequest(path, options = {}) {
-    const headers = {
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-    };
-
-    if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-    }
-
-    let response;
-
-    try {
-        response = await fetch(`${SEBY_API_BASE}${path}`, {
-            ...options,
-            headers
-        });
-    } catch (error) {
-        throw new Error(
-            "Nou pa ka konekte ak sèvè a. Verifye entènèt ou epi eseye ankò."
-        );
-    }
-
-    const raw = await response.text();
-    let data = {};
-
-    try {
-        data = raw ? JSON.parse(raw) : {};
-    } catch (_) {
-        data = {};
-    }
-
-    if (!response.ok) {
-        if (response.status === 401 && authToken) {
-            authToken = "";
-            localStorage.removeItem(STORAGE.TOKEN);
-        }
-
-        throw new Error(
-            data.error || data.message || `Erè sèvè (${response.status}).`
-        );
-    }
-
-    return data;
-}
-
-function requireLogin() {
-    if (authToken && currentUser) return true;
-
-    showSebyAuthGate();
-    switchGateAuth("login");
-    alertMessage(t("loginRequired"));
-    return false;
-}
-
-/* ================= LANGUAGE ================= */
-
-const SCRIPT_TRANSLATIONS = {
-    ht: {
-        login: "Konekte",
-        register: "Enskri",
-        chooseAmount: "Chwazi kantite ou vle an:",
-        requiredInfo: "Enfòmasyon obligatwa",
-        accountId: "ID Kont",
-        region: "Rejyon",
-        whatsapp: "Nimewo WhatsApp",
-        transaction: "ID Transaction",
-        confirmOrder: "Konfime kòmand",
-        noOrders: "Ou poko gen okenn kòmand.",
-        loginRequired: "Tanpri konekte anvan.",
-        emptyCart: "Panye ou vid.",
-        accountCreated: "Kont ou kreye ak siksè!",
-        loginSuccess: "Koneksyon reyisi!",
-        passwordMin: "Modpas la dwe gen omwen 8 karaktè.",
-        passwordsDifferent: "Modpas yo pa menm.",
-        invalidEmail: "Adrès imèl la pa valab.",
-        fillName: "Tanpri mete non ak siyati ou.",
-        enterPassword: "Tanpri mete modpas ou.",
-        walletSent: "Demann recharge a voye pou verifikasyon."
-    },
-
-    fr: {
-        login: "Connexion",
-        register: "Inscription",
-        chooseAmount: "Choisissez la quantité souhaitée :",
-        requiredInfo: "Informations obligatoires",
-        accountId: "ID du compte",
-        region: "Région",
-        whatsapp: "Numéro WhatsApp",
-        transaction: "ID Transaction",
-        confirmOrder: "Confirmer la commande",
-        noOrders: "Vous n'avez pas encore de commande.",
-        loginRequired: "Veuillez vous connecter d'abord.",
-        emptyCart: "Votre panier est vide.",
-        accountCreated: "Votre compte a été créé avec succès !",
-        loginSuccess: "Connexion réussie !",
-        passwordMin: "Le mot de passe doit contenir au moins 8 caractères.",
-        passwordsDifferent: "Les mots de passe ne correspondent pas.",
-        invalidEmail: "L'adresse e-mail n'est pas valide.",
-        fillName: "Veuillez entrer votre prénom et votre nom.",
-        enterPassword: "Veuillez entrer votre mot de passe.",
-        walletSent: "La demande de recharge a été envoyée."
-    },
-
-    en: {
-        login: "Login",
-        register: "Register",
-        chooseAmount: "Choose the amount you want:",
-        requiredInfo: "Required information",
-        accountId: "Account ID",
-        region: "Region",
-        whatsapp: "WhatsApp Number",
-        transaction: "Transaction ID",
-        confirmOrder: "Confirm Order",
-        noOrders: "You don't have any orders yet.",
-        loginRequired: "Please log in first.",
-        emptyCart: "Your cart is empty.",
-        accountCreated: "Your account has been created successfully!",
-        loginSuccess: "Login successful!",
-        passwordMin: "Password must contain at least 8 characters.",
-        passwordsDifferent: "Passwords do not match.",
-        invalidEmail: "The email address is invalid.",
-        fillName: "Please enter your first and last name.",
-        enterPassword: "Please enter your password.",
-        walletSent: "Your recharge request has been sent."
-    }
-};
-
-function getCurrentLanguage() {
-    const language = localStorage.getItem(STORAGE.LANGUAGE) || "ht";
-    return SCRIPT_TRANSLATIONS[language] ? language : "ht";
-}
-
-function t(key) {
-    return SCRIPT_TRANSLATIONS[getCurrentLanguage()][key] ||
-        SCRIPT_TRANSLATIONS.ht[key] || key;
-}
-
-/* ================= AUTH GATE / APP VISIBILITY ================= */
-
-function showSebyApp() {
-    const app = byId("sebyApp");
-    if (!app) return;
-
-    app.hidden = false;
-    app.classList.remove("hidden");
-    app.style.display = "block";
-}
-
-function hideSebyApp() {
-    const app = byId("sebyApp");
-    if (!app) return;
-
-    app.hidden = true;
-    app.classList.add("hidden");
-    app.style.display = "none";
-}
-
-function showSebyAuthGate() {
-    const gate = byId("sebyAuthGate");
-
-    hideSebyApp();
-
-    if (gate) {
-        gate.hidden = false;
-        gate.classList.remove("hidden");
-        gate.style.display = "";
-    }
-
-    document.body.classList.add("auth-gate-active");
-    document.documentElement.classList.add("auth-gate-active");
-}
-
-function hideSebyAuthGate() {
-    const gate = byId("sebyAuthGate");
-
-    if (gate) {
-        gate.hidden = true;
-        gate.classList.add("hidden");
-        gate.style.display = "none";
-    }
-
-    showSebyApp();
-
-    document.body.classList.remove("auth-gate-active");
-    document.documentElement.classList.remove("auth-gate-active");
-}
-
-function switchGateAuth(type) {
-    const login = byId("gateLoginForm");
-    const register = byId("gateRegisterForm");
-    const loginTab = byId("gateLoginTab");
-    const registerTab = byId("gateRegisterTab");
-
-    const showLogin = type !== "register";
-
-    login?.classList.toggle("active", showLogin);
-    register?.classList.toggle("active", !showLogin);
-    loginTab?.classList.toggle("active", showLogin);
-    registerTab?.classList.toggle("active", !showLogin);
-
-    const title = byId("gateAuthTitle");
-    const subtitle = byId("gateAuthSubtitle");
-
-    if (title) {
-        title.textContent = showLogin
-            ? "Welcome to SEBY UNIVERSE"
-            : "Create your SEBY UNIVERSE account";
-    }
-
-    if (subtitle) {
-        subtitle.textContent = showLogin
-            ? "Sign in to continue."
-            : "Create your account to get started.";
-    }
-}
-
-/* ================= LOGIN SUCCESS / CUSTOMER DATA ================= */
-
-async function afterLogin() {
-    hideSebyAuthGate();
-    showSebyApp();
-    updateUI();
-
-    try {
-        await refreshCustomerData();
-    } catch (error) {
-        console.error("Customer data refresh:", error);
-    }
-
-    updateUI();
-}
-
-/* ================= REGISTER ================= */
-
-async function handleGateRegister(event) {
-    event.preventDefault();
-
-    if (isSubmitting) return;
-
-    const firstName = byId("gateFirstName")?.value.trim() || "";
-    const lastName = byId("gateLastName")?.value.trim() || "";
-    const email = byId("gateRegisterEmail")?.value.trim().toLowerCase() || "";
-    const phone = byId("gateWhatsapp")?.value.trim() || "";
-    const password = byId("gateRegisterPassword")?.value || "";
-    const confirmPassword = byId("gateConfirmPassword")?.value || "";
-
-    if (!firstName || !lastName) {
-        alertMessage(t("fillName"));
-        return;
-    }
-
-    if (!isValidEmail(email)) {
-        alertMessage(t("invalidEmail"));
-        return;
-    }
-
-    if (!isValidPhone(phone)) {
-        alertMessage("Mete WhatsApp ou nan fòma +509 XX XX XXXX.");
-        return;
-    }
-
-    if (password.length < 8) {
-        alertMessage(t("passwordMin"));
-        return;
-    }
-
-    if (password !== confirmPassword) {
-        alertMessage(t("passwordsDifferent"));
-        return;
-    }
-
-    isSubmitting = true;
-
-    try {
-        const result = await apiRequest("/api/register", {
-            method: "POST",
-            body: JSON.stringify({
-                firstName,
-                lastName,
-                name: `${firstName} ${lastName}`,
-                email,
-                phone,
-                password
-            })
-        });
-
-        if (!result.token || !result.customer) {
-            throw new Error(
-                "Sèvè a pa retounen token oswa enfòmasyon kont lan. Verifye repons /api/register nan server.js."
-            );
-        }
-
-        authToken = result.token;
-        currentUser = result.customer;
-
-        localStorage.setItem(STORAGE.TOKEN, authToken);
-        saveJSON(STORAGE.USER, currentUser);
-
-        await afterLogin();
-        alertMessage(t("accountCreated"));
-
-    } catch (error) {
-        const message = getErrorMessage(error);
-        const lower = message.toLowerCase();
-
-        const emailAlreadyUsed =
-            lower.includes("already") ||
-            lower.includes("exists") ||
-            lower.includes("existe") ||
-            lower.includes("utilisé") ||
-            lower.includes("used") ||
-            lower.includes("duplicate");
-
-        if (emailAlreadyUsed) {
-            const loginEmail = byId("gateLoginEmail");
-            if (loginEmail) loginEmail.value = email;
-
-            switchGateAuth("login");
-            alertMessage(
-                "Imèl sa a deja gen yon kont. Konekte avèk modpas ou."
-            );
-        } else {
-            alertMessage(message);
-        }
-
-    } finally {
-        isSubmitting = false;
-    }
-}
-
-/* ================= LOGIN ================= */
-
-async function handleGateLogin(event) {
-    event.preventDefault();
-
-    if (isSubmitting) return;
-
-    const email = byId("gateLoginEmail")?.value.trim().toLowerCase() || "";
-    const password = byId("gateLoginPassword")?.value || "";
-
-    if (!isValidEmail(email)) {
-        alertMessage(t("invalidEmail"));
-        return;
-    }
-
-    if (!password) {
-        alertMessage(t("enterPassword"));
-        return;
-    }
-
-    isSubmitting = true;
-
-    try {
-        const result = await apiRequest("/api/login", {
-            method: "POST",
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!result.token || !result.customer) {
-            throw new Error(
-                "Sèvè a pa retounen token oswa enfòmasyon kont lan. Verifye repons /api/login nan server.js."
-            );
-        }
-
-        authToken = result.token;
-        currentUser = result.customer;
-
-        localStorage.setItem(STORAGE.TOKEN, authToken);
-        saveJSON(STORAGE.USER, currentUser);
-
-        await afterLogin();
-        alertMessage(t("loginSuccess"));
-
-    } catch (error) {
-        alertMessage(getErrorMessage(error));
-    } finally {
-        isSubmitting = false;
-    }
-}
-
-/* ================= OLD FORM COMPATIBILITY ================= */
-
-async function handleLogin(event) {
-    event.preventDefault();
-
-    const email = byId("loginEmail")?.value.trim() || "";
-    const password = byId("loginPassword")?.value || "";
-
-    if (byId("gateLoginEmail")) byId("gateLoginEmail").value = email;
-    if (byId("gateLoginPassword")) byId("gateLoginPassword").value = password;
-
-    await handleGateLogin({ preventDefault() {} });
-}
-
-async function handleRegister(event) {
-    event.preventDefault();
-
-    const map = [
-        ["regFirstName", "gateFirstName"],
-        ["regLastName", "gateLastName"],
-        ["regWhatsapp", "gateWhatsapp"],
-        ["regEmail", "gateRegisterEmail"],
-        ["regPassword", "gateRegisterPassword"],
-        ["regConfirmPassword", "gateConfirmPassword"]
-    ];
-
-    map.forEach(([from, to]) => {
-        if (byId(from) && byId(to)) {
-            byId(to).value = byId(from).value;
-        }
-    });
-
-    await handleGateRegister({ preventDefault() {} });
-}
-
-function switchAuthTab(type) {
-    byId("loginForm")?.classList.toggle("active", type === "login");
-    byId("registerForm")?.classList.toggle("active", type === "register");
-}
-
-/* ================= PASSWORD VISIBILITY ================= */
-
-function toggleGatePassword(fieldId, button) {
-    const input = byId(fieldId);
-    if (!input) return;
-
-    input.type = input.type === "password" ? "text" : "password";
-
-    const icon = button?.querySelector("i");
-    if (icon) {
-        icon.classList.toggle("fa-eye", input.type === "password");
-        icon.classList.toggle("fa-eye-slash", input.type === "text");
-    }
-}
-
-function togglePasswordVisibility(fieldId, icon) {
-    const input = byId(fieldId);
-    if (!input) return;
-
-    input.type = input.type === "password" ? "text" : "password";
-
-    if (icon) {
-        icon.classList.toggle("fa-eye", input.type === "password");
-        icon.classList.toggle("fa-eye-slash", input.type === "text");
-    }
-}
-
-/* ================= CUSTOMER DATA ================= */
-
-async function refreshCustomerData() {
-    if (!authToken) return;
-
-    const results = await Promise.allSettled([
-        apiRequest("/api/me"),
-        apiRequest("/api/customer-wallet"),
-        apiRequest("/api/customer-orders"),
-        apiRequest("/api/customer-recharges"),
-        apiRequest("/api/customer-transactions"),
-        apiRequest("/api/customer-notifications")
-    ]);
-
-    if (results[0].status === "fulfilled") {
-        const customer = results[0].value.customer;
-        if (customer) {
-            currentUser = customer;
-            saveJSON(STORAGE.USER, currentUser);
-        }
-    }
-
-    if (results[1].status === "fulfilled") {
-        const data = results[1].value || {};
-        userWallet = Number(data.wallet?.balance) || 0;
-    }
-
-    if (results[2].status === "fulfilled") {
-        const data = results[2].value || {};
-        myOrders = Array.isArray(data) ? data : (data.orders || []);
-    }
-
-    if (results[3].status === "fulfilled") {
-        const data = results[3].value || {};
-        myRecharges = Array.isArray(data)
-            ? data
-            : (data.recharges || []);
-    }
-
-    if (results[4].status === "fulfilled") {
-        const data = results[4].value || {};
-        myTransactions = Array.isArray(data)
-            ? data
-            : (data.transactions || []);
-    }
-
-    if (results[5].status === "fulfilled") {
-        const data = results[5].value || {};
-        myNotifications = Array.isArray(data)
-            ? data
-            : (data.notifications || []);
-    }
-
-    updateUI();
-    renderWalletTransactions();
-}
-
-/* ================= LOGOUT ================= */
-
-async function logoutUser() {
-    try {
-        if (authToken) {
-            await apiRequest("/api/logout", {
-                method: "POST",
-                body: JSON.stringify({})
-            });
-        }
-    } catch (error) {
-        console.warn("Logout API:", getErrorMessage(error));
-    }
-
-    authToken = "";
-    currentUser = null;
-    userWallet = 0;
-    myOrders = [];
-    myRecharges = [];
-    myTransactions = [];
-    myNotifications = [];
-
-    localStorage.removeItem(STORAGE.TOKEN);
-    localStorage.removeItem(STORAGE.USER);
-
-    toggleSidebar(false);
-    updateUI();
-    showSebyAuthGate();
-    switchGateAuth("login");
-}
-/* ================= UI REFRESH ================= */
-
-function updateUI() {
-    const wallet = byId("userWalletBalance");
-    const cartBadge = byId("cartBadge");
-    const notifBadge = byId("notifBadge");
-
-    if (wallet) {
-        wallet.textContent = money(userWallet);
-    }
-
-    if (cartBadge) {
-        cartBadge.textContent = cartItem ? "1" : "0";
-    }
-
-    if (notifBadge) {
-        const unread = myNotifications.filter(
-            notification => !notification.read
-        ).length;
-
-        notifBadge.textContent = String(unread);
-        notifBadge.style.display = unread ? "" : "none";
-    }
-
-    renderOrders();
-    renderProfile();
-}
-
-/* ================= SIDEBAR / NAVIGATION ================= */
-
-function toggleSidebar(open) {
-    byId("sidebar")?.classList.toggle("active", Boolean(open));
-
-    const overlay = byId("sidebarOverlay");
-
-    if (overlay) {
-        overlay.style.display = open ? "block" : "none";
-    }
+function closeMenu() {
+  $("sidebar").classList.remove("open");
+  $("sidebarOverlay").classList.remove("show");
 }
 
 function showPage(pageId) {
-    if (!requireLogin()) return;
+  document.querySelectorAll(".page-section").forEach(page => {
+    page.classList.toggle("active", page.id === pageId);
+  });
 
-    document.querySelectorAll(".page-section").forEach(page => {
-        page.classList.remove("active");
+  document.querySelectorAll(".nav-item[data-page]").forEach(link => {
+    link.classList.toggle("active", link.dataset.page === pageId);
+  });
+
+  closeMenu();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* =========================================
+   PRODUCT CATEGORIES
+========================================= */
+
+function showCategory(category) {
+  const data = catalog[category];
+  if (!data) return;
+
+  selectedCategory = category;
+
+  $("categoryProducts").hidden = false;
+  $("categoryTitle").textContent = data.title;
+
+  const offersBox = $("productOffers");
+  offersBox.innerHTML = "";
+
+  if (!data.offers.length) {
+    offersBox.innerHTML = `
+      <div class="empty-state">
+        <i class="fa-solid fa-clock"></i>
+        <p>Les offres PUBG seront bientôt disponibles.</p>
+        <p>Contactez-nous sur WhatsApp pour connaître les prix.</p>
+      </div>
+    `;
+    $("categoryProducts").scrollIntoView({ behavior: "smooth" });
+    return;
+  }
+
+  data.offers.forEach((offer, index) => {
+    const [name, price] = offer;
+    const card = document.createElement("div");
+    card.className = "offer-card";
+
+    const info = document.createElement("div");
+    const title = document.createElement("h4");
+    const amount = document.createElement("p");
+
+    title.textContent = name;
+    amount.textContent = price.toLocaleString("fr-FR") + " GDES";
+
+    info.append(title, amount);
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Acheter";
+    button.addEventListener("click", () => {
+      openProductOrder(category, index);
     });
 
-    const page = byId(pageId);
+    card.append(info, button);
+    offersBox.appendChild(card);
+  });
 
-    if (page) {
-        page.classList.add("active");
-    }
-
-    if (pageId === "wallet-page") {
-        loadWalletPage();
-    }
-
-    if (pageId === "orders-page") {
-        renderOrders();
-    }
-
-    if (pageId === "profile-page") {
-        renderProfile();
-    }
+  $("categoryProducts").scrollIntoView({ behavior: "smooth" });
 }
 
-/* ================= PROFILE / ORDERS ================= */
-
-function renderProfile() {
-    const profile = byId("profileContent");
-
-    if (!profile) return;
-
-    if (!currentUser) {
-        profile.innerHTML = `<p>${safeText(t("loginRequired"))}</p>`;
-        return;
-    }
-
-    const fullName = currentUser.name ||
-        `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim();
-
-    profile.innerHTML = `
-        <div class="seby-profile-details">
-            <p>
-                <strong>Nom :</strong>
-                ${safeText(fullName)}
-            </p>
-
-            <p>
-                <strong>Email :</strong>
-                ${safeText(currentUser.email || "")}
-            </p>
-
-            <p>
-                <strong>WhatsApp :</strong>
-                ${safeText(currentUser.phone || "")}
-            </p>
-        </div>
-    `;
+function closeCategory() {
+  $("categoryProducts").hidden = true;
+  $("products-page").scrollIntoView({ behavior: "smooth" });
 }
 
-function renderOrders() {
-    const list = byId("ordersList");
+/* =========================================
+   PRODUCT ORDER MODAL
+========================================= */
 
-    if (!list) return;
+function openProductOrder(category, index) {
+  const data = catalog[category];
+  if (!data) return;
 
-    if (!authToken) {
-        list.innerHTML = `<p>${safeText(t("loginRequired"))}</p>`;
-        return;
-    }
+  if (!data.offers[index]) {
+    toast("Cette offre n'est pas disponible.", "error");
+    return;
+  }
 
-    if (!myOrders.length) {
-        list.innerHTML = `<p>${safeText(t("noOrders"))}</p>`;
-        return;
-    }
+  selectedProduct = {
+    category,
+    name: data.offers[index][0],
+    price: data.offers[index][1]
+  };
 
-    list.innerHTML = myOrders.map(order => `
-        <article class="seby-order-card">
+  $("selectedProductTitle").textContent = data.title + " — " + selectedProduct.name;
+  $("selectedProductDescription").textContent =
+    "Prix : " + selectedProduct.price.toLocaleString("fr-FR") + " GDES";
 
-            <h3>
-                ${safeText(
-                    order.productName ||
-                    order.product ||
-                    "Commande"
-                )}
-            </h3>
+  const fieldsBox = $("productRequiredFields");
+  fieldsBox.innerHTML = "";
 
-            <p>${money(order.amount)}</p>
+  data.fields.forEach(field => {
+    const group = document.createElement("div");
+    group.className = "form-group";
 
-            <p>
-                Statut :
-                ${safeText(order.status || "En attente")}
-            </p>
+    const label = document.createElement("label");
+    label.textContent = field.label + (field.required ? " *" : "");
 
-            <small>
-                ${safeText(order.createdAt || "")}
-            </small>
+    const input = document.createElement("input");
+    input.name = field.name;
+    input.type = field.type;
+    input.placeholder = field.label;
+    input.required = Boolean(field.required);
+    input.autocomplete = "off";
 
-        </article>
-    `).join("");
-}
+    label.htmlFor = "required_" + field.name;
+    input.id = "required_" + field.name;
 
-/* ================= CART STORAGE ================= */
+    group.append(label, input);
+    fieldsBox.appendChild(group);
+  });
 
-function saveCart() {
-    saveJSON(STORAGE.CART, cartItem);
-    updateUI();
-}
+  $("orderWhatsapp").value = currentUser?.whatsapp || "";
+  $("orderEmail").value = currentUser?.email || "";
 
-function clearCart() {
-    cartItem = null;
-    saveCart();
-}
-
-/* ================= PRODUCT MODAL ================= */
-
-function openProductModal(productKey) {
-    if (!requireLogin()) return;
-
-    const product = PRODUCTS_DATA[productKey];
-
-    if (!product) {
-        alertMessage("Pwodwi sa a pa disponib.");
-        return;
-    }
-
-    currentSelectedProduct = productKey;
-    currentSelectedPack = null;
-
-    const modal = byId("productModal");
-    const body = byId("modalBody");
-
-    if (!modal || !body) {
-        alertMessage(
-            "Fenèt pwodwi a pa jwenn nan index.html."
-        );
-        return;
-    }
-
-    const fieldHTML = product.fields.map(field => {
-
-        if (field === "region") {
-            return `
-                <label for="orderRegion">Région</label>
-
-                <select id="orderRegion" required>
-                    <option value="">Chwazi rejyon</option>
-                    <option value="Amérique du Nord">
-                        Amérique du Nord
-                    </option>
-                    <option value="États-Unis">
-                        États-Unis
-                    </option>
-                    <option value="Europe">
-                        Europe
-                    </option>
-                </select>
-            `;
-        }
-
-        const labels = {
-            id: "ID Kont",
-            email: "E-mail kont lan",
-            password: "Modpas kont lan",
-            konami_id: "Konami ID",
-            transaction: "ID Transaction",
-            whatsapp: "Nimewo WhatsApp"
-        };
-
-        const placeholders = {
-            id: "Antre ID kont lan",
-            email: "example@email.com",
-            password: "Antre modpas kont lan",
-            konami_id: "Antre Konami ID",
-            transaction: "Antre ID Transaction",
-            whatsapp: WHATSAPP_DISPLAY
-        };
-
-        const type =
-            field === "password" ? "password" :
-            field === "email" ? "email" : "text";
-
-        const required = [
-            "id",
-            "email",
-            "password",
-            "konami_id",
-            "transaction",
-            "whatsapp"
-        ].includes(field);
-
-        return `
-            <label for="order_${field}">
-                ${safeText(labels[field] || field)}
-            </label>
-
-            <input
-                id="order_${field}"
-                type="${type}"
-                placeholder="${safeText(placeholders[field] || "")}"
-                ${required ? "required" : ""}
-                ${field === "transaction"
-                    ? 'inputmode="numeric" maxlength="30"'
-                    : ""}
-                ${field === "whatsapp"
-                    ? 'value="+509 "'
-                    : ""}
-            >
-        `;
-    }).join("");
-
-    body.innerHTML = `
-        <h2>${safeText(product.title)}</h2>
-
-        <p>${safeText(t("chooseAmount"))}</p>
-
-        <label for="productPack">Pakè</label>
-
-        <select id="productPack" required>
-            <option value="">Chwazi pakè a</option>
-
-            ${product.packs.map((pack, index) => `
-                <option value="${index}">
-                    ${safeText(pack.name)}
-                    — ${money(pack.price)}
-                </option>
-            `).join("")}
-
-        </select>
-
-        <div id="selectedPackPrice"></div>
-
-        <h3>${safeText(t("requiredInfo"))}</h3>
-
-        ${fieldHTML}
-
-        <button type="button" id="addProductToCartBtn">
-            Ajoute nan panye
-        </button>
-
-        <button type="button" id="buyProductNowBtn">
-            Konfime kòmand
-        </button>
-    `;
-
-    byId("productPack").addEventListener("change", event => {
-
-        const index = Number(event.target.value);
-
-        currentSelectedPack =
-            Number.isInteger(index) && product.packs[index]
-                ? product.packs[index]
-                : null;
-
-        const price = byId("selectedPackPrice");
-
-        if (price) {
-            price.textContent = currentSelectedPack
-                ? `Total : ${money(currentSelectedPack.price)}`
-                : "";
-        }
-    });
-
-    const whatsappInput = byId("order_whatsapp");
-
-    if (whatsappInput) {
-        whatsappInput.addEventListener("input", () => {
-            formatPhoneInput(whatsappInput);
-        });
-    }
-
-    byId("addProductToCartBtn").onclick = addProductToCart;
-    byId("buyProductNowBtn").onclick = submitProductOrder;
-
-    modal.style.display = "flex";
+  $("productModal").classList.add("show");
+  document.body.style.overflow = "hidden";
 }
 
 function closeProductModal() {
-    const modal = byId("productModal");
-
-    if (modal) {
-        modal.style.display = "none";
-    }
+  $("productModal").classList.remove("show");
+  document.body.style.overflow = "";
 }
 
-/* ================= GET PRODUCT DETAILS ================= */
+/* =========================================
+   API REQUEST
+========================================= */
 
-function getProductDetails() {
-    if (!currentSelectedProduct || !currentSelectedPack) {
-        throw new Error("Tanpri chwazi yon pakè.");
+async function apiRequest(path, options = {}) {
+  const response = await fetch(API_BASE + path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
     }
+  });
 
-    const product = PRODUCTS_DATA[currentSelectedProduct];
-    const details = {};
+  if (!response.ok) {
+    throw new Error("Erreur serveur : " + response.status);
+  }
 
-    for (const field of product.fields) {
-
-        const input = byId(`order_${field}`);
-
-        if (field === "region") {
-            details.region = byId("orderRegion")?.value || "";
-
-            if (!details.region) {
-                throw new Error("Chwazi rejyon an.");
-            }
-
-            continue;
-        }
-
-        const value = input?.value.trim() || "";
-
-        if (!value) {
-            throw new Error(
-                `Tanpri ranpli ${field}.`
-            );
-        }
-
-        if (field === "email" && !isValidEmail(value)) {
-            throw new Error("Adrès imèl la pa valab.");
-        }
-
-        if (field === "whatsapp" && !isValidPhone(value)) {
-            throw new Error(
-                "WhatsApp dwe nan fòma +509 XX XX XXXX."
-            );
-        }
-
-        if (
-            field === "transaction" &&
-            !/^\d{8,30}$/.test(value)
-        ) {
-            throw new Error(
-                "ID Transaction dwe gen 8–30 chif."
-            );
-        }
-
-        details[field] = value;
-    }
-
-    return {
-        productKey: currentSelectedProduct,
-        productName: product.title,
-        packName: currentSelectedPack.name,
-        amount: currentSelectedPack.price,
-        details
-    };
+  return response.json();
 }
 
-/* ================= ADD PRODUCT TO CART ================= */
+/* =========================================
+   ORDERS
+========================================= */
 
-function addProductToCart() {
-    try {
-        cartItem = getProductDetails();
-
-        saveCart();
-        closeProductModal();
-
-        alertMessage("Pwodwi a ajoute nan panye a.");
-
-    } catch (error) {
-        alertMessage(getErrorMessage(error));
-    }
+function getLocalOrders() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE.orders) || "[]");
+  } catch {
+    return [];
+  }
 }
 
-/* ================= SUBMIT PRODUCT ORDER ================= */
-
-async function submitProductOrder() {
-    if (!requireLogin() || isSubmitting) return;
-
-    try {
-        const item = getProductDetails();
-
-        isSubmitting = true;
-
-        const detailLines = Object.entries(item.details)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join("\n");
-
-        const result = await apiRequest("/api/orders", {
-            method: "POST",
-
-            body: JSON.stringify({
-                productName:
-                    `${item.productName} — ${item.packName}`,
-
-                amount: item.amount,
-                quantity: 1,
-                description: detailLines,
-
-                transactionId:
-                    item.details.transaction || ""
-            })
-        });
-
-        if (result.order) {
-            myOrders.unshift(result.order);
-        }
-
-        clearCart();
-        closeProductModal();
-
-        await refreshCustomerData();
-
-        alertMessage(
-            "Kòmand ou an voye pou verifikasyon."
-        );
-
-    } catch (error) {
-        alertMessage(getErrorMessage(error));
-
-    } finally {
-        isSubmitting = false;
-    }
+function saveLocalOrder(order) {
+  const orders = getLocalOrders();
+  orders.unshift(order);
+  localStorage.setItem(STORAGE.orders, JSON.stringify(orders));
 }
 
-/* ================= CART MODAL ================= */
+function displayOrders(orders) {
+  const list = $("ordersList");
+  list.innerHTML = "";
 
-function openCartModal() {
-    if (!requireLogin()) return;
+  if (!orders.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <i class="fa-solid fa-box-open"></i>
+        <p>Aucune commande pour le moment.</p>
+      </div>
+    `;
+    return;
+  }
 
-    const modal = byId("cartModal");
-    const body = byId("cartModalBody");
+  orders.forEach(order => {
+    const card = document.createElement("div");
+    card.className = "order-item";
 
-    if (!modal || !body) return;
+    const title = document.createElement("h3");
+    title.textContent = order.product || order.name || "Commande";
 
-    if (!cartItem) {
+    const price = document.createElement("p");
+    price.textContent = "Prix : " + (order.price || 0) + " GDES";
 
-        body.innerHTML = `
-            <p>${safeText(t("emptyCart"))}</p>
+    const transaction = document.createElement("p");
+    transaction.textContent = "Transaction : " + (order.transactionId || "—");
 
-            <button
-                type="button"
-                onclick="closeCartModal()"
-            >
-                Fèmen
-            </button>
-        `;
+    const status = document.createElement("span");
+    status.className = "order-status";
+    status.textContent = order.status || "En attente";
 
-    } else {
-
-        body.innerHTML = `
-            <h2>Rezime kòmand</h2>
-
-            <p>${safeText(cartItem.productName)}</p>
-
-            <p>${safeText(cartItem.packName)}</p>
-
-            <h3>${money(cartItem.amount)}</h3>
-
-            <button
-                type="button"
-                onclick="submitCartOrder()"
-            >
-                Konfime kòmand
-            </button>
-
-            <button
-                type="button"
-                onclick="clearCart();closeCartModal()"
-            >
-                Retire
-            </button>
-        `;
-    }
-
-    modal.style.display = "flex";
+    card.append(title, price, transaction, status);
+    list.appendChild(card);
+  });
 }
 
-function closeCartModal() {
-    const modal = byId("cartModal");
+async function loadOrders() {
+  if (!currentUser) return;
 
-    if (modal) {
-        modal.style.display = "none";
-    }
+  displayOrders(getLocalOrders());
+
+  try {
+    const result = await apiRequest(
+      "/api/orders?email=" + encodeURIComponent(currentUser.email)
+    );
+
+    const orders = Array.isArray(result)
+      ? result
+      : result.orders || result.data || [];
+
+    if (orders.length) displayOrders(orders);
+  } catch (error) {
+    console.warn("Chargement API commandes :", error.message);
+  }
 }
 
-/* ================= SUBMIT CART ORDER ================= */
-
-async function submitCartOrder() {
-    if (!cartItem || !requireLogin() || isSubmitting) {
-        return;
-    }
-
-    isSubmitting = true;
-
-    try {
-        const result = await apiRequest("/api/orders", {
-            method: "POST",
-
-            body: JSON.stringify({
-                productName:
-                    `${cartItem.productName} — ${cartItem.packName}`,
-
-                amount: cartItem.amount,
-                quantity: 1,
-
-                description: JSON.stringify(
-                    cartItem.details || {}
-                ),
-
-                transactionId:
-                    cartItem.details?.transaction || ""
-            })
-        });
-
-        if (result.order) {
-            myOrders.unshift(result.order);
-        }
-
-        clearCart();
-        closeCartModal();
-
-        await refreshCustomerData();
-
-        alertMessage(
-            "Kòmand lan voye pou verifikasyon."
-        );
-
-    } catch (error) {
-        alertMessage(getErrorMessage(error));
-
-    } finally {
-        isSubmitting = false;
-    }
-}
-
-/* ================= WALLET ================= */
-
-async function loadWalletPage() {
-    if (!requireLogin()) return;
-
-    try {
-        const result = await apiRequest(
-            "/api/customer-wallet"
-        );
-
-        userWallet = Number(
-            result.wallet?.balance
-        ) || 0;
-
-        updateUI();
-        renderWalletTransactions();
-
-    } catch (error) {
-        alertMessage(getErrorMessage(error));
-    }
-}
-
-/* ================= WALLET RECHARGE ================= */
-
-async function submitWalletRecharge() {
-    if (!requireLogin() || isSubmitting) return;
-
-    const amount = Number(
-        byId("rechargeAmount")?.value
-    );
-
-    const transactionId =
-        byId("walletTxnId")?.value.trim() || "";
-
-    const phone =
-        byId("natcashNumInput")?.value.trim() || "";
-
-    if (!Number.isFinite(amount) || amount < 150) {
-        alertMessage(
-            "Montan minimòm recharge a se 150 Gdes."
-        );
-        return;
-    }
-
-    if (!/^\d{8,30}$/.test(transactionId)) {
-        alertMessage(
-            "ID Transaction lan dwe gen 8–30 chif."
-        );
-        return;
-    }
-
-    if (phone && !isValidPhone(phone)) {
-        alertMessage(
-            "Verifye nimewo WhatsApp ou a."
-        );
-        return;
-    }
-
-    isSubmitting = true;
-
-    try {
-        await apiRequest("/api/recharges", {
-            method: "POST",
-
-            body: JSON.stringify({
-                amount,
-                transactionId,
-                phone
-            })
-        });
-
-        if (byId("rechargeAmount")) {
-            byId("rechargeAmount").value = "";
-        }
-
-        if (byId("walletTxnId")) {
-            byId("walletTxnId").value = "";
-        }
-
-        await refreshCustomerData();
-
-        alertMessage(t("walletSent"));
-
-    } catch (error) {
-        alertMessage(getErrorMessage(error));
-
-    } finally {
-        isSubmitting = false;
-    }
-}
-
-/* ================= WALLET TRANSACTIONS ================= */
-
-function renderWalletTransactions() {
-    const container = byId("walletTransactions");
-
-    if (!container) return;
-
-    if (!myTransactions.length && !myRecharges.length) {
-        container.innerHTML = `
-            <p>Pa gen tranzaksyon pou kounye a.</p>
-        `;
-        return;
-    }
-
-    const rows = [
-        ...myTransactions.map(item => ({
-            title:
-                item.description ||
-                item.type ||
-                "Transaction",
-
-            amount: item.amount,
-            status: item.status,
-            date: item.createdAt
-        })),
-
-        ...myRecharges.map(item => ({
-            title:
-                `Recharge ${item.transactionId || ""}`,
-
-            amount: item.amount,
-            status: item.status,
-            date: item.createdAt
-        }))
-    ];
-
-    container.innerHTML = rows.map(item => `
-        <article class="seby-transaction">
-
-            <strong>
-                ${safeText(item.title)}
-            </strong>
-
-            <p>${money(item.amount)}</p>
-
-            <p>
-                ${safeText(item.status || "En attente")}
-            </p>
-
-            <small>
-                ${safeText(item.date || "")}
-            </small>
-
-        </article>
-    `).join("");
-}
-
-/* ================= NOTIFICATIONS ================= */
-
-function openNotifications() {
-    const modal = byId("notifModal");
-
-    if (!modal) return;
-
-    const unread = myNotifications.filter(
-        item => !item.read
-    );
-
-    modal.style.display = "flex";
-
-    const content =
-        modal.querySelector(".modal-content") || modal;
-
-    const list = unread.length
-        ? unread.map(item => `
-            <article>
-
-                <strong>
-                    ${safeText(item.title || "SEBY UNIVERSE")}
-                </strong>
-
-                <p>
-                    ${safeText(item.message || "")}
-                </p>
-
-            </article>
-        `).join("")
-        : "<p>Pa gen nouvo notifikasyon.</p>";
-
-    const existing = byId("sebyNotificationList");
-
-    if (existing) {
-        existing.innerHTML = list;
-
-    } else {
-        const area = document.createElement("div");
-
-        area.id = "sebyNotificationList";
-        area.innerHTML = list;
-
-        content.appendChild(area);
-    }
-}
-
-/* ================= SOCIAL AUTH ================= */
-
-function socialAuth(provider) {
-    if (String(provider).toLowerCase() !== "google") {
-        return;
-    }
-
-    alertMessage(
-        "Pou kounye a, konekte ak imèl ak modpas SEBY UNIVERSE ou. " +
-        "Koneksyon Google mande verifikasyon token sou backend la."
-    );
-}
-
-/* ================= EVENT LISTENERS ================= */
-
-function setupEventListeners() {
-
-    /* AUTH FORMS */
-
-    byId("gateLoginForm")?.addEventListener(
-        "submit",
-        handleGateLogin
-    );
-
-    byId("gateRegisterForm")?.addEventListener(
-        "submit",
-        handleGateRegister
-    );
-
-    byId("loginForm")?.addEventListener(
-        "submit",
-        handleLogin
-    );
-
-    byId("registerForm")?.addEventListener(
-        "submit",
-        handleRegister
-    );
-
-    /* LOGOUT */
-
-    byId("logoutBtn")?.addEventListener(
-        "click",
-        event => {
-            event.preventDefault();
-            logoutUser();
-        }
-    );
-
-    /* PROFILE */
-
-    byId("profileHeaderBtn")?.addEventListener(
-        "click",
-        () => {
-            if (!requireLogin()) return;
-            showPage("profile-page");
-        }
-    );
-
-    /* CART */
-
-    byId("cartBtn")?.addEventListener(
-        "click",
-        openCartModal
-    );
-
-    /* NOTIFICATIONS */
-
-    byId("notifBtn")?.addEventListener(
-        "click",
-        openNotifications
-    );
-
-    /* SIDEBAR */
-
-    byId("openMenuBtn")?.addEventListener(
-        "click",
-        () => toggleSidebar(true)
-    );
-
-    byId("closeMenuBtn")?.addEventListener(
-        "click",
-        () => toggleSidebar(false)
-    );
-
-    byId("sidebarOverlay")?.addEventListener(
-        "click",
-        () => toggleSidebar(false)
-    );
-
-    /* PAGE NAVIGATION */
-
-    document.querySelectorAll(
-        ".nav-item[data-page]"
-    ).forEach(item => {
-
-        item.addEventListener("click", event => {
-
-            event.preventDefault();
-
-            showPage(item.dataset.page);
-
-            toggleSidebar(false);
-        });
+async function submitOrder(event) {
+  event.preventDefault();
+
+  if (!selectedProduct) {
+    toast("Choisissez un produit.", "error");
+    return;
+  }
+
+  if (!currentUser) {
+    toast("Connectez-vous avant de commander.", "error");
+    return;
+  }
+
+  const form = $("productOrderForm");
+
+  if (!form.reportValidity()) return;
+
+  const formData = new FormData(form);
+  const details = {};
+
+  for (const [key, value] of formData.entries()) {
+    details[key] = String(value).trim();
+  }
+
+  const order = {
+    customerName: currentUser.name,
+    email: details.email || currentUser.email,
+    product: catalog[selectedProduct.category].title,
+    category: selectedProduct.category,
+    offer: selectedProduct.name,
+    price: selectedProduct.price,
+    whatsapp: details.whatsapp,
+    transactionId: details.transactionId,
+    details,
+    status: "En attente",
+    createdAt: new Date().toISOString()
+  };
+
+  if (!order.whatsapp || !order.transactionId) {
+    toast("Remplissez WhatsApp et ID Transaction.", "error");
+    return;
+  }
+
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = true;
+  button.textContent = "Envoi en cours...";
+
+  try {
+    await apiRequest("/api/orders", {
+      method: "POST",
+      body: JSON.stringify(order)
     });
 
-    /* ACCOUNT INFOS */
+    saveLocalOrder(order);
 
-    byId("accountInfosBtn")?.addEventListener(
-        "click",
-        event => {
+    currentUser.whatsapp = order.whatsapp;
+    localStorage.setItem(STORAGE.user, JSON.stringify(currentUser));
 
-            event.preventDefault();
+    closeProductModal();
+    form.reset();
+    selectedProduct = null;
 
-            showPage("profile-page");
-
-            toggleSidebar(false);
-        }
+    toast("Commande envoyée. Attendez la validation.", "success");
+    loadOrders();
+  } catch (error) {
+    toast(
+      "Impossible d'envoyer la commande au serveur. Vérifiez le backend.",
+      "error"
     );
-
-    /* PRO MODAL */
-
-    byId("goProBtn")?.addEventListener(
-        "click",
-        event => {
-
-            event.preventDefault();
-
-            const modal = byId("proModal");
-
-            if (modal) {
-                modal.style.display = "flex";
-            }
-        }
-    );
-
-    /* PHONE INPUTS */
-
-    document.querySelectorAll(
-        "#gateWhatsapp, #regWhatsapp, #natcashNumInput"
-    ).forEach(input => {
-
-        input.addEventListener("input", () => {
-            formatPhoneInput(input);
-        });
-    });
-
-    /* SETTINGS MENU */
-
-    byId("paramsToggle")?.addEventListener(
-        "click",
-        event => {
-
-            event.preventDefault();
-
-            byId("paramsMenu")?.classList.toggle("active");
-        }
-    );
-
-    /* PRODUCTS */
-
-    document.querySelectorAll(
-        "[data-product]"
-    ).forEach(button => {
-
-        button.addEventListener("click", () => {
-            openProductModal(button.dataset.product);
-        });
-    });
-
-    /* WALLET RECHARGE */
-
-    byId("submitWalletRechargeBtn")?.addEventListener(
-        "click",
-        submitWalletRecharge
-    );
+    console.error(error);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Confirmer ma commande";
+  }
 }
 
-/* ================= AUTH RESTORE / STARTUP ================= */
+/* =========================================
+   PAYMENT NUMBER
+========================================= */
 
-async function initializeAuthGate() {
+async function copyPaymentNumber() {
+  const number = "+50940098873";
 
-    if (authInitialized) return;
-
-    authInitialized = true;
-
-    setupEventListeners();
-
-    if (!authToken) {
-
-        currentUser = null;
-
-        showSebyAuthGate();
-
-        switchGateAuth("login");
-
-        updateUI();
-
-        return;
-    }
-
-    try {
-
-        const result = await apiRequest("/api/me");
-
-        currentUser = result.customer;
-
-        if (!currentUser) {
-            throw new Error(
-                "Enfòmasyon kont lan pa disponib."
-            );
-        }
-
-        saveJSON(STORAGE.USER, currentUser);
-
-        hideSebyAuthGate();
-
-        await refreshCustomerData();
-
-    } catch (error) {
-
-        authToken = "";
-        currentUser = null;
-
-        localStorage.removeItem(STORAGE.TOKEN);
-        localStorage.removeItem(STORAGE.USER);
-
-        showSebyAuthGate();
-
-        switchGateAuth("login");
-    }
-
-    updateUI();
+  try {
+    await navigator.clipboard.writeText(number);
+    toast("Numéro de paiement copié.", "success");
+  } catch {
+    toast("Copiez ce numéro : " + number);
+  }
 }
 
-/* ================= LANGUAGE SELECT ================= */
+/* =========================================
+   TRANSACTION FORM
+========================================= */
 
-function setupLanguageSelect() {
+async function submitTransaction(event) {
+  event.preventDefault();
 
-    const languageSelect = byId("langSelect");
+  const transactionId = $("transactionId").value.trim();
 
-    if (!languageSelect) return;
+  if (!transactionId) {
+    toast("Entrez votre ID Transaction.", "error");
+    return;
+  }
 
-    languageSelect.value = getCurrentLanguage();
-
-    languageSelect.addEventListener("change", event => {
-
-        const language = event.target.value;
-
-        if (!SCRIPT_TRANSLATIONS[language]) return;
-
-        localStorage.setItem(
-            STORAGE.LANGUAGE,
-            language
-        );
-
-        window.dispatchEvent(
-            new Event("languageChanged")
-        );
-    });
-}
-
-window.addEventListener("languageChanged", () => {
-    updateUI();
-});
-
-/* ================= GLOBAL HTML HANDLERS ================= */
-
-window.openProductModal = openProductModal;
-window.closeProductModal = closeProductModal;
-
-window.openCartModal = openCartModal;
-window.closeCartModal = closeCartModal;
-
-window.submitCartOrder = submitCartOrder;
-window.submitWalletRecharge = submitWalletRecharge;
-
-window.switchGateAuth = switchGateAuth;
-
-window.toggleGatePassword = toggleGatePassword;
-window.togglePasswordVisibility = togglePasswordVisibility;
-
-window.socialAuth = socialAuth;
-window.logoutUser = logoutUser;
-
-window.showPage = showPage;
-window.openNotifications = openNotifications;
-
-window.clearCart = clearCart;
-
-window.handleLogin = handleLogin;
-window.handleRegister = handleRegister;
-
-/* ================= START ================= */
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    setupLanguageSelect();
-
-    initializeAuthGate();
-
-});
-const sebyEffect = document.getElementById("seby-click-effect");
-
-document.addEventListener("click", function (event) {
-  const target = event.target.closest(
-    "button, [role='button'], .clickable"
+  toast(
+    "ID saisi. Pour l'associer à un achat, envoyez votre commande depuis le formulaire du produit."
   );
+}
 
-  if (!target || !sebyEffect) return;
+/* =========================================
+   FEEDBACK
+========================================= */
 
-  if (target.dataset.noSebyEffect === "true") return;
+async function submitFeedback(event) {
+  event.preventDefault();
 
-  sebyEffect.classList.add("active");
+  const name = $("feedbackName").value.trim() || currentUser?.name || "Client";
+  const message = $("feedbackMessage").value.trim();
 
-  clearTimeout(window.sebyEffectTimer);
+  if (!message) {
+    toast("Écrivez votre avis avant de l'envoyer.", "error");
+    return;
+  }
 
-  window.sebyEffectTimer = setTimeout(() => {
-    sebyEffect.classList.remove("active");
-  }, 1100);
+  try {
+    await apiRequest("/api/notifications", {
+      method: "POST",
+      body: JSON.stringify({
+        type: "feedback",
+        name,
+        email: currentUser?.email || "",
+        message,
+        createdAt: new Date().toISOString()
+      })
+    });
+
+    $("feedbackForm").reset();
+    toast("Merci pour votre avis !", "success");
+  } catch (error) {
+    toast("Impossible d'envoyer votre avis au serveur.", "error");
+    console.error(error);
+  }
+}
+
+/* =========================================
+   CLICK ANIMATIONS
+========================================= */
+
+document.addEventListener("click", event => {
+  const target = event.target.closest("button, .nav-item, .category-preview");
+
+  if (!target || target.disabled) return;
+
+  target.animate(
+    [
+      { transform: "scale(1)" },
+      { transform: "scale(.96)" },
+      { transform: "scale(1)" }
+    ],
+    { duration: 220, easing: "ease-out" }
+  );
 });
-/* ===== SEBY LOADER AUTO CLOSE ===== */
-(function () {
-  function closeSebyLoader() {
-    const loader = document.getElementById("sebyLoader");
 
-    if (loader) {
-      loader.classList.add("loader-hidden");
+/* =========================================
+   EVENTS
+========================================= */
 
-      setTimeout(() => {
-        loader.style.display = "none";
-      }, 600);
+function connectEvents() {
+  $("openMenuBtn").addEventListener("click", openMenu);
+  $("closeMenuBtn").addEventListener("click", closeMenu);
+  $("sidebarOverlay").addEventListener("click", closeMenu);
+
+  document.querySelectorAll(".nav-item[data-page]").forEach(link => {
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      showPage(link.dataset.page);
+    });
+  });
+
+  $("viewProductsBtn").addEventListener("click", () => {
+    showPage("products-page");
+  });
+
+  $("homeLogo").addEventListener("click", event => {
+    event.preventDefault();
+    showPage("home-page");
+  });
+
+  $("profileHeaderBtn").addEventListener("click", () => {
+    showPage("profile-page");
+  });
+
+  $("notifBtn").addEventListener("click", () => {
+    showPage("orders-page");
+  });
+
+  $("logoutBtn").addEventListener("click", event => {
+    event.preventDefault();
+    logout();
+  });
+
+  document.querySelectorAll(".product-card[data-category]").forEach(card => {
+    card.addEventListener("click", () => {
+      showCategory(card.dataset.category);
+    });
+  });
+
+  $("backToCategories").addEventListener("click", closeCategory);
+  $("closeProductModal").addEventListener("click", closeProductModal);
+
+  $("productModal").addEventListener("click", event => {
+    if (event.target === $("productModal")) closeProductModal();
+  });
+
+  $("productOrderForm").addEventListener("submit", submitOrder);
+  $("copyPaymentNumber").addEventListener("click", copyPaymentNumber);
+  $("transactionForm").addEventListener("submit", submitTransaction);
+  $("feedbackForm").addEventListener("submit", submitFeedback);
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      closeMenu();
+      closeProductModal();
     }
+  });
+}
+
+/* =========================================
+   START APPLICATION
+========================================= */
+
+function startApp() {
+  connectEvents();
+
+  try {
+    currentUser = JSON.parse(localStorage.getItem(STORAGE.user) || "null");
+  } catch {
+    currentUser = null;
   }
 
-  if (document.readyState === "complete") {
-    setTimeout(closeSebyLoader, 800);
+  if (currentUser) {
+    showApplication();
   } else {
-    window.addEventListener("load", () => {
-      setTimeout(closeSebyLoader, 800);
-    }, { once: true });
+    $("sebyAuthGate").style.display = "flex";
   }
 
-  setTimeout(closeSebyLoader, 5000);
-})();
+  if (window.google && google.accounts) {
+    initializeGoogle();
+  } else {
+    window.addEventListener("load", initializeGoogle, { once: true });
+  }
+
+  hideLoader();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startApp);
+} else {
+  startApp();
+}
