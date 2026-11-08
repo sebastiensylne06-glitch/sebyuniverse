@@ -7,19 +7,15 @@ const path = require("path");
 const crypto = require("crypto");
 
 let nodemailer = null;
-try {
-  nodemailer = require("nodemailer");
-} catch (_) {
-  console.log("Nodemailer pa enstale; imèl dezaktive.");
-}
+try { nodemailer = require("nodemailer"); }
+catch (_) { console.log("Nodemailer pa enstale; imèl dezaktive."); }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 const SECRET_FILE = path.join(DATA_DIR, "admin-secret.json");
-
 const ADMIN_SECRET = process.env.ADMIN_SECRET || "";
 const SESSION_TTL = 8 * 60 * 60 * 1000;
 const CUSTOMER_SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
@@ -27,7 +23,6 @@ const CUSTOMER_SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 const adminSessions = new Map();
 const customerSessions = new Map();
 const loginAttempts = new Map();
-
 const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .split(",").map(v => v.trim()).filter(Boolean);
 
@@ -49,7 +44,10 @@ function readDB() {
       if (!Array.isArray(saved[key])) saved[key] = [];
     }
     return { ...base, ...saved };
-  } catch (_) {
+  } catch (error) {
+    if (fs.existsSync(DB_FILE)) {
+      console.error("Pa kapab li db.json:", error.message);
+    }
     return emptyDB();
   }
 }
@@ -63,9 +61,7 @@ function saveDB() {
 }
 
 function makeId() {
-  return crypto.randomUUID
-    ? crypto.randomUUID()
-    : crypto.randomBytes(16).toString("hex");
+  return crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString("hex");
 }
 
 function text(value, max = 500) {
@@ -77,24 +73,18 @@ function normalizeEmail(value) {
 }
 
 function normalizeStatus(value) {
-  return text(value, 80).normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return text(value, 80).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 function isPending(status) {
   const s = normalizeStatus(status);
-  return s.includes("attente") ||
-    s.includes("pending") ||
-    s.includes("en cours");
+  return s.includes("attente") || s.includes("pending") || s.includes("en cours");
 }
 
 function isValidated(status) {
   const s = normalizeStatus(status);
-  return s.includes("valide") ||
-    s.includes("approved") ||
-    s.includes("complete") ||
-    s.includes("livre") ||
-    s.includes("termine");
+  return s.includes("valide") || s.includes("approved") ||
+    s.includes("complete") || s.includes("livre") || s.includes("termine");
 }
 
 function isRejected(status) {
@@ -107,9 +97,8 @@ function validateTransactionId(value) {
 }
 
 function extractTransactionId(description) {
-  const match = String(description || "")
-    .match(/Transaction\s*ID\s*:\s*(\d+)/i);
-  return match ? match[1] : "";
+  const m = String(description || "").match(/Transaction\s*ID\s*:\s*(\d+)/i);
+  return m ? m[1] : "";
 }
 
 function transactionAlreadyUsed(transactionId) {
@@ -117,27 +106,31 @@ function transactionAlreadyUsed(transactionId) {
   if (!id) return false;
 
   return db.orders.some(o =>
-    (text(o.transactionId, 200) ||
-      extractTransactionId(o.description)) === id
-  ) || db.recharges.some(r =>
-    text(r.transactionId, 200) === id
-  );
+    (text(o.transactionId, 200) || extractTransactionId(o.description)) === id
+  ) || db.recharges.some(r => text(r.transactionId, 200) === id);
 }
 
 function matchesCustomer(record, email, phone, userId) {
-  return (
-    (Boolean(email) &&
-      normalizeEmail(record.email || record.customerEmail) === email) ||
-    (Boolean(phone) &&
-      text(record.phone || record.customerPhone || record.whatsapp, 80) === phone) ||
-    (Boolean(userId) &&
-      text(record.userId, 200) === userId)
+  const recordEmail = normalizeEmail(record.email || record.customerEmail);
+  const recordPhone = text(record.phone || record.customerPhone || record.whatsapp, 80);
+
+  return (Boolean(email) && recordEmail === email) ||
+    (Boolean(phone) && recordPhone === phone) ||
+    (Boolean(userId) && text(record.userId, 200) === userId);
+}
+
+/* Fonksyon sa a nesesè pou jwenn done kliyan yo. */
+function customerMatchesRecord(record, client) {
+  return matchesCustomer(
+    record,
+    normalizeEmail(client.email),
+    text(client.phone, 80),
+    client.userId
   );
 }
 
 function hashSecret(value) {
-  return crypto.createHash("sha256")
-    .update(value, "utf8").digest("hex");
+  return crypto.createHash("sha256").update(value, "utf8").digest("hex");
 }
 
 function matchesSecret(value, expectedHash) {
@@ -146,20 +139,14 @@ function matchesSecret(value, expectedHash) {
   const a = Buffer.from(hashSecret(value), "hex");
   const b = Buffer.from(expectedHash, "hex");
 
-  return a.length === b.length &&
-    crypto.timingSafeEqual(a, b);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 function loadSecretHash() {
   try {
-    const saved = JSON.parse(
-      fs.readFileSync(SECRET_FILE, "utf8")
-    );
+    const saved = JSON.parse(fs.readFileSync(SECRET_FILE, "utf8"));
 
-    if (
-      typeof saved.hash === "string" &&
-      /^[a-f0-9]{64}$/i.test(saved.hash)
-    ) {
+    if (typeof saved.hash === "string" && /^[a-f0-9]{64}$/i.test(saved.hash)) {
       return saved.hash;
     }
   } catch (_) {}
@@ -173,11 +160,8 @@ function loadSecretHash() {
         JSON.stringify({ hash }, null, 2),
         { encoding: "utf8", mode: 0o600 }
       );
-    } catch (error) {
-      console.error(
-        "Pa kapab sove hash admin lan:",
-        error.message
-      );
+    } catch (e) {
+      console.error("Pa kapab sove hash admin lan:", e.message);
     }
 
     return hash;
@@ -193,11 +177,7 @@ app.set("trust proxy", 1);
 
 app.use(cors({
   origin(origin, callback) {
-    if (
-      !origin ||
-      allowedOrigins.length === 0 ||
-      allowedOrigins.includes(origin)
-    ) {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
@@ -206,17 +186,12 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: "100kb" }));
-app.use(express.urlencoded({
-  extended: false,
-  limit: "100kb"
-}));
+app.use(express.urlencoded({ extended: false, limit: "100kb" }));
 
 function allowLoginAttempt(req, res, bucket = loginAttempts) {
-  const ip = req.ip ||
-    req.socket.remoteAddress ||
-    "unknown";
-
+  const ip = req.ip || req.socket.remoteAddress || "unknown";
   const now = Date.now();
+
   let item = bucket.get(ip);
 
   if (!item || now - item.start >= 15 * 60 * 1000) {
@@ -233,13 +208,18 @@ function allowLoginAttempt(req, res, bucket = loginAttempts) {
 
   item.count++;
   bucket.set(ip, item);
+
   return true;
 }
 
+function clearLoginAttempts(req, bucket = loginAttempts) {
+  const ip = req.ip || req.socket.remoteAddress || "unknown";
+  bucket.delete(ip);
+}
+
 function requireAdmin(req, res, next) {
-  const match = (
-    req.get("Authorization") || ""
-  ).match(/^Bearer\s+([a-f0-9]{64})$/i);
+  const match = (req.get("Authorization") || "")
+    .match(/^Bearer\s+([a-f0-9]{64})$/i);
 
   if (!match) {
     return res.status(401).json({
@@ -275,9 +255,8 @@ function publicCustomer(client) {
 }
 
 function requireCustomer(req, res, next) {
-  const match = (
-    req.get("Authorization") || ""
-  ).match(/^Bearer\s+([a-f0-9]{64})$/i);
+  const match = (req.get("Authorization") || "")
+    .match(/^Bearer\s+([a-f0-9]{64})$/i);
 
   if (!match) {
     return res.status(401).json({
@@ -295,9 +274,7 @@ function requireCustomer(req, res, next) {
     });
   }
 
-  const client = db.clients.find(
-    c => c.id === session.clientId
-  );
+  const client = db.clients.find(c => c.id === session.clientId);
 
   if (!client) {
     customerSessions.delete(match[1]);
@@ -309,13 +286,12 @@ function requireCustomer(req, res, next) {
 
   req.customer = client;
   req.customerToken = match[1];
+
   next();
 }
 
 function findCustomerWallet(client) {
-  let wallet = db.wallets.find(
-    w => w.userId === client.userId
-  );
+  let wallet = db.wallets.find(w => w.userId === client.userId);
 
   if (!wallet) {
     wallet = {
@@ -336,6 +312,7 @@ function findCustomerWallet(client) {
 
   return wallet;
 }
+
 function createCustomerSession(client) {
   const token = crypto.randomBytes(32).toString("hex");
 
@@ -350,10 +327,7 @@ function createCustomerSession(client) {
 function createAdminSession() {
   const token = crypto.randomBytes(32).toString("hex");
 
-  adminSessions.set(
-    token,
-    Date.now() + SESSION_TTL
-  );
+  adminSessions.set(token, Date.now() + SESSION_TTL);
 
   return token;
 }
@@ -362,38 +336,6 @@ function sanitizeProduct(product) {
   const copy = { ...product };
   delete copy.internalNotes;
   return copy;
-}
-
-function customerOrders(client) {
-  return db.orders.filter(order =>
-    order.userId === client.userId ||
-    normalizeEmail(order.email || order.customerEmail) ===
-      normalizeEmail(client.email)
-  );
-}
-
-function customerRecharges(client) {
-  return db.recharges.filter(recharge =>
-    recharge.userId === client.userId ||
-    normalizeEmail(recharge.email) ===
-      normalizeEmail(client.email)
-  );
-}
-
-function customerTransactions(client) {
-  return db.transactions.filter(transaction =>
-    transaction.userId === client.userId ||
-    normalizeEmail(transaction.email) ===
-      normalizeEmail(client.email)
-  );
-}
-
-function customerNotifications(client) {
-  return db.customerNotifications.filter(notification =>
-    notification.userId === client.userId ||
-    normalizeEmail(notification.email) ===
-      normalizeEmail(client.email)
-  );
 }
 
 function addNotification(notification) {
@@ -412,7 +354,9 @@ function addCustomerNotification(client, title, message) {
   db.customerNotifications.unshift({
     id: makeId(),
     userId: client.userId,
-    email: client.email,
+    customerEmail: client.email,
+    customerPhone: client.phone || "",
+    customerName: client.name || "",
     title: text(title, 200),
     message: text(message, 2000),
     read: false,
@@ -420,435 +364,15 @@ function addCustomerNotification(client, title, message) {
   });
 }
 
-function addTransaction(data) {
-  const transaction = {
-    id: makeId(),
-    createdAt: new Date().toISOString(),
-    ...data
-  };
-
-  db.transactions.unshift(transaction);
-  return transaction;
-}
-
-function errorHandler(error, req, res, next) {
-  console.error("Erreur serveur:", error);
-
-  if (res.headersSent) {
-    return next(error);
-  }
-
-  res.status(500).json({
-    error: "Yon erè entèn rive. Eseye ankò pita."
-  });
-}
-
-/* =========================================================
-   HEALTH CHECK
-========================================================= */
-
-app.get("/api/health", (req, res) => {
-  res.json({
-    ok: true,
-    service: "SEBY UNIVERSE API",
-    time: new Date().toISOString()
-  });
-});
-
-/* =========================================================
-   CUSTOMER REGISTRATION
-========================================================= */
-
-app.post("/api/register", async (req, res) => {
-  if (!allowLoginAttempt(req, res)) return;
-
-  const firstName = text(req.body.firstName, 100);
-  const lastName = text(req.body.lastName, 100);
-  const email = normalizeEmail(req.body.email);
-  const phone = text(req.body.phone || req.body.whatsapp, 40);
-  const password = typeof req.body.password === "string"
-    ? req.body.password
-    : "";
-
-  if (!firstName || !lastName) {
-    return res.status(400).json({
-      error: "Tanpri antre non ak siyati ou."
-    });
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({
-      error: "Adrès imèl la pa valab."
-    });
-  }
-
-  if (password.length < 8 || password.length > 200) {
-    return res.status(400).json({
-      error: "Modpas la dwe gen ant 8 ak 200 karaktè."
-    });
-  }
-
-  if (phone && !/^\+?[\d\s()-]{8,25}$/.test(phone)) {
-    return res.status(400).json({
-      error: "Nimewo WhatsApp la pa valab."
-    });
-  }
-
-  const existing = db.clients.find(
-    client => normalizeEmail(client.email) === email
-  );
-
-  if (existing) {
-    return res.status(409).json({
-      error: "Gen yon kont ki deja itilize imèl sa a."
-    });
-  }
-
-  const salt = crypto.randomBytes(16).toString("hex");
-  const passwordHash = await new Promise((resolve, reject) => {
-    crypto.scrypt(password, salt, 64, (error, key) => {
-      if (error) return reject(error);
-      resolve(key.toString("hex"));
-    });
-  }).catch(error => {
-    console.error("Erè hash modpas:", error);
-    return null;
-  });
-
-  if (!passwordHash) {
-    return res.status(500).json({
-      error: "Nou pa t kapab kreye kont lan. Eseye ankò."
-    });
-  }
-
-  const client = {
-    id: makeId(),
-    userId: makeId(),
-    firstName,
-    lastName,
-    name: `${firstName} ${lastName}`.trim(),
-    email,
-    phone,
-    passwordSalt: salt,
-    passwordHash,
-    createdAt: new Date().toISOString()
-  };
-
-  db.clients.push(client);
-  findCustomerWallet(client);
-  saveDB();
-
-  const token = createCustomerSession(client);
-
-  res.status(201).json({
-    message: "Kont ou kreye ak siksè!",
-    token,
-    customer: publicCustomer(client)
-  });
-});
-
-/* =========================================================
-   CUSTOMER LOGIN
-========================================================= */
-
-app.post("/api/login", async (req, res) => {
-  if (!allowLoginAttempt(req, res)) return;
-
-  const email = normalizeEmail(req.body.email);
-  const password = typeof req.body.password === "string"
-    ? req.body.password
-    : "";
-
-  if (!email || !password) {
-    return res.status(400).json({
-      error: "Antre imèl ou ak modpas ou."
-    });
-  }
-
-  const client = db.clients.find(
-    item => normalizeEmail(item.email) === email
-  );
-
-  if (!client || !client.passwordSalt || !client.passwordHash) {
-    return res.status(401).json({
-      error: "Imèl oswa modpas la pa kòrèk."
-    });
-  }
-
-  const verified = await new Promise(resolve => {
-    crypto.scrypt(
-      password,
-      client.passwordSalt,
-      64,
-      (error, key) => {
-        if (error) return resolve(false);
-
-        const actual = Buffer.from(key.toString("hex"), "hex");
-        const expected = Buffer.from(client.passwordHash, "hex");
-
-        resolve(
-          actual.length === expected.length &&
-          crypto.timingSafeEqual(actual, expected)
-        );
-      }
-    );
-  });
-
-  if (!verified) {
-    return res.status(401).json({
-      error: "Imèl oswa modpas la pa kòrèk."
-    });
-  }
-
-  const token = createCustomerSession(client);
-
-  res.json({
-    message: "Koneksyon reyisi!",
-    token,
-    customer: publicCustomer(client)
-  });
-});
-
-/* =========================================================
-   CUSTOMER LOGOUT / SESSION
-========================================================= */
-
-app.post("/api/logout", requireCustomer, (req, res) => {
-  customerSessions.delete(req.customerToken);
-  res.json({ ok: true, message: "Ou dekonekte." });
-});
-
-app.get("/api/me", requireCustomer, (req, res) => {
-  res.json({
-    customer: publicCustomer(req.customer)
-  });
-});
-
-/* =========================================================
-   PUBLIC PRODUCTS
-========================================================= */
-
-app.get("/api/products", (req, res) => {
-  res.json({
-    products: db.products.map(sanitizeProduct)
-  });
-});
-app.post("/api/orders", requireCustomer, (req, res) => {
-  const b = req.body || {};
-  const client = req.customer;
-  const productName = text(b.productName || b.product || b.name, 200);
-  const amount = Number(b.amount ?? b.price ?? 0);
-  const quantity = Math.max(1, Math.min(100, Number(b.quantity) || 1));
-  const description = text(b.description, 1000);
-  const transactionId = text(b.transactionId || b.reference, 200) || extractTransactionId(description);
-
-  if (!productName) return res.status(400).json({ error: "Pwodwi a obligatwa." });
-  if (transactionId && !validateTransactionId(transactionId)) {
-    return res.status(400).json({ error: "Kòd tranzaksyon an dwe gen 10–20 chif." });
-  }
-  if (transactionId && transactionAlreadyUsed(transactionId)) {
-    return res.status(409).json({ error: "Kòd tranzaksyon sa a deja itilize." });
-  }
-
-  const order = {
-    id: makeId(), userId: client.userId, productName,
-    customerName: client.name, customerPhone: client.phone,
-    customerEmail: client.email,
-    amount: Number.isFinite(amount) && amount >= 0 ? amount : 0,
-    quantity, description, transactionId, status: "En attente",
-    createdAt: new Date().toISOString()
-  };
-
-  db.orders.unshift(order);
-  db.notifications.unshift({
-    id: makeId(), title: "Nouvelle commande",
-    message: `${productName} — ${client.name || client.email}`,
-    read: false, createdAt: order.createdAt
-  });
-
-  saveDB();
-  res.status(201).json({ ok: true, order });
-});
-
-app.get("/api/customer-orders", requireCustomer, (req, res) => {
-  res.set("Cache-Control", "no-store");
-  const c = req.customer;
-
-  res.json(db.orders.filter(o => customerMatchesRecord(o, c)).map(o => ({
-    id: o.id,
-    userId: o.userId || "",
-    productName: o.productName,
-    customerName: o.customerName,
-    amount: Number(o.amount) || 0,
-    quantity: Number(o.quantity) || 1,
-    status: o.status || "En attente",
-    createdAt: o.createdAt || null,
-    updatedAt: o.updatedAt || null
-  })));
-});
-
-/* =========================
-   CUSTOMER WALLET + RECHARGES
-========================= */
-app.get("/api/customer-wallet", requireCustomer, (req, res) => {
-  res.set("Cache-Control", "no-store");
-  const wallet = findCustomerWallet(req.customer);
-  saveDB();
-
-  res.json({
-    ok: true,
-    wallet: {
-      id: wallet.id,
-      userId: wallet.userId,
-      email: wallet.email,
-      phone: wallet.phone,
-      balance: Number(wallet.balance) || 0,
-      updatedAt: wallet.updatedAt || null
-    }
-  });
-});
-
-app.post("/api/recharges", requireCustomer, (req, res) => {
-  const b = req.body || {};
-  const client = req.customer;
-  const amount = Number(b.amount);
-  const transactionId = text(b.transactionId || b.reference, 200);
-
-  if (!validateTransactionId(transactionId)) {
-    return res.status(400).json({
-      error: "Kòd tranzaksyon an dwe gen 10–20 chif."
-    });
-  }
-
-  if (transactionAlreadyUsed(transactionId)) {
-    return res.status(409).json({
-      error: "Kòd tranzaksyon sa a deja itilize."
-    });
-  }
-
-  if (!Number.isFinite(amount) || amount < 150 || amount > 1000000) {
-    return res.status(400).json({
-      error: "Montan minimòm lan se 150 Gdes."
-    });
-  }
-
-  const now = new Date().toISOString();
-  const recharge = {
-    id: makeId(),
-    userId: client.userId,
-    email: client.email,
-    customerName: client.name,
-    phone: client.phone,
-    amount,
-    transactionId,
-    status: "En attente",
-    creditedAt: null,
-    createdAt: now
-  };
-
-  db.recharges.unshift(recharge);
-  findCustomerWallet(client);
-
-  db.notifications.unshift({
-    id: makeId(),
-    title: "Nouvelle demande de recharge",
-    message: `${amount} Gdes — ${client.name || client.email}`,
-    read: false,
-    createdAt: now
-  });
-
-  saveDB();
-  res.status(201).json({ ok: true, recharge });
-});
-
-app.get("/api/customer-recharges", requireCustomer, (req, res) => {
-  res.set("Cache-Control", "no-store");
-  const c = req.customer;
-
-  res.json({
-    ok: true,
-    recharges: db.recharges
-      .filter(r => customerMatchesRecord(r, c))
-      .map(r => ({
-        id: r.id,
-        userId: r.userId || "",
-        amount: Number(r.amount) || 0,
-        transactionId: r.transactionId || "",
-        status: r.status || "En attente",
-        createdAt: r.createdAt || null,
-        updatedAt: r.updatedAt || null,
-        creditedAt: r.creditedAt || null
-      }))
-  });
-});
-
-app.get("/api/customer-transactions", requireCustomer, (req, res) => {
-  res.set("Cache-Control", "no-store");
-  const c = req.customer;
-
-  const rows = db.transactions.filter(t => {
-    if (customerMatchesRecord(t, c)) return true;
-    if (!t.walletId) return false;
-
-    const wallet = db.wallets.find(w => w.id === t.walletId);
-    return Boolean(wallet && wallet.userId === c.userId);
-  }).map(t => ({
-    id: t.id,
-    type: t.type || "",
-    amount: Number(t.amount) || 0,
-    status: t.status || "",
-    description: t.description || "",
-    createdAt: t.createdAt || null
-  }));
-
-  res.json({ ok: true, transactions: rows });
-});
-
-/* =========================
-   CUSTOMER NOTIFICATIONS
-========================= */
-app.get("/api/customer-notifications", requireCustomer, (req, res) => {
-  res.set("Cache-Control", "no-store");
-  const c = req.customer;
-
-  res.json(db.customerNotifications.filter(n =>
-    (n.userId && n.userId === c.userId) ||
-    normalizeEmail(n.customerEmail) === c.email
-  ));
-});
-
-app.patch("/api/customer-notifications/:id", requireCustomer, (req, res) => {
-  const c = req.customer;
-
-  const item = db.customerNotifications.find(n =>
-    String(n.id) === req.params.id &&
-    (
-      (n.userId && n.userId === c.userId) ||
-      normalizeEmail(n.customerEmail) === c.email
-    )
-  );
-
-  if (!item) {
-    return res.status(404).json({
-      error: "Notifikasyon an pa jwenn."
-    });
-  }
-
-  item.read = Boolean(req.body && req.body.read);
-  saveDB();
-  res.json({ ok: true, notification: item });
-});
-
-/* =========================
-   CUSTOMER DIRECTORY + SMTP
-========================= */
 function getMailTransport() {
   if (
     !nodemailer ||
     !process.env.SMTP_HOST ||
     !process.env.SMTP_USER ||
     !process.env.SMTP_PASS
-  ) return null;
+  ) {
+    return null;
+  }
 
   const port = Number(process.env.SMTP_PORT || 587);
 
@@ -865,6 +389,7 @@ function getMailTransport() {
 
 async function sendCustomerEmail(email, title, message) {
   const transport = getMailTransport();
+
   if (!transport) return { sent: false };
 
   try {
@@ -876,8 +401,8 @@ async function sendCustomerEmail(email, title, message) {
     });
 
     return { sent: true };
-  } catch (error) {
-    console.error("SMTP error:", error.message);
+  } catch (e) {
+    console.error("SMTP error:", e.message);
     return { sent: false };
   }
 }
@@ -902,9 +427,17 @@ function buildCustomerDirectory() {
       orders: []
     };
 
-    if (!old.name && data.name) old.name = text(data.name, 200);
-    if (!old.userId && data.userId) old.userId = data.userId;
-    if (data.order) old.orders.push(data.order);
+    if (!old.name && data.name) {
+      old.name = text(data.name, 200);
+    }
+
+    if (!old.userId && data.userId) {
+      old.userId = data.userId;
+    }
+
+    if (data.order) {
+      old.orders.push(data.order);
+    }
 
     map.set(key, old);
   };
@@ -936,8 +469,468 @@ function buildCustomerDirectory() {
 
   return Array.from(map.values());
 }
+
+/* HEALTH */
+app.get("/api/health", (req, res) => res.json({
+  ok: true,
+  service: "SEBY UNIVERSE API",
+  time: new Date().toISOString()
+}));
+
+/* ADMIN LOGIN */
+app.post("/api/admin/login", (req, res) => {
+  if (!allowLoginAttempt(req, res)) return;
+
+  const supplied =
+    typeof req.body.secret === "string" ? req.body.secret :
+    typeof req.body.password === "string" ? req.body.password :
+    typeof req.body.key === "string" ? req.body.key : "";
+
+  if (!adminSecretHash || !matchesSecret(supplied, adminSecretHash)) {
+    return res.status(401).json({
+      error: "Kle admin lan pa kòrèk."
+    });
+  }
+
+  clearLoginAttempts(req);
+
+  const token = createAdminSession();
+
+  res.json({
+    ok: true,
+    token,
+    message: "Koneksyon admin reyisi."
+  });
+});
+
+app.post("/api/admin/logout", requireAdmin, (req, res) => {
+  adminSessions.delete(req.adminToken);
+  res.json({ ok: true });
+});
+
+/* CUSTOMER REGISTER */
+app.post("/api/register", async (req, res) => {
+  if (!allowLoginAttempt(req, res)) return;
+
+  const firstName = text(req.body.firstName, 100);
+  const lastName = text(req.body.lastName, 100);
+  const email = normalizeEmail(req.body.email);
+  const phone = text(req.body.phone || req.body.whatsapp, 40);
+  const password = typeof req.body.password === "string"
+    ? req.body.password : "";
+
+  if (!firstName || !lastName) {
+    return res.status(400).json({
+      error: "Tanpri antre non ak siyati ou."
+    });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({
+      error: "Adrès imèl la pa valab."
+    });
+  }
+
+  if (password.length < 8 || password.length > 200) {
+    return res.status(400).json({
+      error: "Modpas la dwe gen ant 8 ak 200 karaktè."
+    });
+  }
+
+  if (phone && !/^\+?[\d\s()-]{8,25}$/.test(phone)) {
+    return res.status(400).json({
+      error: "Nimewo WhatsApp la pa valab."
+    });
+  }
+
+  if (db.clients.some(c => normalizeEmail(c.email) === email)) {
+    return res.status(409).json({
+      error: "Gen yon kont ki deja itilize imèl sa a."
+    });
+  }
+  const salt = crypto.randomBytes(16).toString("hex");
+
+  const passwordHash = await new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, 64, (err, key) =>
+      err ? reject(err) : resolve(key.toString("hex"))
+    );
+  }).catch(err => {
+    console.error("Erè hash modpas:", err);
+    return null;
+  });
+
+  if (!passwordHash) {
+    return res.status(500).json({
+      error: "Nou pa t kapab kreye kont lan. Eseye ankò."
+    });
+  }
+
+  const client = {
+    id: makeId(),
+    userId: makeId(),
+    firstName,
+    lastName,
+    name: `${firstName} ${lastName}`.trim(),
+    email,
+    phone,
+    passwordSalt: salt,
+    passwordHash,
+    createdAt: new Date().toISOString()
+  };
+
+  db.clients.push(client);
+  findCustomerWallet(client);
+  saveDB();
+  clearLoginAttempts(req);
+
+  res.status(201).json({
+    message: "Kont ou kreye ak siksè!",
+    token: createCustomerSession(client),
+    customer: publicCustomer(client)
+  });
+});
+
+/* CUSTOMER LOGIN */
+app.post("/api/login", async (req, res) => {
+  if (!allowLoginAttempt(req, res)) return;
+
+  const email = normalizeEmail(req.body.email);
+  const password = typeof req.body.password === "string"
+    ? req.body.password : "";
+
+  if (!email || !password) {
+    return res.status(400).json({
+      error: "Antre imèl ou ak modpas ou."
+    });
+  }
+
+  const client = db.clients.find(c =>
+    normalizeEmail(c.email) === email
+  );
+
+  if (!client || !client.passwordSalt || !client.passwordHash) {
+    return res.status(401).json({
+      error: "Imèl oswa modpas la pa kòrèk."
+    });
+  }
+
+  const verified = await new Promise(resolve => {
+    crypto.scrypt(password, client.passwordSalt, 64, (err, key) => {
+      if (err) return resolve(false);
+
+      const a = Buffer.from(key.toString("hex"), "hex");
+      const b = Buffer.from(client.passwordHash, "hex");
+
+      resolve(
+        a.length === b.length &&
+        crypto.timingSafeEqual(a, b)
+      );
+    });
+  });
+
+  if (!verified) {
+    return res.status(401).json({
+      error: "Imèl oswa modpas la pa kòrèk."
+    });
+  }
+
+  clearLoginAttempts(req);
+
+  res.json({
+    message: "Koneksyon reyisi!",
+    token: createCustomerSession(client),
+    customer: publicCustomer(client)
+  });
+});
+
+app.post("/api/logout", requireCustomer, (req, res) => {
+  customerSessions.delete(req.customerToken);
+  res.json({ ok: true, message: "Ou dekonekte." });
+});
+
+app.get("/api/me", requireCustomer, (req, res) => {
+  res.json({ customer: publicCustomer(req.customer) });
+});
+
+/* PUBLIC PRODUCTS */
+app.get("/api/products", (req, res) => {
+  res.json({
+    products: db.products.map(sanitizeProduct)
+  });
+});
+
+/* CUSTOMER ORDERS */
+app.post("/api/orders", requireCustomer, (req, res) => {
+  const b = req.body || {};
+  const c = req.customer;
+
+  const productName = text(
+    b.productName || b.product || b.name,
+    200
+  );
+
+  const amount = Number(b.amount ?? b.price ?? 0);
+
+  const quantity = Math.max(
+    1,
+    Math.min(100, Number(b.quantity) || 1)
+  );
+
+  const description = text(b.description, 1000);
+
+  const transactionId = text(
+    b.transactionId || b.reference,
+    200
+  ) || extractTransactionId(description);
+
+  if (!productName) {
+    return res.status(400).json({
+      error: "Pwodwi a obligatwa."
+    });
+  }
+
+  if (transactionId && !validateTransactionId(transactionId)) {
+    return res.status(400).json({
+      error: "Kòd tranzaksyon an dwe gen 10–20 chif."
+    });
+  }
+
+  if (transactionId && transactionAlreadyUsed(transactionId)) {
+    return res.status(409).json({
+      error: "Kòd tranzaksyon sa a deja itilize."
+    });
+  }
+
+  const order = {
+    id: makeId(),
+    userId: c.userId,
+    productName,
+    customerName: c.name,
+    customerPhone: c.phone,
+    customerEmail: c.email,
+    amount: Number.isFinite(amount) && amount >= 0 ? amount : 0,
+    quantity,
+    description,
+    transactionId,
+    status: "En attente",
+    createdAt: new Date().toISOString()
+  };
+
+  db.orders.unshift(order);
+
+  addNotification({
+    title: "Nouvelle commande",
+    message: `${productName} — ${c.name || c.email}`,
+    read: false
+  });
+
+  saveDB();
+
+  res.status(201).json({
+    ok: true,
+    order
+  });
+});
+
+app.get("/api/customer-orders", requireCustomer, (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  res.json(
+    db.orders
+      .filter(o => customerMatchesRecord(o, req.customer))
+      .map(o => ({
+        id: o.id,
+        userId: o.userId || "",
+        productName: o.productName,
+        customerName: o.customerName,
+        amount: Number(o.amount) || 0,
+        quantity: Number(o.quantity) || 1,
+        status: o.status || "En attente",
+        createdAt: o.createdAt || null,
+        updatedAt: o.updatedAt || null
+      }))
+  );
+});
+
+/* WALLET AND RECHARGES */
+app.get("/api/customer-wallet", requireCustomer, (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const wallet = findCustomerWallet(req.customer);
+  saveDB();
+
+  res.json({
+    ok: true,
+    wallet: {
+      id: wallet.id,
+      userId: wallet.userId,
+      email: wallet.email,
+      phone: wallet.phone,
+      balance: Number(wallet.balance) || 0,
+      updatedAt: wallet.updatedAt || null
+    }
+  });
+});
+
+app.post("/api/recharges", requireCustomer, (req, res) => {
+  const b = req.body || {};
+  const c = req.customer;
+
+  const amount = Number(b.amount);
+  const transactionId = text(
+    b.transactionId || b.reference,
+    200
+  );
+
+  if (!validateTransactionId(transactionId)) {
+    return res.status(400).json({
+      error: "Kòd tranzaksyon an dwe gen 10–20 chif."
+    });
+  }
+
+  if (transactionAlreadyUsed(transactionId)) {
+    return res.status(409).json({
+      error: "Kòd tranzaksyon sa a deja itilize."
+    });
+  }
+
+  if (
+    !Number.isFinite(amount) ||
+    amount < 150 ||
+    amount > 1000000
+  ) {
+    return res.status(400).json({
+      error: "Montan minimòm lan se 150 Gdes."
+    });
+  }
+
+  const now = new Date().toISOString();
+
+  const recharge = {
+    id: makeId(),
+    userId: c.userId,
+    email: c.email,
+    customerName: c.name,
+    phone: c.phone,
+    amount,
+    transactionId,
+    status: "En attente",
+    creditedAt: null,
+    createdAt: now
+  };
+
+  db.recharges.unshift(recharge);
+  findCustomerWallet(c);
+
+  addNotification({
+    title: "Nouvelle demande de recharge",
+    message: `${amount} Gdes — ${c.name || c.email}`,
+    read: false,
+    createdAt: now
+  });
+
+  saveDB();
+
+  res.status(201).json({
+    ok: true,
+    recharge
+  });
+});
+
+app.get("/api/customer-recharges", requireCustomer, (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  res.json({
+    ok: true,
+    recharges: db.recharges
+      .filter(r => customerMatchesRecord(r, req.customer))
+      .map(r => ({
+        id: r.id,
+        userId: r.userId || "",
+        amount: Number(r.amount) || 0,
+        transactionId: r.transactionId || "",
+        status: r.status || "En attente",
+        createdAt: r.createdAt || null,
+        updatedAt: r.updatedAt || null,
+        creditedAt: r.creditedAt || null
+      }))
+  });
+});
+
+app.get("/api/customer-transactions", requireCustomer, (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const c = req.customer;
+
+  const rows = db.transactions
+    .filter(t => {
+      if (customerMatchesRecord(t, c)) return true;
+
+      const wallet = t.walletId
+        ? db.wallets.find(w => w.id === t.walletId)
+        : null;
+
+      return Boolean(wallet && wallet.userId === c.userId);
+    })
+    .map(t => ({
+      id: t.id,
+      type: t.type || "",
+      amount: Number(t.amount) || 0,
+      status: t.status || "",
+      description: t.description || "",
+      createdAt: t.createdAt || null
+    }));
+
+  res.json({
+    ok: true,
+    transactions: rows
+  });
+});
+
+/* CUSTOMER NOTIFICATIONS */
+app.get("/api/customer-notifications", requireCustomer, (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const c = req.customer;
+
+  res.json(
+    db.customerNotifications.filter(n =>
+      (n.userId && n.userId === c.userId) ||
+      normalizeEmail(n.customerEmail || n.email) === normalizeEmail(c.email)
+    )
+  );
+});
+
+app.patch("/api/customer-notifications/:id", requireCustomer, (req, res) => {
+  const c = req.customer;
+
+  const item = db.customerNotifications.find(n =>
+    String(n.id) === req.params.id &&
+    (
+      (n.userId && n.userId === c.userId) ||
+      normalizeEmail(n.customerEmail || n.email) === normalizeEmail(c.email)
+    )
+  );
+
+  if (!item) {
+    return res.status(404).json({
+      error: "Notifikasyon an pa jwenn."
+    });
+  }
+
+  item.read = Boolean(req.body && req.body.read);
+  saveDB();
+
+  res.json({
+    ok: true,
+    notification: item
+  });
+});
+
+/* ADMIN MESSAGES AND EMAIL */
 app.post("/api/admin/messages", requireAdmin, async (req, res) => {
   const b = req.body || {};
+
   const audience = text(b.audience, 30).toLowerCase();
   const title = text(b.title, 160);
   const message = text(b.message, 5000);
@@ -962,7 +955,6 @@ app.post("/api/admin/messages", requireAdmin, async (req, res) => {
   }
 
   let customers = buildCustomerDirectory();
-  const now = Date.now();
 
   if (audience === "specific") {
     customers = customers.filter(c => c.email === targetEmail);
@@ -983,7 +975,7 @@ app.post("/api/admin/messages", requireAdmin, async (req, res) => {
   if (audience === "new") {
     customers = customers.filter(c =>
       c.createdAt &&
-      now - new Date(c.createdAt).getTime() <= 7 * 86400000
+      Date.now() - new Date(c.createdAt).getTime() <= 7 * 86400000
     );
   }
 
@@ -1024,8 +1016,11 @@ app.post("/api/admin/messages", requireAdmin, async (req, res) => {
         message
       );
 
-      if (sent.sent) results.emailsSent++;
-      else results.emailsFailed++;
+      if (sent.sent) {
+        results.emailsSent++;
+      } else {
+        results.emailsFailed++;
+      }
     }
   }
 
@@ -1038,9 +1033,7 @@ app.post("/api/admin/messages", requireAdmin, async (req, res) => {
   });
 });
 
-/* =========================
-   ADMIN DATA ROUTES
-========================= */
+/* ADMIN DATA */
 for (const key of [
   "products",
   "orders",
@@ -1067,8 +1060,8 @@ for (const key of [
 }
 
 app.patch("/api/orders/:id", requireAdmin, (req, res) => {
-  const item = db.orders.find(
-    o => String(o.id) === req.params.id
+  const item = db.orders.find(o =>
+    String(o.id) === req.params.id
   );
 
   if (!item) {
@@ -1088,13 +1081,27 @@ app.patch("/api/orders/:id", requireAdmin, (req, res) => {
   item.status = status;
   item.updatedAt = new Date().toISOString();
 
+  if (isValidated(status) || isRejected(status)) {
+    const c = db.clients.find(x => x.userId === item.userId);
+
+    if (c) {
+      addCustomerNotification(
+        c,
+        isValidated(status) ? "Kòmand valide" : "Kòmand refize",
+        isValidated(status)
+          ? "Kòmand ou a valide."
+          : "Kòmand ou a pa valide."
+      );
+    }
+  }
+
   saveDB();
   res.json(item);
 });
 
 app.patch("/api/recharges/:id", requireAdmin, (req, res) => {
-  const item = db.recharges.find(
-    r => String(r.id) === req.params.id
+  const item = db.recharges.find(r =>
+    String(r.id) === req.params.id
   );
 
   if (!item) {
@@ -1120,34 +1127,31 @@ app.patch("/api/recharges/:id", requireAdmin, (req, res) => {
   }
 
   if (approved && !item.creditedAt) {
-    const client = db.clients.find(
-      c => c.userId === item.userId
+    const client = db.clients.find(c =>
+      c.userId === item.userId
     );
 
-    let wallet;
-
-    if (client) {
-      wallet = findCustomerWallet(client);
-    } else {
-      wallet =
-        db.wallets.find(w => w.userId === item.userId) ||
-        db.wallets.find(
-          w => normalizeEmail(w.email) === normalizeEmail(item.email)
+    let wallet = client
+      ? findCustomerWallet(client)
+      : (
+          db.wallets.find(w => w.userId === item.userId) ||
+          db.wallets.find(w =>
+            normalizeEmail(w.email) === normalizeEmail(item.email)
+          )
         );
 
-      if (!wallet) {
-        wallet = {
-          id: makeId(),
-          userId: item.userId || "",
-          email: item.email || "",
-          phone: item.phone || "",
-          balance: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
+    if (!wallet) {
+      wallet = {
+        id: makeId(),
+        userId: item.userId || "",
+        email: item.email || "",
+        phone: item.phone || "",
+        balance: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
 
-        db.wallets.unshift(wallet);
-      }
+      db.wallets.unshift(wallet);
     }
 
     const amount = Number(item.amount);
@@ -1195,8 +1199,7 @@ app.patch("/api/recharges/:id", requireAdmin, (req, res) => {
       createdAt: now
     });
 
-    db.notifications.unshift({
-      id: makeId(),
+    addNotification({
       title: "Rechaj valide",
       message: `${amount} Gdes kredite pou ${item.customerName || item.email}`,
       read: false,
@@ -1209,7 +1212,9 @@ app.patch("/api/recharges/:id", requireAdmin, (req, res) => {
       ok: true,
       message: "Rechaj valide; Wallet kliyan an kredite yon sèl fwa.",
       recharge: item,
-      wallet: { balance: wallet.balance }
+      wallet: {
+        balance: wallet.balance
+      }
     });
   }
 
@@ -1231,12 +1236,16 @@ app.patch("/api/recharges/:id", requireAdmin, (req, res) => {
   }
 
   saveDB();
-  res.json({ ok: true, recharge: item });
+
+  res.json({
+    ok: true,
+    recharge: item
+  });
 });
 
 app.patch("/api/notifications/:id", requireAdmin, (req, res) => {
-  const item = db.notifications.find(
-    n => String(n.id) === req.params.id
+  const item = db.notifications.find(n =>
+    String(n.id) === req.params.id
   );
 
   if (!item) {
@@ -1247,14 +1256,15 @@ app.patch("/api/notifications/:id", requireAdmin, (req, res) => {
 
   item.read = Boolean(req.body && req.body.read);
   saveDB();
+
   res.json(item);
 });
 
 app.delete("/api/notifications/:id", requireAdmin, (req, res) => {
   const before = db.notifications.length;
 
-  db.notifications = db.notifications.filter(
-    n => String(n.id) !== req.params.id
+  db.notifications = db.notifications.filter(n =>
+    String(n.id) !== req.params.id
   );
 
   if (before === db.notifications.length) {
@@ -1267,22 +1277,24 @@ app.delete("/api/notifications/:id", requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-/* =========================
-   STATIC SITE + ERRORS
-========================= */
-app.use(express.static(ROOT, { index: "index.html" }));
+/* STATIC SITE AND ERRORS */
+app.use(express.static(ROOT, {
+  index: "index.html"
+}));
 
-app.get("/admin", (req, res) =>
-  res.sendFile(path.join(ROOT, "admin.html"))
-);
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(ROOT, "admin.html"));
+});
 
-app.get("/admin.html", (req, res) =>
-  res.sendFile(path.join(ROOT, "admin.html"))
-);
+app.get("/admin.html", (req, res) => {
+  res.sendFile(path.join(ROOT, "admin.html"));
+});
 
-app.use((req, res) =>
-  res.status(404).json({ error: "Route introuvable." })
-);
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route introuvable."
+  });
+});
 
 app.use((err, req, res, next) => {
   console.error("Server error:", err);
