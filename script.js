@@ -1,8 +1,11 @@
 "use strict";
 
 /* =====================================================
-   SEBY UNIVERSE — CONFIGURATION
+   SEBY UNIVERSE — CUSTOMER APPLICATION
+   Corrected complete script.js
 ===================================================== */
+
+/* ================= CONFIGURATION ================= */
 
 const SEBY_API_BASE = "https://sebyuniverse.onrender.com";
 const WHATSAPP_NUMBER = "50937155313";
@@ -27,10 +30,9 @@ let myRecharges = [];
 let myTransactions = [];
 let myNotifications = [];
 let isSubmitting = false;
+let authInitialized = false;
 
-/* =====================================================
-   PRODUCTS AND PRICES
-===================================================== */
+/* ================= PRODUCTS AND PRICES ================= */
 
 const PRODUCTS_DATA = {
     freefire: {
@@ -137,9 +139,7 @@ const PRODUCTS_DATA = {
     }
 };
 
-/* =====================================================
-   HELPERS
-===================================================== */
+/* ================= HELPERS ================= */
 
 function readJSON(key, fallback) {
     try {
@@ -151,7 +151,11 @@ function readJSON(key, fallback) {
 }
 
 function saveJSON(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.warn("Local storage save failed:", error);
+    }
 }
 
 function byId(id) {
@@ -201,12 +205,16 @@ function formatPhoneInput(input) {
 }
 
 function alertMessage(message) {
-    window.alert(message);
+    window.alert(String(message || "Yon erè rive."));
 }
 
-/* =====================================================
-   API CONNECTION
-===================================================== */
+function getErrorMessage(error) {
+    return error && error.message
+        ? error.message
+        : "Yon erè enkoni rive. Tanpri eseye ankò.";
+}
+
+/* ================= API CONNECTION ================= */
 
 async function apiRequest(path, options = {}) {
     const headers = {
@@ -247,7 +255,7 @@ async function apiRequest(path, options = {}) {
         }
 
         throw new Error(
-            data.error || `Erè sèvè (${response.status}).`
+            data.error || data.message || `Erè sèvè (${response.status}).`
         );
     }
 
@@ -259,13 +267,11 @@ function requireLogin() {
 
     showSebyAuthGate();
     switchGateAuth("login");
-    alertMessage("Tanpri konekte sou kont SEBY UNIVERSE ou anvan.");
+    alertMessage(t("loginRequired"));
     return false;
 }
 
-/* =====================================================
-   LANGUAGE
-===================================================== */
+/* ================= LANGUAGE ================= */
 
 const SCRIPT_TRANSLATIONS = {
     ht: {
@@ -290,6 +296,7 @@ const SCRIPT_TRANSLATIONS = {
         enterPassword: "Tanpri mete modpas ou.",
         walletSent: "Demann recharge a voye pou verifikasyon."
     },
+
     fr: {
         login: "Connexion",
         register: "Inscription",
@@ -312,6 +319,7 @@ const SCRIPT_TRANSLATIONS = {
         enterPassword: "Veuillez entrer votre mot de passe.",
         walletSent: "La demande de recharge a été envoyée."
     },
+
     en: {
         login: "Login",
         register: "Register",
@@ -346,13 +354,36 @@ function t(key) {
         SCRIPT_TRANSLATIONS.ht[key] || key;
 }
 
-/* =====================================================
-   AUTH GATE
-===================================================== */
+/* ================= AUTH GATE / APP VISIBILITY ================= */
+
+function showSebyApp() {
+    const app = byId("sebyApp");
+    if (!app) return;
+
+    app.hidden = false;
+    app.classList.remove("hidden");
+    app.style.display = "block";
+}
+
+function hideSebyApp() {
+    const app = byId("sebyApp");
+    if (!app) return;
+
+    app.hidden = true;
+    app.classList.add("hidden");
+    app.style.display = "none";
+}
 
 function showSebyAuthGate() {
     const gate = byId("sebyAuthGate");
-    if (gate) gate.classList.remove("hidden");
+
+    hideSebyApp();
+
+    if (gate) {
+        gate.hidden = false;
+        gate.classList.remove("hidden");
+        gate.style.display = "";
+    }
 
     document.body.classList.add("auth-gate-active");
     document.documentElement.classList.add("auth-gate-active");
@@ -360,7 +391,14 @@ function showSebyAuthGate() {
 
 function hideSebyAuthGate() {
     const gate = byId("sebyAuthGate");
-    if (gate) gate.classList.add("hidden");
+
+    if (gate) {
+        gate.hidden = true;
+        gate.classList.add("hidden");
+        gate.style.display = "none";
+    }
+
+    showSebyApp();
 
     document.body.classList.remove("auth-gate-active");
     document.documentElement.classList.remove("auth-gate-active");
@@ -372,17 +410,46 @@ function switchGateAuth(type) {
     const loginTab = byId("gateLoginTab");
     const registerTab = byId("gateRegisterTab");
 
-    const showLogin = type === "login";
+    const showLogin = type !== "register";
 
     login?.classList.toggle("active", showLogin);
     register?.classList.toggle("active", !showLogin);
     loginTab?.classList.toggle("active", showLogin);
     registerTab?.classList.toggle("active", !showLogin);
+
+    const title = byId("gateAuthTitle");
+    const subtitle = byId("gateAuthSubtitle");
+
+    if (title) {
+        title.textContent = showLogin
+            ? "Welcome to SEBY UNIVERSE"
+            : "Create your SEBY UNIVERSE account";
+    }
+
+    if (subtitle) {
+        subtitle.textContent = showLogin
+            ? "Sign in to continue."
+            : "Create your account to get started.";
+    }
 }
 
-/* =====================================================
-   REGISTER — SERVER
-===================================================== */
+/* ================= LOGIN SUCCESS / CUSTOMER DATA ================= */
+
+async function afterLogin() {
+    hideSebyAuthGate();
+    showSebyApp();
+    updateUI();
+
+    try {
+        await refreshCustomerData();
+    } catch (error) {
+        console.error("Customer data refresh:", error);
+    }
+
+    updateUI();
+}
+
+/* ================= REGISTER ================= */
 
 async function handleGateRegister(event) {
     event.preventDefault();
@@ -397,23 +464,28 @@ async function handleGateRegister(event) {
     const confirmPassword = byId("gateConfirmPassword")?.value || "";
 
     if (!firstName || !lastName) {
-        return alertMessage(t("fillName"));
+        alertMessage(t("fillName"));
+        return;
     }
 
     if (!isValidEmail(email)) {
-        return alertMessage(t("invalidEmail"));
+        alertMessage(t("invalidEmail"));
+        return;
     }
 
     if (!isValidPhone(phone)) {
-        return alertMessage("Mete WhatsApp ou nan fòma +509 XX XX XXXX.");
+        alertMessage("Mete WhatsApp ou nan fòma +509 XX XX XXXX.");
+        return;
     }
 
     if (password.length < 8) {
-        return alertMessage(t("passwordMin"));
+        alertMessage(t("passwordMin"));
+        return;
     }
 
     if (password !== confirmPassword) {
-        return alertMessage(t("passwordsDifferent"));
+        alertMessage(t("passwordsDifferent"));
+        return;
     }
 
     isSubmitting = true;
@@ -431,31 +503,51 @@ async function handleGateRegister(event) {
             })
         });
 
-        authToken = result.token;
-        currentUser = result.customer;
-
-        if (!authToken || !currentUser) {
+        if (!result.token || !result.customer) {
             throw new Error(
-                "Sèvè a pa retounen token oswa enfòmasyon kont lan. Verifye server.js."
+                "Sèvè a pa retounen token oswa enfòmasyon kont lan. Verifye repons /api/register nan server.js."
             );
         }
+
+        authToken = result.token;
+        currentUser = result.customer;
 
         localStorage.setItem(STORAGE.TOKEN, authToken);
         saveJSON(STORAGE.USER, currentUser);
 
         await afterLogin();
-
         alertMessage(t("accountCreated"));
+
     } catch (error) {
-        alertMessage(error.message);
+        const message = getErrorMessage(error);
+        const lower = message.toLowerCase();
+
+        const emailAlreadyUsed =
+            lower.includes("already") ||
+            lower.includes("exists") ||
+            lower.includes("existe") ||
+            lower.includes("utilisé") ||
+            lower.includes("used") ||
+            lower.includes("duplicate");
+
+        if (emailAlreadyUsed) {
+            const loginEmail = byId("gateLoginEmail");
+            if (loginEmail) loginEmail.value = email;
+
+            switchGateAuth("login");
+            alertMessage(
+                "Imèl sa a deja gen yon kont. Konekte avèk modpas ou."
+            );
+        } else {
+            alertMessage(message);
+        }
+
     } finally {
         isSubmitting = false;
     }
 }
 
-/* =====================================================
-   LOGIN — SERVER
-===================================================== */
+/* ================= LOGIN ================= */
 
 async function handleGateLogin(event) {
     event.preventDefault();
@@ -466,11 +558,13 @@ async function handleGateLogin(event) {
     const password = byId("gateLoginPassword")?.value || "";
 
     if (!isValidEmail(email)) {
-        return alertMessage(t("invalidEmail"));
+        alertMessage(t("invalidEmail"));
+        return;
     }
 
     if (!password) {
-        return alertMessage(t("enterPassword"));
+        alertMessage(t("enterPassword"));
+        return;
     }
 
     isSubmitting = true;
@@ -481,31 +575,29 @@ async function handleGateLogin(event) {
             body: JSON.stringify({ email, password })
         });
 
-        authToken = result.token;
-        currentUser = result.customer;
-
-        if (!authToken || !currentUser) {
+        if (!result.token || !result.customer) {
             throw new Error(
-                "Sèvè a pa retounen token oswa enfòmasyon kont lan. Verifye server.js."
+                "Sèvè a pa retounen token oswa enfòmasyon kont lan. Verifye repons /api/login nan server.js."
             );
         }
+
+        authToken = result.token;
+        currentUser = result.customer;
 
         localStorage.setItem(STORAGE.TOKEN, authToken);
         saveJSON(STORAGE.USER, currentUser);
 
         await afterLogin();
-
         alertMessage(t("loginSuccess"));
+
     } catch (error) {
-        alertMessage(error.message);
+        alertMessage(getErrorMessage(error));
     } finally {
         isSubmitting = false;
     }
 }
 
-/* =====================================================
-   OLD LOGIN / REGISTER FORM COMPATIBILITY
-===================================================== */
+/* ================= OLD FORM COMPATIBILITY ================= */
 
 async function handleLogin(event) {
     event.preventDefault();
@@ -516,9 +608,7 @@ async function handleLogin(event) {
     if (byId("gateLoginEmail")) byId("gateLoginEmail").value = email;
     if (byId("gateLoginPassword")) byId("gateLoginPassword").value = password;
 
-    await handleGateLogin({
-        preventDefault() {}
-    });
+    await handleGateLogin({ preventDefault() {} });
 }
 
 async function handleRegister(event) {
@@ -539,22 +629,15 @@ async function handleRegister(event) {
         }
     });
 
-    await handleGateRegister({
-        preventDefault() {}
-    });
+    await handleGateRegister({ preventDefault() {} });
 }
 
 function switchAuthTab(type) {
-    const loginForm = byId("loginForm");
-    const registerForm = byId("registerForm");
-
-    loginForm?.classList.toggle("active", type === "login");
-    registerForm?.classList.toggle("active", type === "register");
+    byId("loginForm")?.classList.toggle("active", type === "login");
+    byId("registerForm")?.classList.toggle("active", type === "register");
 }
 
-/* =====================================================
-   PASSWORD VISIBILITY
-===================================================== */
+/* ================= PASSWORD VISIBILITY ================= */
 
 function toggleGatePassword(fieldId, button) {
     const input = byId(fieldId);
@@ -574,28 +657,14 @@ function togglePasswordVisibility(fieldId, icon) {
     if (!input) return;
 
     input.type = input.type === "password" ? "text" : "password";
+
     if (icon) {
         icon.classList.toggle("fa-eye", input.type === "password");
         icon.classList.toggle("fa-eye-slash", input.type === "text");
     }
 }
 
-/* =====================================================
-   LOGIN SUCCESS / LOAD CUSTOMER DATA
-===================================================== */
-
-async function afterLogin() {
-    hideSebyAuthGate();
-    updateUI();
-
-    try {
-        await refreshCustomerData();
-    } catch (error) {
-        console.error("Customer data refresh:", error);
-    }
-
-    updateUI();
-}
+/* ================= CUSTOMER DATA ================= */
 
 async function refreshCustomerData() {
     if (!authToken) return;
@@ -610,41 +679,49 @@ async function refreshCustomerData() {
     ]);
 
     if (results[0].status === "fulfilled") {
-        currentUser = results[0].value.customer;
-        saveJSON(STORAGE.USER, currentUser);
+        const customer = results[0].value.customer;
+        if (customer) {
+            currentUser = customer;
+            saveJSON(STORAGE.USER, currentUser);
+        }
     }
 
     if (results[1].status === "fulfilled") {
-        const data = results[1].value;
+        const data = results[1].value || {};
         userWallet = Number(data.wallet?.balance) || 0;
     }
 
     if (results[2].status === "fulfilled") {
-        const data = results[2].value;
-        myOrders = Array.isArray(data) ? data : data.orders || [];
+        const data = results[2].value || {};
+        myOrders = Array.isArray(data) ? data : (data.orders || []);
     }
 
     if (results[3].status === "fulfilled") {
-        const data = results[3].value;
-        myRecharges = data.recharges || [];
+        const data = results[3].value || {};
+        myRecharges = Array.isArray(data)
+            ? data
+            : (data.recharges || []);
     }
 
     if (results[4].status === "fulfilled") {
-        const data = results[4].value;
-        myTransactions = data.transactions || [];
+        const data = results[4].value || {};
+        myTransactions = Array.isArray(data)
+            ? data
+            : (data.transactions || []);
     }
 
     if (results[5].status === "fulfilled") {
-        const data = results[5].value;
-        myNotifications = Array.isArray(data) ? data : [];
+        const data = results[5].value || {};
+        myNotifications = Array.isArray(data)
+            ? data
+            : (data.notifications || []);
     }
 
     updateUI();
+    renderWalletTransactions();
 }
 
-/* =====================================================
-   LOGOUT
-===================================================== */
+/* ================= LOGOUT ================= */
 
 async function logoutUser() {
     try {
@@ -655,7 +732,7 @@ async function logoutUser() {
             });
         }
     } catch (error) {
-        console.warn("Logout API:", error.message);
+        console.warn("Logout API:", getErrorMessage(error));
     }
 
     authToken = "";
@@ -674,20 +751,26 @@ async function logoutUser() {
     showSebyAuthGate();
     switchGateAuth("login");
 }
-/* =====================================================
-   UI REFRESH
-===================================================== */
+/* ================= UI REFRESH ================= */
 
 function updateUI() {
     const wallet = byId("userWalletBalance");
     const cartBadge = byId("cartBadge");
     const notifBadge = byId("notifBadge");
 
-    if (wallet) wallet.textContent = money(userWallet);
-    if (cartBadge) cartBadge.textContent = cartItem ? "1" : "0";
+    if (wallet) {
+        wallet.textContent = money(userWallet);
+    }
+
+    if (cartBadge) {
+        cartBadge.textContent = cartItem ? "1" : "0";
+    }
 
     if (notifBadge) {
-        const unread = myNotifications.filter(n => !n.read).length;
+        const unread = myNotifications.filter(
+            notification => !notification.read
+        ).length;
+
         notifBadge.textContent = String(unread);
         notifBadge.style.display = unread ? "" : "none";
     }
@@ -696,15 +779,16 @@ function updateUI() {
     renderProfile();
 }
 
-/* =====================================================
-   SIDEBAR / PAGE NAVIGATION
-===================================================== */
+/* ================= SIDEBAR / NAVIGATION ================= */
 
 function toggleSidebar(open) {
     byId("sidebar")?.classList.toggle("active", Boolean(open));
 
     const overlay = byId("sidebarOverlay");
-    if (overlay) overlay.style.display = open ? "block" : "none";
+
+    if (overlay) {
+        overlay.style.display = open ? "block" : "none";
+    }
 }
 
 function showPage(pageId) {
@@ -714,19 +798,30 @@ function showPage(pageId) {
         page.classList.remove("active");
     });
 
-    byId(pageId)?.classList.add("active");
+    const page = byId(pageId);
 
-    if (pageId === "wallet-page") loadWalletPage();
-    if (pageId === "orders-page") renderOrders();
-    if (pageId === "profile-page") renderProfile();
+    if (page) {
+        page.classList.add("active");
+    }
+
+    if (pageId === "wallet-page") {
+        loadWalletPage();
+    }
+
+    if (pageId === "orders-page") {
+        renderOrders();
+    }
+
+    if (pageId === "profile-page") {
+        renderProfile();
+    }
 }
 
-/* =====================================================
-   PROFILE / ORDERS
-===================================================== */
+/* ================= PROFILE / ORDERS ================= */
 
 function renderProfile() {
     const profile = byId("profileContent");
+
     if (!profile) return;
 
     if (!currentUser) {
@@ -734,19 +829,32 @@ function renderProfile() {
         return;
     }
 
+    const fullName = currentUser.name ||
+        `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim();
+
     profile.innerHTML = `
         <div class="seby-profile-details">
-            <p><strong>Nom :</strong> ${safeText(
-                currentUser.name ||
-                `${currentUser.firstName || ""} ${currentUser.lastName || ""}`
-            )}</p>
-            <p><strong>Email :</strong> ${safeText(currentUser.email || "")}</p>
-            <p><strong>WhatsApp :</strong> ${safeText(currentUser.phone || "")}</p>
-        </div>`;
+            <p>
+                <strong>Nom :</strong>
+                ${safeText(fullName)}
+            </p>
+
+            <p>
+                <strong>Email :</strong>
+                ${safeText(currentUser.email || "")}
+            </p>
+
+            <p>
+                <strong>WhatsApp :</strong>
+                ${safeText(currentUser.phone || "")}
+            </p>
+        </div>
+    `;
 }
 
 function renderOrders() {
     const list = byId("ordersList");
+
     if (!list) return;
 
     if (!authToken) {
@@ -761,17 +869,31 @@ function renderOrders() {
 
     list.innerHTML = myOrders.map(order => `
         <article class="seby-order-card">
-            <h3>${safeText(order.productName || order.product || "Commande")}</h3>
+
+            <h3>
+                ${safeText(
+                    order.productName ||
+                    order.product ||
+                    "Commande"
+                )}
+            </h3>
+
             <p>${money(order.amount)}</p>
-            <p>Statut : ${safeText(order.status || "En attente")}</p>
-            <small>${safeText(order.createdAt || "")}</small>
+
+            <p>
+                Statut :
+                ${safeText(order.status || "En attente")}
+            </p>
+
+            <small>
+                ${safeText(order.createdAt || "")}
+            </small>
+
         </article>
     `).join("");
 }
 
-/* =====================================================
-   CART STORAGE
-===================================================== */
+/* ================= CART STORAGE ================= */
 
 function saveCart() {
     saveJSON(STORAGE.CART, cartItem);
@@ -783,15 +905,17 @@ function clearCart() {
     saveCart();
 }
 
-/* =====================================================
-   PRODUCT MODAL
-===================================================== */
+/* ================= PRODUCT MODAL ================= */
 
 function openProductModal(productKey) {
     if (!requireLogin()) return;
 
     const product = PRODUCTS_DATA[productKey];
-    if (!product) return alertMessage("Pwodwi sa a pa disponib.");
+
+    if (!product) {
+        alertMessage("Pwodwi sa a pa disponib.");
+        return;
+    }
 
     currentSelectedProduct = productKey;
     currentSelectedPack = null;
@@ -800,19 +924,31 @@ function openProductModal(productKey) {
     const body = byId("modalBody");
 
     if (!modal || !body) {
-        return alertMessage("Fenèt pwodwi a pa jwenn nan index.html.");
+        alertMessage(
+            "Fenèt pwodwi a pa jwenn nan index.html."
+        );
+        return;
     }
 
     const fieldHTML = product.fields.map(field => {
+
         if (field === "region") {
             return `
                 <label for="orderRegion">Région</label>
+
                 <select id="orderRegion" required>
                     <option value="">Chwazi rejyon</option>
-                    <option value="Amérique du Nord">Amérique du Nord</option>
-                    <option value="États-Unis">États-Unis</option>
-                    <option value="Europe">Europe</option>
-                </select>`;
+                    <option value="Amérique du Nord">
+                        Amérique du Nord
+                    </option>
+                    <option value="États-Unis">
+                        États-Unis
+                    </option>
+                    <option value="Europe">
+                        Europe
+                    </option>
+                </select>
+            `;
         }
 
         const labels = {
@@ -833,54 +969,84 @@ function openProductModal(productKey) {
             whatsapp: WHATSAPP_DISPLAY
         };
 
-        const type = field === "password" ? "password" :
+        const type =
+            field === "password" ? "password" :
             field === "email" ? "email" : "text";
 
+        const required = [
+            "id",
+            "email",
+            "password",
+            "konami_id",
+            "transaction",
+            "whatsapp"
+        ].includes(field);
+
         return `
-            <label for="order_${field}">${safeText(labels[field] || field)}</label>
+            <label for="order_${field}">
+                ${safeText(labels[field] || field)}
+            </label>
+
             <input
                 id="order_${field}"
                 type="${type}"
                 placeholder="${safeText(placeholders[field] || "")}"
-                ${field === "transaction" || field === "whatsapp" ? "required" : ""}
-                ${field === "transaction" ? 'inputmode="numeric" maxlength="30"' : ""}
-                ${field === "whatsapp" ? 'value="+509 "' : ""}
-            >`;
+                ${required ? "required" : ""}
+                ${field === "transaction"
+                    ? 'inputmode="numeric" maxlength="30"'
+                    : ""}
+                ${field === "whatsapp"
+                    ? 'value="+509 "'
+                    : ""}
+            >
+        `;
     }).join("");
 
     body.innerHTML = `
         <h2>${safeText(product.title)}</h2>
+
         <p>${safeText(t("chooseAmount"))}</p>
 
         <label for="productPack">Pakè</label>
+
         <select id="productPack" required>
             <option value="">Chwazi pakè a</option>
+
             ${product.packs.map((pack, index) => `
                 <option value="${index}">
-                    ${safeText(pack.name)} — ${money(pack.price)}
+                    ${safeText(pack.name)}
+                    — ${money(pack.price)}
                 </option>
             `).join("")}
+
         </select>
 
         <div id="selectedPackPrice"></div>
 
         <h3>${safeText(t("requiredInfo"))}</h3>
+
         ${fieldHTML}
 
         <button type="button" id="addProductToCartBtn">
             Ajoute nan panye
         </button>
+
         <button type="button" id="buyProductNowBtn">
             Konfime kòmand
         </button>
     `;
 
     byId("productPack").addEventListener("change", event => {
+
         const index = Number(event.target.value);
-        currentSelectedPack = Number.isInteger(index) &&
-            product.packs[index] ? product.packs[index] : null;
+
+        currentSelectedPack =
+            Number.isInteger(index) && product.packs[index]
+                ? product.packs[index]
+                : null;
 
         const price = byId("selectedPackPrice");
+
         if (price) {
             price.textContent = currentSelectedPack
                 ? `Total : ${money(currentSelectedPack.price)}`
@@ -889,23 +1055,28 @@ function openProductModal(productKey) {
     });
 
     const whatsappInput = byId("order_whatsapp");
+
     if (whatsappInput) {
-        whatsappInput.addEventListener("input", () =>
-            formatPhoneInput(whatsappInput)
-        );
+        whatsappInput.addEventListener("input", () => {
+            formatPhoneInput(whatsappInput);
+        });
     }
 
-    byId("addProductToCartBtn").onclick = () => addProductToCart();
-    byId("buyProductNowBtn").onclick = () => submitProductOrder();
+    byId("addProductToCartBtn").onclick = addProductToCart;
+    byId("buyProductNowBtn").onclick = submitProductOrder;
 
     modal.style.display = "flex";
 }
 
 function closeProductModal() {
-    if (byId("productModal")) {
-        byId("productModal").style.display = "none";
+    const modal = byId("productModal");
+
+    if (modal) {
+        modal.style.display = "none";
     }
 }
+
+/* ================= GET PRODUCT DETAILS ================= */
 
 function getProductDetails() {
     if (!currentSelectedProduct || !currentSelectedPack) {
@@ -916,30 +1087,44 @@ function getProductDetails() {
     const details = {};
 
     for (const field of product.fields) {
+
         const input = byId(`order_${field}`);
 
         if (field === "region") {
             details.region = byId("orderRegion")?.value || "";
-            if (!details.region) throw new Error("Chwazi rejyon an.");
+
+            if (!details.region) {
+                throw new Error("Chwazi rejyon an.");
+            }
+
             continue;
         }
 
         const value = input?.value.trim() || "";
 
-        if (["transaction", "whatsapp"].includes(field) && !value) {
-            throw new Error(`Tanpri ranpli ${field}.`);
+        if (!value) {
+            throw new Error(
+                `Tanpri ranpli ${field}.`
+            );
         }
 
-        if (field === "email" && value && !isValidEmail(value)) {
+        if (field === "email" && !isValidEmail(value)) {
             throw new Error("Adrès imèl la pa valab.");
         }
 
         if (field === "whatsapp" && !isValidPhone(value)) {
-            throw new Error("WhatsApp dwe nan fòma +509 XX XX XXXX.");
+            throw new Error(
+                "WhatsApp dwe nan fòma +509 XX XX XXXX."
+            );
         }
 
-        if (field === "transaction" && !/^\d{8,30}$/.test(value)) {
-            throw new Error("ID Transaction dwe gen 8–30 chif.");
+        if (
+            field === "transaction" &&
+            !/^\d{8,30}$/.test(value)
+        ) {
+            throw new Error(
+                "ID Transaction dwe gen 8–30 chif."
+            );
         }
 
         details[field] = value;
@@ -954,16 +1139,23 @@ function getProductDetails() {
     };
 }
 
+/* ================= ADD PRODUCT TO CART ================= */
+
 function addProductToCart() {
     try {
         cartItem = getProductDetails();
+
         saveCart();
         closeProductModal();
+
         alertMessage("Pwodwi a ajoute nan panye a.");
+
     } catch (error) {
-        alertMessage(error.message);
+        alertMessage(getErrorMessage(error));
     }
 }
+
+/* ================= SUBMIT PRODUCT ORDER ================= */
 
 async function submitProductOrder() {
     if (!requireLogin() || isSubmitting) return;
@@ -979,32 +1171,42 @@ async function submitProductOrder() {
 
         const result = await apiRequest("/api/orders", {
             method: "POST",
+
             body: JSON.stringify({
-                productName: `${item.productName} — ${item.packName}`,
+                productName:
+                    `${item.productName} — ${item.packName}`,
+
                 amount: item.amount,
                 quantity: 1,
                 description: detailLines,
-                transactionId: item.details.transaction || ""
+
+                transactionId:
+                    item.details.transaction || ""
             })
         });
 
-        if (result.order) myOrders.unshift(result.order);
+        if (result.order) {
+            myOrders.unshift(result.order);
+        }
 
         clearCart();
         closeProductModal();
 
         await refreshCustomerData();
-        alertMessage("Kòmand ou an voye pou verifikasyon.");
+
+        alertMessage(
+            "Kòmand ou an voye pou verifikasyon."
+        );
+
     } catch (error) {
-        alertMessage(error.message);
+        alertMessage(getErrorMessage(error));
+
     } finally {
         isSubmitting = false;
     }
 }
 
-/* =====================================================
-   CART MODAL
-===================================================== */
+/* ================= CART MODAL ================= */
 
 function openCartModal() {
     if (!requireLogin()) return;
@@ -1015,18 +1217,42 @@ function openCartModal() {
     if (!modal || !body) return;
 
     if (!cartItem) {
+
         body.innerHTML = `
             <p>${safeText(t("emptyCart"))}</p>
-            <button type="button" onclick="closeCartModal()">Fèmen</button>
+
+            <button
+                type="button"
+                onclick="closeCartModal()"
+            >
+                Fèmen
+            </button>
         `;
+
     } else {
+
         body.innerHTML = `
-            <h2>${safeText(t("orderSummary"))}</h2>
+            <h2>Rezime kòmand</h2>
+
             <p>${safeText(cartItem.productName)}</p>
+
             <p>${safeText(cartItem.packName)}</p>
+
             <h3>${money(cartItem.amount)}</h3>
-            <button type="button" onclick="submitCartOrder()">Konfime kòmand</button>
-            <button type="button" onclick="clearCart();closeCartModal()">Retire</button>
+
+            <button
+                type="button"
+                onclick="submitCartOrder()"
+            >
+                Konfime kòmand
+            </button>
+
+            <button
+                type="button"
+                onclick="clearCart();closeCartModal()"
+            >
+                Retire
+            </button>
         `;
     }
 
@@ -1034,75 +1260,119 @@ function openCartModal() {
 }
 
 function closeCartModal() {
-    if (byId("cartModal")) byId("cartModal").style.display = "none";
+    const modal = byId("cartModal");
+
+    if (modal) {
+        modal.style.display = "none";
+    }
 }
 
+/* ================= SUBMIT CART ORDER ================= */
+
 async function submitCartOrder() {
-    if (!cartItem || !requireLogin() || isSubmitting) return;
+    if (!cartItem || !requireLogin() || isSubmitting) {
+        return;
+    }
 
     isSubmitting = true;
 
     try {
         const result = await apiRequest("/api/orders", {
             method: "POST",
+
             body: JSON.stringify({
-                productName: `${cartItem.productName} — ${cartItem.packName}`,
+                productName:
+                    `${cartItem.productName} — ${cartItem.packName}`,
+
                 amount: cartItem.amount,
                 quantity: 1,
-                description: JSON.stringify(cartItem.details || {}),
-                transactionId: cartItem.details?.transaction || ""
+
+                description: JSON.stringify(
+                    cartItem.details || {}
+                ),
+
+                transactionId:
+                    cartItem.details?.transaction || ""
             })
         });
 
-        if (result.order) myOrders.unshift(result.order);
+        if (result.order) {
+            myOrders.unshift(result.order);
+        }
 
         clearCart();
         closeCartModal();
+
         await refreshCustomerData();
 
-        alertMessage("Kòmand lan voye pou verifikasyon.");
+        alertMessage(
+            "Kòmand lan voye pou verifikasyon."
+        );
+
     } catch (error) {
-        alertMessage(error.message);
+        alertMessage(getErrorMessage(error));
+
     } finally {
         isSubmitting = false;
     }
 }
 
-/* =====================================================
-   WALLET
-===================================================== */
+/* ================= WALLET ================= */
 
 async function loadWalletPage() {
     if (!requireLogin()) return;
 
     try {
-        const result = await apiRequest("/api/customer-wallet");
-        userWallet = Number(result.wallet?.balance) || 0;
+        const result = await apiRequest(
+            "/api/customer-wallet"
+        );
+
+        userWallet = Number(
+            result.wallet?.balance
+        ) || 0;
 
         updateUI();
         renderWalletTransactions();
+
     } catch (error) {
-        alertMessage(error.message);
+        alertMessage(getErrorMessage(error));
     }
 }
+
+/* ================= WALLET RECHARGE ================= */
 
 async function submitWalletRecharge() {
     if (!requireLogin() || isSubmitting) return;
 
-    const amount = Number(byId("rechargeAmount")?.value);
-    const transactionId = byId("walletTxnId")?.value.trim() || "";
-    const phone = byId("natcashNumInput")?.value.trim() || "";
+    const amount = Number(
+        byId("rechargeAmount")?.value
+    );
+
+    const transactionId =
+        byId("walletTxnId")?.value.trim() || "";
+
+    const phone =
+        byId("natcashNumInput")?.value.trim() || "";
 
     if (!Number.isFinite(amount) || amount < 150) {
-        return alertMessage("Montan minimòm recharge a se 150 Gdes.");
+        alertMessage(
+            "Montan minimòm recharge a se 150 Gdes."
+        );
+        return;
     }
 
     if (!/^\d{8,30}$/.test(transactionId)) {
-        return alertMessage("ID Transaction lan dwe gen 8–30 chif.");
+        alertMessage(
+            "ID Transaction lan dwe gen 8–30 chif."
+        );
+        return;
     }
 
     if (phone && !isValidPhone(phone)) {
-        return alertMessage("Verifye nimewo WhatsApp ou a.");
+        alertMessage(
+            "Verifye nimewo WhatsApp ou a."
+        );
+        return;
     }
 
     isSubmitting = true;
@@ -1110,6 +1380,7 @@ async function submitWalletRecharge() {
     try {
         await apiRequest("/api/recharges", {
             method: "POST",
+
             body: JSON.stringify({
                 amount,
                 transactionId,
@@ -1117,36 +1388,56 @@ async function submitWalletRecharge() {
             })
         });
 
-        if (byId("rechargeAmount")) byId("rechargeAmount").value = "";
-        if (byId("walletTxnId")) byId("walletTxnId").value = "";
+        if (byId("rechargeAmount")) {
+            byId("rechargeAmount").value = "";
+        }
+
+        if (byId("walletTxnId")) {
+            byId("walletTxnId").value = "";
+        }
 
         await refreshCustomerData();
+
         alertMessage(t("walletSent"));
+
     } catch (error) {
-        alertMessage(error.message);
+        alertMessage(getErrorMessage(error));
+
     } finally {
         isSubmitting = false;
     }
 }
 
+/* ================= WALLET TRANSACTIONS ================= */
+
 function renderWalletTransactions() {
     const container = byId("walletTransactions");
+
     if (!container) return;
 
     if (!myTransactions.length && !myRecharges.length) {
-        container.innerHTML = "<p>Pa gen tranzaksyon pou kounye a.</p>";
+        container.innerHTML = `
+            <p>Pa gen tranzaksyon pou kounye a.</p>
+        `;
         return;
     }
 
     const rows = [
         ...myTransactions.map(item => ({
-            title: item.description || item.type || "Transaction",
+            title:
+                item.description ||
+                item.type ||
+                "Transaction",
+
             amount: item.amount,
             status: item.status,
             date: item.createdAt
         })),
+
         ...myRecharges.map(item => ({
-            title: `Recharge ${item.transactionId || ""}`,
+            title:
+                `Recharge ${item.transactionId || ""}`,
+
             amount: item.amount,
             status: item.status,
             date: item.createdAt
@@ -1155,54 +1446,78 @@ function renderWalletTransactions() {
 
     container.innerHTML = rows.map(item => `
         <article class="seby-transaction">
-            <strong>${safeText(item.title)}</strong>
+
+            <strong>
+                ${safeText(item.title)}
+            </strong>
+
             <p>${money(item.amount)}</p>
-            <p>${safeText(item.status || "En attente")}</p>
-            <small>${safeText(item.date || "")}</small>
+
+            <p>
+                ${safeText(item.status || "En attente")}
+            </p>
+
+            <small>
+                ${safeText(item.date || "")}
+            </small>
+
         </article>
     `).join("");
 }
 
-/* =====================================================
-   NOTIFICATIONS
-===================================================== */
+/* ================= NOTIFICATIONS ================= */
 
 function openNotifications() {
     const modal = byId("notifModal");
+
     if (!modal) return;
 
-    const unread = myNotifications.filter(item => !item.read);
+    const unread = myNotifications.filter(
+        item => !item.read
+    );
 
     modal.style.display = "flex";
 
-    const content = modal.querySelector(".modal-content") || modal;
+    const content =
+        modal.querySelector(".modal-content") || modal;
 
     const list = unread.length
         ? unread.map(item => `
             <article>
-                <strong>${safeText(item.title || "SEBY UNIVERSE")}</strong>
-                <p>${safeText(item.message || "")}</p>
+
+                <strong>
+                    ${safeText(item.title || "SEBY UNIVERSE")}
+                </strong>
+
+                <p>
+                    ${safeText(item.message || "")}
+                </p>
+
             </article>
         `).join("")
         : "<p>Pa gen nouvo notifikasyon.</p>";
 
     const existing = byId("sebyNotificationList");
+
     if (existing) {
         existing.innerHTML = list;
+
     } else {
         const area = document.createElement("div");
+
         area.id = "sebyNotificationList";
         area.innerHTML = list;
+
         content.appendChild(area);
     }
 }
 
-/* =====================================================
-   GOOGLE BUTTON
-===================================================== */
+/* ================= SOCIAL AUTH ================= */
 
 function socialAuth(provider) {
-    if (String(provider).toLowerCase() !== "google") return;
+    if (String(provider).toLowerCase() !== "google") {
+        return;
+    }
 
     alertMessage(
         "Pou kounye a, konekte ak imèl ak modpas SEBY UNIVERSE ou. " +
@@ -1210,105 +1525,214 @@ function socialAuth(provider) {
     );
 }
 
-/* =====================================================
-   PHONE INPUTS / EVENT SETUP
-===================================================== */
+/* ================= EVENT LISTENERS ================= */
 
 function setupEventListeners() {
-    byId("gateLoginForm")?.addEventListener("submit", handleGateLogin);
-    byId("gateRegisterForm")?.addEventListener("submit", handleGateRegister);
 
-    byId("loginForm")?.addEventListener("submit", handleLogin);
-    byId("registerForm")?.addEventListener("submit", handleRegister);
+    /* AUTH FORMS */
 
-    byId("logoutBtn")?.addEventListener("click", event => {
-        event.preventDefault();
-        logoutUser();
-    });
+    byId("gateLoginForm")?.addEventListener(
+        "submit",
+        handleGateLogin
+    );
 
-    byId("profileHeaderBtn")?.addEventListener("click", () => {
-        if (!requireLogin()) return;
-        showPage("profile-page");
-    });
+    byId("gateRegisterForm")?.addEventListener(
+        "submit",
+        handleGateRegister
+    );
 
-    byId("cartBtn")?.addEventListener("click", openCartModal);
-    byId("notifBtn")?.addEventListener("click", openNotifications);
+    byId("loginForm")?.addEventListener(
+        "submit",
+        handleLogin
+    );
 
-    byId("openMenuBtn")?.addEventListener("click", () => toggleSidebar(true));
-    byId("closeMenuBtn")?.addEventListener("click", () => toggleSidebar(false));
-    byId("sidebarOverlay")?.addEventListener("click", () => toggleSidebar(false));
+    byId("registerForm")?.addEventListener(
+        "submit",
+        handleRegister
+    );
 
-    document.querySelectorAll(".nav-item[data-page]").forEach(item => {
-        item.addEventListener("click", event => {
+    /* LOGOUT */
+
+    byId("logoutBtn")?.addEventListener(
+        "click",
+        event => {
             event.preventDefault();
+            logoutUser();
+        }
+    );
+
+    /* PROFILE */
+
+    byId("profileHeaderBtn")?.addEventListener(
+        "click",
+        () => {
+            if (!requireLogin()) return;
+            showPage("profile-page");
+        }
+    );
+
+    /* CART */
+
+    byId("cartBtn")?.addEventListener(
+        "click",
+        openCartModal
+    );
+
+    /* NOTIFICATIONS */
+
+    byId("notifBtn")?.addEventListener(
+        "click",
+        openNotifications
+    );
+
+    /* SIDEBAR */
+
+    byId("openMenuBtn")?.addEventListener(
+        "click",
+        () => toggleSidebar(true)
+    );
+
+    byId("closeMenuBtn")?.addEventListener(
+        "click",
+        () => toggleSidebar(false)
+    );
+
+    byId("sidebarOverlay")?.addEventListener(
+        "click",
+        () => toggleSidebar(false)
+    );
+
+    /* PAGE NAVIGATION */
+
+    document.querySelectorAll(
+        ".nav-item[data-page]"
+    ).forEach(item => {
+
+        item.addEventListener("click", event => {
+
+            event.preventDefault();
+
             showPage(item.dataset.page);
+
             toggleSidebar(false);
         });
     });
 
-    byId("accountInfosBtn")?.addEventListener("click", event => {
-        event.preventDefault();
-        showPage("profile-page");
-        toggleSidebar(false);
-    });
+    /* ACCOUNT INFOS */
 
-    byId("goProBtn")?.addEventListener("click", event => {
-        event.preventDefault();
-        const modal = byId("proModal");
-        if (modal) modal.style.display = "flex";
-    });
+    byId("accountInfosBtn")?.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+            showPage("profile-page");
+
+            toggleSidebar(false);
+        }
+    );
+
+    /* PRO MODAL */
+
+    byId("goProBtn")?.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+            const modal = byId("proModal");
+
+            if (modal) {
+                modal.style.display = "flex";
+            }
+        }
+    );
+
+    /* PHONE INPUTS */
 
     document.querySelectorAll(
         "#gateWhatsapp, #regWhatsapp, #natcashNumInput"
     ).forEach(input => {
-        input.addEventListener("input", () => formatPhoneInput(input));
+
+        input.addEventListener("input", () => {
+            formatPhoneInput(input);
+        });
     });
 
-    byId("paramsToggle")?.addEventListener("click", event => {
-        event.preventDefault();
-        byId("paramsMenu")?.classList.toggle("active");
-    });
+    /* SETTINGS MENU */
 
-    document.querySelectorAll("[data-product]").forEach(button => {
+    byId("paramsToggle")?.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+            byId("paramsMenu")?.classList.toggle("active");
+        }
+    );
+
+    /* PRODUCTS */
+
+    document.querySelectorAll(
+        "[data-product]"
+    ).forEach(button => {
+
         button.addEventListener("click", () => {
             openProductModal(button.dataset.product);
         });
     });
 
+    /* WALLET RECHARGE */
+
     byId("submitWalletRechargeBtn")?.addEventListener(
-        "click", submitWalletRecharge
+        "click",
+        submitWalletRecharge
     );
 }
 
-/* =====================================================
-   AUTH RESTORE + STARTUP
-===================================================== */
+/* ================= AUTH RESTORE / STARTUP ================= */
 
 async function initializeAuthGate() {
+
+    if (authInitialized) return;
+
+    authInitialized = true;
+
     setupEventListeners();
 
     if (!authToken) {
+
         currentUser = null;
+
         showSebyAuthGate();
+
         switchGateAuth("login");
+
         updateUI();
+
         return;
     }
 
     try {
+
         const result = await apiRequest("/api/me");
 
         currentUser = result.customer;
 
         if (!currentUser) {
-            throw new Error("Enfòmasyon kont lan pa disponib.");
+            throw new Error(
+                "Enfòmasyon kont lan pa disponib."
+            );
         }
 
         saveJSON(STORAGE.USER, currentUser);
 
         hideSebyAuthGate();
+
         await refreshCustomerData();
+
     } catch (error) {
+
         authToken = "";
         currentUser = null;
 
@@ -1316,28 +1740,37 @@ async function initializeAuthGate() {
         localStorage.removeItem(STORAGE.USER);
 
         showSebyAuthGate();
+
         switchGateAuth("login");
     }
 
     updateUI();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    initializeAuthGate();
-});
+/* ================= LANGUAGE SELECT ================= */
 
-/* =====================================================
-   LANGUAGE SELECT
-===================================================== */
+function setupLanguageSelect() {
 
-const languageSelect = byId("langSelect");
+    const languageSelect = byId("langSelect");
 
-if (languageSelect) {
+    if (!languageSelect) return;
+
     languageSelect.value = getCurrentLanguage();
 
     languageSelect.addEventListener("change", event => {
-        localStorage.setItem(STORAGE.LANGUAGE, event.target.value);
-        window.dispatchEvent(new Event("languageChanged"));
+
+        const language = event.target.value;
+
+        if (!SCRIPT_TRANSLATIONS[language]) return;
+
+        localStorage.setItem(
+            STORAGE.LANGUAGE,
+            language
+        );
+
+        window.dispatchEvent(
+            new Event("languageChanged")
+        );
     });
 }
 
@@ -1345,20 +1778,39 @@ window.addEventListener("languageChanged", () => {
     updateUI();
 });
 
-/* =====================================================
-   GLOBAL FUNCTIONS USED BY HTML ONCLICK
-===================================================== */
+/* ================= GLOBAL HTML HANDLERS ================= */
 
 window.openProductModal = openProductModal;
 window.closeProductModal = closeProductModal;
+
 window.openCartModal = openCartModal;
 window.closeCartModal = closeCartModal;
+
 window.submitCartOrder = submitCartOrder;
 window.submitWalletRecharge = submitWalletRecharge;
+
 window.switchGateAuth = switchGateAuth;
+
 window.toggleGatePassword = toggleGatePassword;
 window.togglePasswordVisibility = togglePasswordVisibility;
+
 window.socialAuth = socialAuth;
 window.logoutUser = logoutUser;
+
 window.showPage = showPage;
 window.openNotifications = openNotifications;
+
+window.clearCart = clearCart;
+
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+
+/* ================= START ================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    setupLanguageSelect();
+
+    initializeAuthGate();
+
+});
